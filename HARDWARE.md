@@ -367,6 +367,59 @@ An RTC-stop UI switch is intentionally absent until there is a measured reason
 for it and a tested resume sequence. This choice does not affect ALDO3: the
 audio rail remains enabled for shared-I2C safety.
 
+## Recommended sleep sequence (firmware-independent, measured 2026-11-14)
+
+The logic below keeps the shared I2C bus working through sleep and stops the
+panel being back-powered. It applies to any firmware on this board, not only
+ESPHome. Figures come from [PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md)
+and [run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md): USB-C at
+5.0 V, measured at the board input, on one board.
+
+**Rules that always hold**
+
+1. **Never clear ALDO3** (REG90 bit 2): the codecs' I2C pins clamp the shared bus
+   until a full power drain (see the ALDO3 section below).
+2. **Never modify ALDO2** (REG90 bit 1). Change only the intended bit by
+   read-modify-write, then verify the read-back.
+3. **Whenever ALDO4 is off and the ESP32 is awake, drive no panel line high**:
+   CS (GPIO9), DC (GPIO8), RESET (GPIO12), SCLK (GPIO10), MOSI (GPIO11). A high
+   line back-powers the unpowered panel: +8 mA with audio on, +50 mA with audio
+   off. Driving CS, DC, and RESET low removed it entirely.
+4. **A successful write does not prove the bus survived.** The ALDO3 clamp
+   develops as the rail discharges (working at +3 ms, clamped by +4.07 s).
+
+**Entering sleep**
+
+1. Let any refresh finish: wait for BUSY to report idle, never cut ALDO4
+   mid-refresh.
+2. Put the panel into deep sleep: command `0x07`, data `0xA5`.
+3. Park the panel lines: CS, DC, and RESET low. SCLK and MOSI idle low in SPI
+   mode 0; `0xA5` ends in a 1, so confirm MOSI is low if the SPI driver holds the
+   last bit.
+4. Clear ALDO4 (REG90 bit 3) by read-modify-write and verify; ALDO3 stays set.
+5. Quiet audio: amplifier enable (GPIO7) low; with a codec driver, also the
+   ES8311/ES7210 low-power register states.
+6. Hold no panel line high through sleep. Unheld pins stop being driven in ESP32
+   deep sleep, which is the measured state; a pin hold keeping CS or RESET high
+   would reintroduce the back-powering.
+7. Arm wake sources (ext1 ANY_LOW on GPIO0 and GPIO4, with GPIO4's RTC pull-up
+   enabled; and/or a timer) and enter ESP32 deep sleep.
+
+**Waking:** I2C works immediately (ALDO3 never went off). Set ALDO4 and verify,
+let the rail settle, restore CS and RESET high, then run the panel's normal reset
+and init before the first refresh. Restore codec registers if they were shut
+down.
+
+| Deep sleep, ALDO4 off | Mean current |
+| --- | --- |
+| ALDO3 on, codecs in logical low power (this sequence) | **16.07 mA** |
+| ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **4.79 mA** |
+| Cost of keeping I2C working | **≈ 11.3 mA** |
+
+Not yet measured: ALDO3 on with the codecs left at their power-on defaults (a fix
+without a codec driver), a `REG90 = 0x00` sleep that also clears ALDO1/ALDO2, and
+any of this on battery input.
+
 ## Audio codecs: what setup() does not restore
 
 Both codecs sit on the shared bus and stay powered by ALDO3 at all times. The
