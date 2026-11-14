@@ -130,13 +130,16 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
 - **Package builds** validate and compile for every entry point with ESPHome
   2026.10.2 (2026-11-13). Physical regression of the package-built images, including the
   demo's deep-sleep and wake path, is the remaining gate for 1.0.0.
-- **No current consumption has been measured.** A Nordic PPK2 is available, but
-  no measurement campaign has been run. Every statement here about saving power
-  is reasoning from the data sheets, not a measured result.
+- **First current measurements are recorded** (2026-11-14, USB-C at 5.0 V):
+  [PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md). Idle with
+  everything on is about 120 mA at 5 V, audio logical shutdown saves about 56 mA,
+  and deep sleep is about 16 mA. Switching the display rail off while awake
+  currently *raises* current (under investigation). These are one board and one
+  supply; the battery-input run is still to do.
 
 Not yet built or characterized:
 
-- Current consumption in any power state
+- Current consumption on battery input, and without monitoring clients connected
 - Repeat-cycle regression across the power-state matrix
 - Battery ADC enable behaviour across the power-state matrix
 - Native `image:` dithering against Waveshare's 480 x 480 sample image
@@ -264,6 +267,7 @@ procedure and the log vocabulary.
 | [`TESTING.md`](TESTING.md) | How to capture a log that means something, the log vocabulary, and the procedures with a known-good result. |
 | [`CHANGELOG.md`](CHANGELOG.md) | What each release changed, matched to the version in the boot log. |
 | [`Logs/`](Logs/) | Sanitized device logs from bring-up and the power-state matrix. |
+| [`Measurements/`](Measurements/) | PPK2 current measurements: run header, results, boundary log lines, and a 1 s trace. |
 | [`scripts/`](scripts/) | Package verification and standalone-profile generation. |
 | [`Documentation/README.md`](Documentation/README.md) | Provenance, authoritative sources, and hashes for third-party PDFs. |
 | [`References/README.md`](References/README.md) | Pinned vendor repositories and immutable links to the relevant source files. |

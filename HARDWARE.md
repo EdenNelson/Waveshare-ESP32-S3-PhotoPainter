@@ -313,6 +313,13 @@ routine that clears ALDO3 among other rails, but every call to it is commented
 out and it is absent from the pinned repository and the factory image. The
 clamp survives reflashing, because flashing does not de-energize the rail.
 
+**Onset is not instant (measured 2026-11-14).** Clearing ALDO3 alone
+(`0x90` `0xF7 -> 0xF3`) left the bus working 3 ms later: the read-back succeeded
+with SDA and SCL high. By the next poll, 4.07 s later, both lines were held low
+(`sda=0 scl=0`) and the PMIC and RTC were unreachable, and after an ESP32 deep
+sleep and wake every poll and bounded recovery failed. A write that succeeds
+does not show the bus survived it.
+
 **Recovery requires a full power draindown.** Disconnect USB-C *and* the
 battery, and leave the board disconnected for at least one minute so the bulk
 capacitance drains. A ten-second power-down is reliably not enough; the timeouts
@@ -468,6 +475,10 @@ measurements and additions that have not been made yet.
 - GPIO21 PMIC-interrupt support in ESPHome
 - Physical repeat-cycle regression of the new demo deep-sleep path, especially
   BOOT/KEY ext1 wake versus timer fallback and post-wake codec restoration
+- **Measured 2026-11-14 (PPK2 run 1):** switching ALDO4 off while the ESP32 is
+  awake *raised* input current (about +8 mA with audio on, +50 mA with audio off),
+  consistent with the hypothesis below; deep sleep with ALDO4 off is 16.07 mA.
+  See [the run record](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md).
 - Whether the e-paper signal lines back-power the panel while ALDO4 is off. The
   ESP32 keeps driving the panel's SPI and control pins, and ESPHome's shutdown
   hook sends the panel's deep-sleep command during a reboot or deep-sleep entry

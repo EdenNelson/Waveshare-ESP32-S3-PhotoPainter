@@ -101,9 +101,10 @@ same package source.
 
 ### Not claimed
 
-No current consumption has been measured. The battery-oriented composition and
-the deep-sleep demo are not low-power claims until a recorded PPK2 procedure
-backs them.
+The first PPK2 run (USB-C at 5.0 V) is recorded in
+[`Measurements/`](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md). The
+battery-oriented composition and the deep-sleep demo are not battery-life claims
+until the battery-input run backs them.
 
 ## Pre-release development
 

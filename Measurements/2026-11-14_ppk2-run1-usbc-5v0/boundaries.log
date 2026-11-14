@@ -1,0 +1,168 @@
+[13:59:06.374][I][photopainter_dashboard:236]: event=render_begin stamp_ms=9044 page=sample_image rotate=0
+[13:59:59.793][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=3 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:00:00.655][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x28 status2=0x14 ldo_enable=0xFF rtc_seconds=0x51 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:00:59.792][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=3 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:01:00.688][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x28 status2=0x14 ldo_enable=0xFF rtc_seconds=0x51 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:01:11.462][I][photopainter_power:310]: event=register_transition status1=0x28->0x20 status2=0x14->0x15 ldo_enable=0xFF->0xFF
+[14:01:59.814][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=3 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:02:00.737][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x51 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:03:41.861][W][photopainter_power:340]: event=rtc_osc_flag old=stopped new=running seconds=0x41 ctrl_ok=1 rtc_ctrl1=0x00 rtc_ctrl2=0x00 irq_ok=1 axp_irq0=0x40 axp_irq1=0x80 axp_irq2=0x40 status1=0x20 status2=0x15 uptime_ms=40397
+[14:04:04.359][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:04:06.167][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x01 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:05:04.367][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:05:06.167][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x01 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:06:04.360][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:06:06.165][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x01 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:06:21.339][I][photopainter_audio:143]: event=transition old=active new=low_power result=ok amplifier=off aldo3=on dac_csm=0x00 adc_csm=0x00
+[14:06:21.346][W][component:419]: photopainter_audio_shutdown took a long time for an operation (110 ms), max is 50 ms
+[14:07:04.362][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=0 display=1 amplifier=0 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:07:06.177][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x01 display=active audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:07:17.880][I][photopainter_audio:206]: event=transition old=low_power new=active result=ok dac_id=0x83 adc_id=0x72 dac_mute=0x00 aldo3=on
+[14:08:02.151][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=294649 timeout_ms=45000 expected=immediate
+[14:08:02.154][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=1 idle=1 failed=0 safe=1 busy=0
+[14:08:02.164][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:08:02.266][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:08:04.361][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=0 amplifier=1 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:08:06.165][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x01 display=off audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:09:04.360][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=0 amplifier=1 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:09:06.166][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x01 display=off audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:09:08.238][I][photopainter_audio:143]: event=transition old=active new=low_power result=ok amplifier=off aldo3=on dac_csm=0x00 adc_csm=0x00
+[14:09:08.277][W][component:419]: photopainter_audio_shutdown took a long time for an operation (110 ms), max is 50 ms
+[14:10:04.362][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=0 display=0 amplifier=0 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:10:06.165][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x01 display=off audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:10:08.723][I][photopainter_display:248]: event=rail_transition old=off new=on result=ok rail=aldo4 reg90=0xF7->0xFF reg95=0x1C->0x1C aldo3=on
+[14:10:13.329][I][photopainter_dashboard:236]: event=render_begin stamp_ms=431891 page=sample_image rotate=0
+[14:11:04.361][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=1 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=0 display=1 amplifier=0 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:11:06.174][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x01 display=active audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:11:11.169][I][photopainter_deep_sleep:242]: event=request result=accepted audio=0 display=1 bus=1 gpio0=1 rtc_valid=1 timer_minutes=15
+[14:11:11.173][I][photopainter_deep_sleep:276]: event=stage stage=audio result=ok audio=0 amplifier=0 aldo3=on
+[14:11:11.182][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=57860 timeout_ms=45000 expected=immediate
+[14:11:11.182][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=1 idle=1 failed=0 safe=1 busy=0
+[14:11:11.185][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:11:11.288][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:11:11.295][I][photopainter_deep_sleep:295]: event=stage stage=display result=ok display=0 safe=1 rail_write=1
+[14:11:11.297][I][photopainter_deep_sleep:342]: event=pre_sleep result=ok pmic_ok=1 reg90=0xF7 aldo3=1 aldo4=0 rtc_ok=1 rtc_seconds=0x11 entry_rtc_s=79871 gpio0=1 gpio4=1 audio=0 display=0 amplifier=0
+[14:11:11.305][W][photopainter_deep_sleep:364]: event=enter source=manual wake=ext1_any_low pins=gpio0,gpio4 timer=on gpio4_rtc_pullup=ok gpio4_rtc_pulldown_off=ok rtc=running aldo3=on aldo4=off
+[14:11:11.311][I][deep_sleep:057]: Beginning sleep
+[14:11:11.311][I][deep_sleep:059]: Sleeping for 900000000us
+[14:14:29.508][I][photopainter_dashboard:236]: event=render_begin stamp_ms=10520 page=sample_image rotate=0
+[14:15:20.766][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x14 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:15:23.643][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=188 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:16:20.758][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x14 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:16:23.644][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=188 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:16:36.545][I][photopainter_audio:143]: event=transition old=active new=low_power result=ok amplifier=off aldo3=on dac_csm=0x00 adc_csm=0x00
+[14:16:36.559][W][component:419]: photopainter_audio_shutdown took a long time for an operation (110 ms), max is 50 ms
+[14:17:16.929][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=167419 timeout_ms=45000 expected=immediate
+[14:17:16.933][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=3 idle=1 failed=0 safe=1 busy=0
+[14:17:16.936][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:17:17.058][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:17:20.760][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x14 display=off audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:17:23.650][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=188 gpio0=1 gpio4=1 button_armed=1 audio=0 display=0 amplifier=0 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:18:20.765][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x14 display=off audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:18:23.646][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=188 gpio0=1 gpio4=1 button_armed=1 audio=0 display=0 amplifier=0 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:18:34.491][I][photopainter_display:248]: event=rail_transition old=off new=on result=ok rail=aldo4 reg90=0xF7->0xFF reg95=0x1C->0x1C aldo3=on
+[14:18:34.746][I][photopainter_dashboard:236]: event=render_begin stamp_ms=255755 page=sample_image rotate=0
+[14:19:20.762][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x14 display=active audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:19:23.646][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=188 gpio0=1 gpio4=1 button_armed=1 audio=0 display=1 amplifier=0 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:19:36.715][I][photopainter_deep_sleep:242]: event=request result=accepted audio=0 display=1 bus=1 gpio0=1 rtc_valid=1 timer_minutes=15
+[14:19:36.718][I][photopainter_deep_sleep:276]: event=stage stage=audio result=ok audio=0 amplifier=0 aldo3=on
+[14:19:36.722][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=61975 timeout_ms=45000 expected=immediate
+[14:19:36.724][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=3 idle=1 failed=0 safe=1 busy=0
+[14:19:36.727][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:19:36.830][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:19:36.843][I][photopainter_deep_sleep:295]: event=stage stage=display result=ok display=0 safe=1 rail_write=1
+[14:19:36.849][I][photopainter_deep_sleep:342]: event=pre_sleep result=ok pmic_ok=1 reg90=0xF7 aldo3=1 aldo4=0 rtc_ok=1 rtc_seconds=0x36 entry_rtc_s=80376 gpio0=1 gpio4=1 audio=0 display=0 amplifier=0
+[14:19:36.856][W][photopainter_deep_sleep:364]: event=enter source=manual wake=ext1_any_low pins=gpio0,gpio4 timer=on gpio4_rtc_pullup=ok gpio4_rtc_pulldown_off=ok rtc=running aldo3=on aldo4=off
+[14:19:36.857][I][deep_sleep:057]: Beginning sleep
+[14:19:36.857][I][deep_sleep:059]: Sleeping for 900000000us
+[14:22:27.163][I][photopainter_dashboard:236]: event=render_begin stamp_ms=7016 page=sample_image rotate=0
+[14:23:25.055][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x21 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:23:25.174][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:24:16.387][I][photopainter_audio:143]: event=transition old=active new=low_power result=ok amplifier=off aldo3=on dac_csm=0x00 adc_csm=0x00
+[14:24:16.389][W][component:419]: photopainter_audio_shutdown took a long time for an operation (110 ms), max is 50 ms
+[14:24:25.052][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x21 display=active audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:24:25.178][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=0 display=1 amplifier=0 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:25:17.214][I][photopainter_audio:206]: event=transition old=low_power new=active result=ok dac_id=0x83 adc_id=0x72 dac_mute=0x00 aldo3=on
+[14:25:25.055][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x21 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:25:25.174][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:26:01.692][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=214523 timeout_ms=45000 expected=immediate
+[14:26:01.695][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=2 idle=1 failed=0 safe=1 busy=0
+[14:26:01.695][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:26:01.799][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:26:25.059][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x21 display=off audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:26:25.175][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=1 display=0 amplifier=1 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:27:07.598][I][photopainter_audio:143]: event=transition old=active new=low_power result=ok amplifier=off aldo3=on dac_csm=0x00 adc_csm=0x00
+[14:27:07.600][W][component:419]: photopainter_audio_shutdown took a long time for an operation (110 ms), max is 50 ms
+[14:27:25.053][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xF7 rtc_seconds=0x21 display=off audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:27:25.176][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=0 display=0 amplifier=0 aldo3=1 aldo4=0 rtc_valid=1 bus=1
+[14:28:10.226][I][photopainter_display:248]: event=rail_transition old=off new=on result=ok rail=aldo4 reg90=0xF7->0xFF reg95=0x1C->0x1C aldo3=on
+[14:28:14.659][I][photopainter_dashboard:236]: event=render_begin stamp_ms=354509 page=sample_image rotate=0
+[14:28:25.057][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x21 display=active audio=low_power amplifier=off sd=mounted sda=1 scl=1
+[14:28:25.177][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=164 gpio0=1 gpio4=1 button_armed=1 audio=0 display=1 amplifier=0 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:29:14.184][I][photopainter_deep_sleep:242]: event=request result=accepted audio=0 display=1 bus=1 gpio0=1 rtc_valid=1 timer_minutes=15
+[14:29:14.186][I][photopainter_deep_sleep:276]: event=stage stage=audio result=ok audio=0 amplifier=0 aldo3=on
+[14:29:14.189][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=59529 timeout_ms=45000 expected=immediate
+[14:29:14.194][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=3 idle=1 failed=0 safe=1 busy=0
+[14:29:14.197][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:29:14.298][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:29:14.317][I][photopainter_deep_sleep:295]: event=stage stage=display result=ok display=0 safe=1 rail_write=1
+[14:29:14.317][I][photopainter_deep_sleep:342]: event=pre_sleep result=ok pmic_ok=1 reg90=0xF7 aldo3=1 aldo4=0 rtc_ok=1 rtc_seconds=0x14 entry_rtc_s=80954 gpio0=1 gpio4=1 audio=0 display=0 amplifier=0
+[14:29:14.321][W][photopainter_deep_sleep:364]: event=enter source=manual wake=ext1_any_low pins=gpio0,gpio4 timer=on gpio4_rtc_pullup=ok gpio4_rtc_pulldown_off=ok rtc=running aldo3=on aldo4=off
+[14:29:14.322][I][deep_sleep:057]: Beginning sleep
+[14:29:14.322][I][deep_sleep:059]: Sleeping for 900000000us
+[14:32:18.986][I][photopainter_dashboard:236]: event=render_begin stamp_ms=6955 page=sample_image rotate=0
+[14:33:13.040][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=178 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:33:16.644][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x15 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:34:13.040][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=178 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:34:16.632][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x15 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:35:13.057][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=178 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:35:16.641][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x15 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:36:13.046][I][photopainter_deep_sleep:444]: event=level wake=boot_gpio0 wake_raw=3 ext1=0x01 reset_raw=8 restore=ok slept_s=178 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:36:16.628][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x15 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:37:52.327][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=3 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:37:54.330][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x51 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:38:52.337][I][photopainter_deep_sleep:444]: event=level wake=not_deep_sleep wake_raw=0 ext1=0x00 reset_raw=3 restore=not_applicable slept_s=-1 gpio0=1 gpio4=1 button_armed=1 audio=1 display=1 amplifier=1 aldo3=1 aldo4=1 rtc_valid=1 bus=1
+[14:38:54.335][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x20 status2=0x15 ldo_enable=0xFF rtc_seconds=0x51 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[14:39:46.321][W][photopainter_test:5684]: event=clamp_test phase=begin note=unsupported_state_ppk2_comparison
+[14:39:46.325][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=170715 timeout_ms=45000 expected=immediate
+[14:39:46.328][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=2 idle=1 failed=0 safe=1 busy=0
+[14:39:46.333][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[14:39:46.437][I][photopainter_display:167]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[14:39:46.457][W][photopainter_test:067]: event=clamp_test phase=aldo3_off reg90=0xF7->0xF3 aldo4=0 display_power_down_ok=1 gpio7_amp=0 uptime_ms=177102
+[14:39:46.460][W][photopainter_test:078]: event=clamp_test phase=after_write write_ok=1 readback_ok=1 readback=0xF3 sda=1 scl=1 (readback failure = bus clamped, expected)
+[14:39:49.489][W][photopainter_test:089]: event=clamp_test phase=enter_deep_sleep timer=2min aldo3=off aldo4=off bus=clamped
+[14:39:50.428][I][esp-idf:000]: E (181074) i2c.master: I2C software timeout
+[14:39:50.531][I][esp-idf:000]: E (181176) i2c.master: I2C software timeout
+[14:39:50.531][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[14:39:50.531][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[14:39:50.535][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=1 sda=0 scl=0
+[14:39:50.538][I][deep_sleep:057]: Beginning sleep
+[14:39:50.539][I][deep_sleep:059]: Sleeping for 120000000us
+[14:42:05.329][I][esp-idf:000]: E (15126) i2c.master: I2C software timeout
+[14:42:05.432][I][esp-idf:000]: E (15228) i2c.master: I2C software timeout
+[14:42:05.433][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[14:42:05.434][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[14:42:05.437][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=2 sda=0 scl=0
+[14:42:05.462][W][photopainter_i2c:248]: event=recovery_attempt attempt=1 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:05.588][W][photopainter_i2c:248]: event=recovery_attempt attempt=2 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:05.716][W][photopainter_i2c:248]: event=recovery_attempt attempt=3 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:05.814][E][photopainter_i2c:276]: event=recovery result=exhausted bus=unavailable
+[14:42:15.332][I][esp-idf:000]: E (25126) i2c.master: I2C software timeout
+[14:42:15.431][I][esp-idf:000]: E (25228) i2c.master: I2C software timeout
+[14:42:15.434][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[14:42:15.434][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[14:42:15.436][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=3 sda=0 scl=0
+[14:42:15.461][W][photopainter_i2c:248]: event=recovery_attempt attempt=1 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:15.587][W][photopainter_i2c:248]: event=recovery_attempt attempt=2 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:15.717][W][photopainter_i2c:248]: event=recovery_attempt attempt=3 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:15.819][E][photopainter_i2c:276]: event=recovery result=exhausted bus=unavailable
+[14:42:25.383][I][esp-idf:000]: E (35126) i2c.master: I2C software timeout
+[14:42:25.430][I][esp-idf:000]: E (35227) i2c.master: I2C software timeout
+[14:42:25.442][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[14:42:25.442][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[14:42:25.442][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=4 sda=0 scl=0
+[14:42:25.459][W][photopainter_i2c:248]: event=recovery_attempt attempt=1 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:25.586][W][photopainter_i2c:248]: event=recovery_attempt attempt=2 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:25.715][W][photopainter_i2c:248]: event=recovery_attempt attempt=3 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[14:42:25.812][E][photopainter_i2c:276]: event=recovery result=exhausted bus=unavailable
+[14:42:25.915][I][esp-idf:000]: E (35711) i2c.master: I2C software timeout

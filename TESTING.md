@@ -444,11 +444,12 @@ the device through an I/O pin, or trigger watchdog and component-state failures.
 
 ## Not yet measured
 
-### Current consumption — PPK2 available, nothing measured yet
+### Current consumption
 
-**No current measurement of any kind has been taken on this board.** Every
-power-saving statement in this repository is inference from the data sheets, and
-should be read that way until numbers replace it.
+**First run recorded 2026-11-14:** USB-C at 5.0 V, firmware 1.0.0-rc.11 —
+[results and boundary lines](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md).
+It is one board and one supply topology; the battery-input run is still to do.
+Any power statement not backed by a recorded run remains data-sheet inference.
 
 A Nordic Power Profiler Kit II is on hand as of 2026-09-23. A claim about a
 low-power or battery configuration requires the procedure below, the firmware
@@ -475,20 +476,31 @@ next boundary, so switching transients are excluded:
 
 | State | Actuation | Opening boundary |
 | --- | --- | --- |
-| A. Baseline idle, everything on | none, after the first refresh has finished | `photopainter_snapshot event=snapshot` with `display=1 amp=1 dac=1 adc=1` |
+| A. Baseline idle, everything on | none, after the first refresh has finished | `photopainter_state event=level` with `display=active audio=active amplifier=on` (normal builds have no snapshot line) |
 | B. Audio logical low power | "Audio Codecs Enabled" off | `photopainter_audio event=transition new=low_power result=ok` |
 | C. Display rail off, audio on | audio on, then "Display Enabled" off | `photopainter_display event=rail_transition old=on new=off result=ok` |
 | D. Display rail and audio off | "Audio Codecs Enabled" off with the display off | the audio `new=low_power` line |
-| E. One display refresh | "Display Enabled" on | `event=render_begin` to `epaper_spi … Display update took` |
+| E. One display refresh | "Display Enabled" on | `event=render_begin`; the end is taken from the trace (the panel plateau ends), because `Display update took` is DEBUG-only |
 | F. ESP32 deep sleep, ALDO4 off | "Deep Sleep", 2 min timer | `photopainter_deep_sleep event=enter`; the sleep window ends at the current rise of the wake |
 | G. One wake cycle | timer wake from F | the wake current rise to `Display update took` of the first refresh |
+| X. Deep sleep, ALDO3 and ALDO4 off, bus clamped (comparison only) | private test build, "TEST X" button; ends the session | `photopainter_test event=clamp_test phase=enter_deep_sleep` |
 
-E and G are reported as charge per event (mAh) and duration; A–D and F as mean
-and peak current. PMIC power-off is not measured: it is not part of the
+State X is **not a supported configuration**. It reproduces the failure mode of
+firmware that de-energizes ALDO3 in sleep, so that **X − F** states the
+relative sleep-current cost of keeping the shared I2C bus working (ALDO3 up,
+codecs in logical low power). Only ALDO3 and ALDO4 are cleared; ALDO2 is never
+modified. The build that enters it is private and unpublished. X runs last: the
+bus stays clamped after the timer wake, and the board needs a full power drain
+of at least one minute.
+
+E and G are reported as charge per event (mAh) and duration; A–D, F, and X as
+mean and peak current. PMIC power-off is not measured: it is not part of the
 supported configuration (see [PMIC power off — removed](#pmic-power-off--removed)).
 
 **Run order:** A, B, C, D, E, F (which ends in G), then the second and third
-repeats. USB-C first; the battery-input run repeats the same table, since USB
+repeats, then X once at the very end. State C needs audio switched back **on**
+before the display rail goes off; it is easy to skip, so call each step out.
+Record whether a web UI or API log client is connected: both add idle current. USB-C first; the battery-input run repeats the same table, since USB
 power can disguise the battery-side figure.
 
 **Result record:** per state, the opening and closing log lines quoted
