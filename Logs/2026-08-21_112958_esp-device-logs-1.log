@@ -1,0 +1,525 @@
+[11:29:13][D][esp-idf:000]: E (4242) i2c.master: I2C software timeout
+[11:29:13][D][esp-idf:000]: E (4343) i2c.master: I2C software timeout
+[11:29:13][C][i2c.idf:092]: I2C Bus:
+[11:29:13][C][i2c.idf:093]:   SDA Pin: GPIO47
+[11:29:13][C][i2c.idf:093]:   SCL Pin: GPIO48
+[11:29:13][C][i2c.idf:093]:   Frequency: 100000 Hz
+[11:29:13][C][i2c.idf:106]:   Recovery: failed, SCL is held low on the bus
+[11:29:13][C][spi:066]: SPI bus:
+[11:29:13][C][spi:131]:   CLK Pin: GPIO10
+[11:29:13][C][spi:131]:   SDI Pin: 
+[11:29:13][C][spi:131]:   SDO Pin: GPIO11
+[11:29:13][C][spi:074]:   Using HW SPI: SPI2_HOST
+[11:29:13][D][esp-idf:000]: E (4463) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (4564) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (4665) i2c.master: I2C software timeout
+[11:29:14][C][spi:066]: SPI bus:
+[11:29:14][C][spi:131]:   CLK Pin: GPIO39
+[11:29:14][C][spi:131]:   SDI Pin: GPIO40
+[11:29:14][C][spi:131]:   SDO Pin: GPIO41
+[11:29:14][C][spi:074]:   Using HW SPI: SPI3_HOST
+[11:29:14][D][esp-idf:000]: E (4782) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (4883) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (4984) i2c.master: I2C software timeout
+[11:29:14][C][switch.gpio:088]: GPIO Switch 'Power Control: Audio Amplifier'
+[11:29:14][C][switch.gpio:088]:   Restore Mode: always OFF
+[11:29:14][C][switch.gpio:131]:   Pin: GPIO7
+[11:29:14][D][esp-idf:000]: E (5103) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (5204) i2c.master: I2C software timeout
+[11:29:14][D][esp-idf:000]: E (5305) i2c.master: I2C software timeout
+[11:29:14][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Voltage'
+[11:29:14][C][template.sensor:017]:   State Class: ''
+[11:29:14][C][template.sensor:017]:   Unit of Measurement: 'V'
+[11:29:14][C][template.sensor:017]:   Accuracy Decimals: 2
+[11:29:14][C][template.sensor:196]:   Device Class: 'voltage'
+[11:29:14][C][template.sensor:342]:   Update Interval: 60.0s
+[11:29:14][D][esp-idf:000]: E (5410) i2c.master: I2C software timeout
+[11:29:14][W][component:421]: template.sensor took a long time for an operation (101 ms), max is 50 ms
+[11:29:14][D][esp-idf:000]: E (5513) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (5614) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (5715) i2c.master: I2C software timeout
+[11:29:15][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Level'
+[11:29:15][C][template.sensor:017]:   State Class: ''
+[11:29:15][C][template.sensor:017]:   Unit of Measurement: '%'
+[11:29:15][C][template.sensor:017]:   Accuracy Decimals: 0
+[11:29:15][C][template.sensor:196]:   Device Class: 'battery'
+[11:29:15][C][template.sensor:342]:   Update Interval: 180.0s
+[11:29:15][D][wifi:1494]: Found networks:
+[11:29:15][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -41dB P:0
+[11:29:15][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -68dB P:0
+[11:29:15][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -69dB P:0
+[11:29:15][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[11:29:15][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[11:29:15][D][esp-idf:000]: E (5860) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (5961) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (6062) i2c.master: I2C software timeout
+[11:29:15][C][template.binary_sensor:016]: Template Binary Sensor 'Power Li-ion Battery: Charging'
+[11:29:15][C][template.binary_sensor:196]:   Device Class: 'battery_charging'
+[11:29:15][D][esp-idf:000]: E (6181) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (6282) i2c.master: I2C software timeout
+[11:29:15][D][esp-idf:000]: E (6383) i2c.master: I2C software timeout
+[11:29:15][C][gpio.binary_sensor:016]: GPIO Binary Sensor 'Button: KEY1'
+[11:29:15][C][gpio.binary_sensor:131]:   Pin: GPIO4
+[11:29:15][C][gpio.binary_sensor:061]:   Mode: interrupt
+[11:29:15][C][gpio.binary_sensor:063]:   Interrupt Type: ANY_EDGE
+[11:29:15][D][esp-idf:000]: E (6503) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (6604) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (6705) i2c.master: I2C software timeout
+[11:29:16][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: USB-C'
+[11:29:16][C][template.binary_sensor:196]:   Device Class: 'plug'
+[11:29:16][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: Li-ion Battery'
+[11:29:16][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:16][D][esp-idf:000]: E (6824) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (6925) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (7026) i2c.master: I2C software timeout
+[11:29:16][C][template.binary_sensor:016]: Template Binary Sensor 'Reboot Required'
+[11:29:16][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Audio (Active)'
+[11:29:16][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:16][D][esp-idf:000]: E (7145) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (7246) i2c.master: I2C software timeout
+[11:29:16][D][esp-idf:000]: E (7347) i2c.master: I2C software timeout
+[11:29:16][W][component:421]: display took a long time for an operation (70 ms), max is 50 ms
+[11:29:16][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Display (Active)'
+[11:29:16][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:17][D][esp-idf:000]: E (7538) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (7639) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (7740) i2c.master: I2C software timeout
+[11:29:17][C][gpio.output:009]: Binary Output:
+[11:29:17][C][gpio.output:131]:   Pin: GPIO42
+[11:29:17][C][gpio.output:011]:   Inverted: YES
+[11:29:17][D][esp-idf:000]: E (7859) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (7960) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (8061) i2c.master: I2C software timeout
+[11:29:17][C][gpio.output:009]: Binary Output:
+[11:29:17][C][gpio.output:131]:   Pin: GPIO45
+[11:29:17][C][gpio.output:011]:   Inverted: YES
+[11:29:17][D][esp-idf:000]: E (8180) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (8281) i2c.master: I2C software timeout
+[11:29:17][D][esp-idf:000]: E (8382) i2c.master: I2C software timeout
+[11:29:17][C][light:101]: Light 'LED: ACT'
+[11:29:17][D][esp-idf:000]: E (8501) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (8602) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (8703) i2c.master: I2C software timeout
+[11:29:18][D][api:255]: Accept <ipv4-1>
+[11:29:18][W][component:313]: api cleared Warning flag
+[11:29:18][W][api.connection:2593]: <ipv4-1> (<ipv4-1>): Network down; disconnect
+[11:29:18][W][component:290]: api set Warning flag: waiting for client connection
+[11:29:18][C][light:101]: Light 'LED: PWR'
+[11:29:18][I][wifi:1609]: Connected
+[11:29:18][D][wifi:1626]: Disabling AP
+[11:29:18][C][wifi:1268]:   IP Address: <ipv4-2>
+[11:29:18][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[11:29:18][C][wifi:1279]:   BSSID: <bssid-1>
+[11:29:18][C][wifi:1279]:   Hostname: 'waveshare-photopainter'
+[11:29:18][C][wifi:1279]:   Signal strength: -41 dB ▂▄▆█
+[11:29:18][C][wifi:1279]:   Channel: 11
+[11:29:18][C][wifi:1279]:   Subnet: <ipv4-3>
+[11:29:18][C][wifi:1279]:   Gateway: <ipv4-4>
+[11:29:18][C][wifi:1279]:   DNS1: <ipv4-5>
+[11:29:18][C][wifi:1279]:   DNS2: <ipv4-1>
+[11:29:18][D][esp-idf:000]: E (8828) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (8929) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (9030) i2c.master: I2C software timeout
+[11:29:18][C][template.switch:088]: Template Switch 'Power Rail: Audio (ALDO3)'
+[11:29:18][C][template.switch:088]:   Restore Mode: restore defaults to ON
+[11:29:18][C][template.switch:187]:   Icon: 'mdi:volume-high'
+[11:29:18][C][template.switch:055]:   Optimistic: YES
+[11:29:18][W][component:313]: wifi cleared Warning flag
+[11:29:18][D][esp-idf:000]: E (9162) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (9263) i2c.master: I2C software timeout
+[11:29:18][D][esp-idf:000]: E (9364) i2c.master: I2C software timeout
+[11:29:18][C][template.switch:088]: Template Switch 'Power Rail: Display (ALDO4)'
+[11:29:18][C][template.switch:088]:   Restore Mode: restore defaults to ON
+[11:29:18][C][template.switch:187]:   Icon: 'mdi:image'
+[11:29:18][C][template.switch:055]:   Optimistic: YES
+[11:29:18][D][esp-idf:000]: E (9498) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (9600) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (9701) i2c.master: I2C software timeout
+[11:29:19][D][api:255]: Accept <ipv4-1>
+[11:29:19][W][component:313]: api cleared Warning flag
+[11:29:19][C][psram:015]: PSRAM:
+[11:29:19][C][psram:018]:   Available: YES
+[11:29:19][C][psram:020]:   Size: 8192 KB
+[11:29:19][D][esp-idf:000]: E (9818) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (9919) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (10020) i2c.master: I2C software timeout
+[11:29:19][C][pcf85063:020]: PCF85063:
+[11:29:19][C][pcf85063:021]:   Address: 0x51
+[11:29:19][E][pcf85063:023]: Communication failed
+[11:29:19][C][time:049]: Timezone: UTC-8:00 (DST UTC-7:00)
+[11:29:19][C][time:055]: Current time: 2026-08-21 11:29:19
+[11:29:19][E][component:143]:   pcf85063.time is marked FAILED: unspecified
+[11:29:19][D][esp-idf:000]: E (10160) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (10261) i2c.master: I2C software timeout
+[11:29:19][D][esp-idf:000]: E (10362) i2c.master: I2C software timeout
+[11:29:19][D][api.connection:2593]: ESPHome Logs 2026.8.0 (<ipv4-1>): connected
+[11:29:19][D][esp-idf:000]: E (10477) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (10578) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (10679) i2c.master: I2C software timeout
+[11:29:20][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-21 11:25:01 -0700
+[11:29:20][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[11:29:20][C][logger:223]: Logger:
+[11:29:20][C][logger:223]:   Max Level: DEBUG
+[11:29:20][C][logger:223]:   Initial Level: DEBUG
+[11:29:20][C][logger:230]:   Log Baud Rate: 115200
+[11:29:20][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[11:29:20][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[11:29:20][D][esp-idf:000]: E (10818) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (10920) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (11022) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (11138) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (11240) i2c.master: I2C software timeout
+[11:29:20][D][esp-idf:000]: E (11342) i2c.master: I2C software timeout
+[11:29:20][C][i2c.idf:092]: I2C Bus:
+[11:29:20][C][i2c.idf:093]:   SDA Pin: GPIO47
+[11:29:20][C][i2c.idf:093]:   SCL Pin: GPIO48
+[11:29:20][C][i2c.idf:093]:   Frequency: 100000 Hz
+[11:29:20][C][i2c.idf:106]:   Recovery: failed, SCL is held low on the bus
+[11:29:20][D][esp-idf:000]: E (11477) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (11579) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (11681) i2c.master: I2C software timeout
+[11:29:21][C][spi:066]: SPI bus:
+[11:29:21][C][spi:131]:   CLK Pin: GPIO10
+[11:29:21][C][spi:131]:   SDI Pin: 
+[11:29:21][C][spi:131]:   SDO Pin: GPIO11
+[11:29:21][C][spi:074]:   Using HW SPI: SPI2_HOST
+[11:29:21][D][esp-idf:000]: E (11822) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (11924) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (12026) i2c.master: I2C software timeout
+[11:29:21][C][spi:066]: SPI bus:
+[11:29:21][C][spi:131]:   CLK Pin: GPIO39
+[11:29:21][C][spi:131]:   SDI Pin: GPIO40
+[11:29:21][C][spi:131]:   SDO Pin: GPIO41
+[11:29:21][C][spi:074]:   Using HW SPI: SPI3_HOST
+[11:29:21][D][esp-idf:000]: E (12162) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (12264) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (12366) i2c.master: I2C software timeout
+[11:29:21][D][esp-idf:000]: E (12495) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (12597) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (12699) i2c.master: I2C software timeout
+[11:29:22][C][switch.gpio:088]: GPIO Switch 'Power Control: Audio Amplifier'
+[11:29:22][C][switch.gpio:088]:   Restore Mode: always OFF
+[11:29:22][C][switch.gpio:131]:   Pin: GPIO7
+[11:29:22][D][esp-idf:000]: E (12833) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (12935) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (13037) i2c.master: I2C software timeout
+[11:29:22][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Voltage'
+[11:29:22][C][template.sensor:017]:   State Class: ''
+[11:29:22][C][template.sensor:017]:   Unit of Measurement: 'V'
+[11:29:22][C][template.sensor:017]:   Accuracy Decimals: 2
+[11:29:22][C][template.sensor:196]:   Device Class: 'voltage'
+[11:29:22][C][template.sensor:342]:   Update Interval: 60.0s
+[11:29:22][D][esp-idf:000]: E (13174) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (13276) i2c.master: I2C software timeout
+[11:29:22][D][esp-idf:000]: E (13378) i2c.master: I2C software timeout
+[11:29:22][D][api:255]: Accept <ipv4-1>
+[11:29:22][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Level'
+[11:29:22][C][template.sensor:017]:   State Class: ''
+[11:29:22][C][template.sensor:017]:   Unit of Measurement: '%'
+[11:29:22][C][template.sensor:017]:   Accuracy Decimals: 0
+[11:29:22][C][template.sensor:196]:   Device Class: 'battery'
+[11:29:22][C][template.sensor:342]:   Update Interval: 180.0s
+[11:29:22][D][esp-idf:000]: E (13500) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (13602) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (13704) i2c.master: I2C software timeout
+[11:29:23][C][template.binary_sensor:016]: Template Binary Sensor 'Power Li-ion Battery: Charging'
+[11:29:23][C][template.binary_sensor:196]:   Device Class: 'battery_charging'
+[11:29:23][D][esp-idf:000]: E (13840) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (13942) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (14044) i2c.master: I2C software timeout
+[11:29:23][D][api.connection:2593]: esphome-device-builder (<ipv4-1>): connected
+[11:29:23][C][gpio.binary_sensor:016]: GPIO Binary Sensor 'Button: KEY1'
+[11:29:23][C][gpio.binary_sensor:131]:   Pin: GPIO4
+[11:29:23][C][gpio.binary_sensor:061]:   Mode: interrupt
+[11:29:23][C][gpio.binary_sensor:063]:   Interrupt Type: ANY_EDGE
+[11:29:23][D][esp-idf:000]: E (14155) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (14257) i2c.master: I2C software timeout
+[11:29:23][D][esp-idf:000]: E (14359) i2c.master: I2C software timeout
+[11:29:23][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: USB-C'
+[11:29:23][C][template.binary_sensor:196]:   Device Class: 'plug'
+[11:29:23][D][esp-idf:000]: E (14470) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (14572) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (14674) i2c.master: I2C software timeout
+[11:29:24][D][api.connection:2593]: esphome-device-builder (<ipv4-1>): disconnected
+[11:29:24][W][api.connection:2599]: esphome-device-builder (<ipv4-1>): Reading failed CONNECTION_CLOSED errno=128
+[11:29:24][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: Li-ion Battery'
+[11:29:24][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:24][D][esp-idf:000]: E (14790) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (14892) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (14994) i2c.master: I2C software timeout
+[11:29:24][C][template.binary_sensor:016]: Template Binary Sensor 'Reboot Required'
+[11:29:24][D][esp-idf:000]: E (15114) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (15216) i2c.master: I2C software timeout
+[11:29:24][D][esp-idf:000]: E (15318) i2c.master: I2C software timeout
+[11:29:24][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Audio (Active)'
+[11:29:24][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:24][D][esp-idf:000]: E (15440) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (15542) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (15644) i2c.master: I2C software timeout
+[11:29:25][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Display (Active)'
+[11:29:25][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:25][D][esp-idf:000]: E (15767) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (15869) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (15971) i2c.master: I2C software timeout
+[11:29:25][C][gpio.output:009]: Binary Output:
+[11:29:25][C][gpio.output:131]:   Pin: GPIO42
+[11:29:25][C][gpio.output:011]:   Inverted: YES
+[11:29:25][D][esp-idf:000]: E (16095) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (16197) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (16300) i2c.master: I2C software timeout
+[11:29:25][C][gpio.output:009]: Binary Output:
+[11:29:25][C][gpio.output:131]:   Pin: GPIO45
+[11:29:25][C][gpio.output:011]:   Inverted: YES
+[11:29:25][D][esp-idf:000]: E (16422) i2c.master: I2C software timeout
+[11:29:25][D][esp-idf:000]: E (16524) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (16626) i2c.master: I2C software timeout
+[11:29:26][C][light:101]: Light 'LED: ACT'
+[11:29:26][D][esp-idf:000]: E (16746) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (16848) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (16950) i2c.master: I2C software timeout
+[11:29:26][C][light:101]: Light 'LED: PWR'
+[11:29:26][D][esp-idf:000]: E (17070) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (17172) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (17274) i2c.master: I2C software timeout
+[11:29:26][C][template.switch:088]: Template Switch 'Power Rail: Audio (ALDO3)'
+[11:29:26][C][template.switch:088]:   Restore Mode: restore defaults to ON
+[11:29:26][C][template.switch:187]:   Icon: 'mdi:volume-high'
+[11:29:26][C][template.switch:055]:   Optimistic: YES
+[11:29:26][D][esp-idf:000]: E (17399) i2c.master: I2C software timeout
+[11:29:26][D][esp-idf:000]: E (17501) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (17603) i2c.master: I2C software timeout
+[11:29:27][C][template.switch:088]: Template Switch 'Power Rail: Display (ALDO4)'
+[11:29:27][C][template.switch:088]:   Restore Mode: restore defaults to ON
+[11:29:27][C][template.switch:187]:   Icon: 'mdi:image'
+[11:29:27][C][template.switch:055]:   Optimistic: YES
+[11:29:27][D][esp-idf:000]: E (17727) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (17829) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (17931) i2c.master: I2C software timeout
+[11:29:27][C][psram:015]: PSRAM:
+[11:29:27][C][psram:018]:   Available: YES
+[11:29:27][C][psram:020]:   Size: 8192 KB
+[11:29:27][D][esp-idf:000]: E (18055) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (18157) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (18259) i2c.master: I2C software timeout
+[11:29:27][C][pcf85063:020]: PCF85063:
+[11:29:27][C][pcf85063:021]:   Address: 0x51
+[11:29:27][E][pcf85063:023]: Communication failed
+[11:29:27][C][time:049]: Timezone: UTC-8:00 (DST UTC-7:00)
+[11:29:27][C][time:055]: Current time: 2026-08-21 11:29:27
+[11:29:27][E][component:143]:   pcf85063.time is marked FAILED: unspecified
+[11:29:27][D][esp-idf:000]: E (18390) i2c.master: I2C software timeout
+[11:29:27][D][esp-idf:000]: E (18492) i2c.master: I2C software timeout
+
+
+Terminal disconnected: NetworkError: The device has been lost.
+Waiting for the device to come back…
+Reconnected
+
+[11:29:32][I][logger:122]: Log initialized
+[11:29:32][C][safe_mode:201]: Unsuccessful boot attempts: 1
+[11:29:32][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[11:29:32][I][app:060]: Running through setup()
+[11:29:32][I][i2c.idf:205]: Performing bus recovery
+[11:29:32][I][axp_diag:027]: [+   0 ms] === Starting PMIC & Peripheral Init ===
+[11:29:32][I][axp_diag:066]: [+   2 ms] PMIC responsive on try 1! Chip ID: 0x4A
+[11:29:32][I][axp_diag:090]: [+   5 ms] Baseline State -> DC[I][axp_diag:163]: [+ 464 ms] ES7210 Audio ADC (0x40): NOT RESPONDING
+[11:29:32][I][axp_diag:167]: [+ 565 ms] ES8311 Audio Codec (0x18): NOT RESPONDING
+[11:29:32][I][axp_diag:172]: [+ 566 ms] Initialization complete. Handing over to display component.
+[11:29:33][I][es8311_diag:178]: === ES8311 Post-Init Register Dump ===
+[11:29:33][D][esp-idf:000]: E (1259) i2c.master: I2C software timeout
+[11:29:33][D][esp-idf:000]: E (1360) i2c.master: I2C software timeout
+[11:29:33][D][esp-idf:000]: E (1461) i2c.master: I2C software timeout
+[11:29:33][D][esp-idf:000]: E (1562) i2c.master: I2C software timeout
+[11:29:33][D][esp-idf:000]: E (1663) i2c.master: I2C software timeout
+[11:29:33][D][esp-idf:000]: E (1764) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (1865) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (1966) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2067) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2168) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2269) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2370) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2471) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2572) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2673) i2c.master: I2C software timeout
+[11:29:34][D][esp-idf:000]: E (2774) i2c.master: I2C software timeout
+[11:29:35][D][esp-idf:000]: E (2875) i2c.master: I2C software timeout
+[11:29:35][D][esp-idf:000]: E (2976) i2c.master: I2C software timeout
+[11:29:35][I][es8311_diag:205]: === End ES8311 Register Dump ===
+[11:29:35][I][sd_card:226]: SD Card mounted successfully at /sdcard
+[11:29:35][D][esp-idf:000]: E (3148) i2c.master: I2C software timeout
+[11:29:35][E][pcf85063:079]: Can't read I2C data.
+[11:29:35][C][component:164]: Setup esphome.coroutine took 3059ms
+[11:29:35][D][esp-idf:000]: E (3251) i2c.master: I2C software timeout
+[11:29:35][C][component:164]: Setup template.binary_sensor took 101ms
+[11:29:35][D][esp-idf:000]: E (3354) i2c.master: I2C software timeout
+[11:29:35][C][component:164]: Setup template.binary_sensor took 102ms
+[11:29:35][D][esp-idf:000]: E (3456) i2c.master: I2C software timeout
+[11:29:35][C][component:164]: Setup template.binary_sensor took 101ms
+[11:29:35][D][template.switch:044]:   Restored state ON
+[11:29:35][D][esp-idf:000]: E (3560) i2c.master: I2C software timeout
+[11:29:35][C][component:164]: Setup template.switch took 103ms
+[11:29:35][D][template.switch:044]:   Restored state ON
+[11:29:35][D][esp-idf:000]: E (3663) i2c.master: I2C software timeout
+[11:29:35][C][component:164]: Setup template.switch took 102ms
+[11:29:35][D][esp-idf:000]: E (3765) i2c.master: I2C software timeout
+[11:29:35][E][pcf85063:079]: Can't read I2C data.
+[11:29:35][E][component:204]: pcf85063.time was marked as failed
+[11:29:35][E][component:297]: pcf85063.time set Error flag: unspecified
+[11:29:35][C][component:164]: Setup pcf85063.time took 103ms
+[11:29:36][D][esp-idf:000]: E (3869) i2c.master: I2C software timeout
+[11:29:36][E][component:204]: es8311.audio_dac was marked as failed
+[11:29:36][E][component:297]: es8311.audio_dac set Error flag: unspecified
+[11:29:36][C][component:164]: Setup es8311.audio_dac took 103ms
+[11:29:36][D][esp-idf:000]: E (3972) i2c.master: I2C software timeout
+[11:29:36][E][component:204]: es7210.audio_adc was marked as failed
+[11:29:36][E][component:297]: es7210.audio_adc set Error flag: unspecified
+[11:29:36][C][component:164]: Setup es7210.audio_adc took 103ms
+[11:29:36][D][esp-idf:000]: E (4076) i2c.master: I2C software timeout
+[11:29:36][D][esp-idf:000]: E (4177) i2c.master: I2C software timeout
+[11:29:36][D][esp-idf:000]: E (4278) i2c.master: I2C software timeout
+[11:29:36][E][shtcx:032]: Communication failed
+[11:29:36][E][component:204]: shtcx.sensor was marked as failed
+[11:29:36][E][component:297]: shtcx.sensor set Error flag: unspecified
+[11:29:36][C][component:164]: Setup shtcx.sensor took 306ms
+[11:29:36][D][esp-idf:000]: E (4382) i2c.master: I2C software timeout
+[11:29:36][D][esp-idf:000]: E (4483) i2c.master: I2C software timeout
+[11:29:36][C][component:164]: Setup i2s_audio.speaker took 202ms
+[11:29:36][D][split_buffer:066]: Allocated 1 * 192000 bytes - 192000 bytes
+[11:29:36][D][spi_device:395]: mode 0, data_rate 20000kHz
+[11:29:36][C][wifi:649]: Starting
+[11:29:36][D][wifi:1334]: Starting scan
+[11:29:36][W][component:290]: api set Warning flag: waiting for client connection
+[11:29:36][I][app:117]: setup() finished successfully!
+[11:29:36][D][esp-idf:000]: E (4654) i2c.master: I2C software timeout
+[11:29:36][W][component:421]: template.sensor took a long time for an operation (102 ms), max is 50 ms
+[11:29:36][W][component:290]: wifi set Warning flag: scanning for networks
+[11:29:36][D][esp-idf:000]: E (4758) i2c.master: I2C software timeout
+[11:29:36][W][component:421]: template.binary_sensor took a long time for an operation (101 ms), max is 50 ms
+[11:29:37][D][esp-idf:000]: E (4861) i2c.master: I2C software timeout
+[11:29:37][W][component:421]: template.binary_sensor took a long time for an operation (102 ms), max is 50 ms
+[11:29:37][D][esp-idf:000]: E (4964) i2c.master: I2C software timeout
+[11:29:37][W][component:421]: template.binary_sensor took a long time for an operation (102 ms), max is 50 ms
+[11:29:37][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-21 10:58:02 -0700
+[11:29:37][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[11:29:37][C][logger:223]: Logger:
+[11:29:37][C][logger:223]:   Max Level: DEBUG
+[11:29:37][C][logger:223]:   Initial Level: DEBUG
+[11:29:37][C][logger:230]:   Log Baud Rate: 115200
+[11:29:37][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[11:29:37][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[11:29:37][D][esp-idf:000]: E (5088) i2c.master: I2C software timeout
+[11:29:37][D][esp-idf:000]: E (5189) i2c.master: I2C software timeout
+[11:29:37][D][esp-idf:000]: E (5290) i2c.master: I2C software timeout
+[11:29:37][D][esp-idf:000]: E (5407) i2c.master: I2C software timeout
+[11:29:37][D][esp-idf:000]: E (5508) i2c.master: I2C software timeout
+[11:29:37][D][esp-idf:000]: E (5609) i2c.master: I2C software timeout
+[11:29:37][C][i2c.idf:092]: I2C Bus:
+[11:29:37][C][i2c.idf:093]:   SDA Pin: GPIO47
+[11:29:37][C][i2c.idf:093]:   SCL Pin: GPIO48
+[11:29:37][C][i2c.idf:093]:   Frequency: 100000 Hz
+[11:29:37][C][i2c.idf:103]:   Recovery: bus successfully recovered
+[11:29:37][C][spi:066]: SPI bus:
+[11:29:37][C][spi:131]:   CLK Pin: GPIO10
+[11:29:37][C][spi:131]:   SDI Pin: 
+[11:29:37][C][spi:131]:   SDO Pin: GPIO11
+[11:29:37][C][spi:074]:   Using HW SPI: SPI2_HOST
+[11:29:37][D][esp-idf:000]: E (5729) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (5830) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (5931) i2c.master: I2C software timeout
+[11:29:38][W][component:421]: display took a long time for an operation (69 ms), max is 50 ms
+[11:29:38][C][spi:066]: SPI bus:
+[11:29:38][C][spi:131]:   CLK Pin: GPIO39
+[11:29:38][C][spi:131]:   SDI Pin: GPIO40
+[11:29:38][C][spi:131]:   SDO Pin: GPIO41
+[11:29:38][C][spi:074]:   Using HW SPI: SPI3_HOST
+[11:29:38][D][esp-idf:000]: E (6121) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (6222) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (6323) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (6440) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (6541) i2c.master: I2C software timeout
+[11:29:38][D][esp-idf:000]: E (6642) i2c.master: I2C software timeout
+[11:29:38][C][switch.gpio:088]: GPIO Switch 'Power Control: Audio Amplifier'
+[11:29:38][C][switch.gpio:088]:   Restore Mode: always OFF
+[11:29:38][C][switch.gpio:131]:   Pin: GPIO7
+[11:29:38][D][esp-idf:000]: E (6761) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (6862) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (6963) i2c.master: I2C software timeout
+[11:29:39][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Voltage'
+[11:29:39][C][template.sensor:017]:   State Class: ''
+[11:29:39][C][template.sensor:017]:   Unit of Measurement: 'V'
+[11:29:39][C][template.sensor:017]:   Accuracy Decimals: 2
+[11:29:39][C][template.sensor:196]:   Device Class: 'voltage'
+[11:29:39][C][template.sensor:342]:   Update Interval: 60.0s
+[11:29:39][D][esp-idf:000]: E (7085) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (7186) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (7287) i2c.master: I2C software timeout
+[11:29:39][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Level'
+[11:29:39][C][template.sensor:017]:   State Class: ''
+[11:29:39][C][template.sensor:017]:   Unit of Measurement: '%'
+[11:29:39][C][template.sensor:017]:   Accuracy Decimals: 0
+[11:29:39][C][template.sensor:196]:   Device Class: 'battery'
+[11:29:39][C][template.sensor:342]:   Update Interval: 180.0s
+[11:29:39][D][esp-idf:000]: E (7403) i2c.master: I2C software timeout
+[11:29:39][W][component:421]: template.sensor took a long time for an operation (102 ms), max is 50 ms
+[11:29:39][D][wifi:1494]: Found networks:
+[11:29:39][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -40dB P:0
+[11:29:39][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -56dB P:0
+[11:29:39][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -68dB P:0
+[11:29:39][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[11:29:39][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[11:29:39][D][esp-idf:000]: E (7531) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (7632) i2c.master: I2C software timeout
+[11:29:39][D][esp-idf:000]: E (7733) i2c.master: I2C software timeout
+[11:29:39][C][template.binary_sensor:016]: Template Binary Sensor 'Power Li-ion Battery: Charging'
+[11:29:39][C][template.binary_sensor:196]:   Device Class: 'battery_charging'
+[11:29:40][D][esp-idf:000]: E (7850) i2c.master: I2C software timeout
+[11:29:40][W][component:421]: interval took a long time for an operation (101 ms), max is 50 ms
+[11:29:40][D][esp-idf:000]: E (7953) i2c.master: I2C software timeout
+[11:29:40][D][esp-idf:000]: E (8054) i2c.master: I2C software timeout
+[11:29:40][D][esp-idf:000]: E (8155) i2c.master: I2C software timeout
+[11:29:40][C][gpio.binary_sensor:016]: GPIO Binary Sensor 'Button: KEY1'
+[11:29:40][C][gpio.binary_sensor:131]:   Pin: GPIO4
+[11:29:40][C][gpio.binary_sensor:061]:   Mode: interrupt
+[11:29:40][C][gpio.binary_sensor:063]:   Interrupt Type: ANY_EDGE
+[11:29:40][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: USB-C'
+[11:29:40][C][template.binary_sensor:196]:   Device Class: 'plug'
+[11:29:40][D][esp-idf:000]: E (8285) i2c.master: I2C software timeout
+[11:29:40][D][esp-idf:000]: E (8386) i2c.master: I2C software timeout
+[11:29:40][D][esp-idf:000]: E (8487) i2c.master: I2C software timeout
+[11:29:40][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: Li-ion Battery'
+[11:29:40][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:40][D][esp-idf:000]: E (8617) i2c.master: I2C software timeout
+[11:29:40][D][esp-idf:000]: E (8718) i2c.master: I2C software timeout
+[11:29:41][D][esp-idf:000]: E (8819) i2c.master: I2C software timeout
+[11:29:41][C][template.binary_sensor:016]: Template Binary Sensor 'Reboot Required'
+[11:29:41][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Audio (Active)'
+[11:29:41][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:41][D][esp-idf:000]: E (8949) i2c.master: I2C software timeout
+[11:29:41][D][esp-idf:000]: E (9050) i2c.master: I2C software timeout
+[11:29:41][D][esp-idf:000]: E (9151) i2c.master: I2C software timeout
+[11:29:41][C][template.binary_sensor:016]: Template Binary Sensor 'Power Rail: Display (Active)'
+[11:29:41][C][template.binary_sensor:196]:   Device Class: 'power'
+[11:29:41][I][wifi:1609]: Connected
+[11:29:41][D][wifi:1626]: Disabling AP
+[11:29:41][C][wifi:1268]:   IP Address: <ipv4-2>
+[11:29:41][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[11:29:41][C][wifi:1279]:   BSSID: <bssid-1>
+[11:29:41][C][wifi:1279]:   Hostname: 'waveshare-photopainter'
+[11:29:41][C][wifi:1279]:   Signal strength: -40 dB ▂▄▆█
+[11:29:41][C][wifi:1279]:   Channel: 11
+[11:29:41][C][wifi:1279]:   Subnet: <ipv4-3>
+[11:29:41][C][wifi:1279]:   Gateway: <ipv4-4>
+[11:29:41][C][wifi:1279]:   DNS1: <ipv4-5>
+[11:29:41][C][wifi:1279]:   DNS2: <ipv4-1>
+[11:29:41][D][esp-idf:000]: E (9287) i2c.master: I2C software timeout
+[11:29:41][D][esp-idf:000]: E (9389) i2c.master: I2C software timeout
+[11:29:41][D][esp-idf:000]: E (9491) i2c.master: I2C software timeout
+[11:29:41][C][gpio.output:009]: Binary Output:
+[11:29:41][C][gpio.output:131]:   Pin: GPIO42
+[11:29:41][C][gpio.output:011]:   Inverted: YES
+[11:29:41][D][sntp:099]: Synchronized time: 2026-08-21 11:29:41
+[11:29:41][D][esp-idf:000]: E (9606) i2c.master: I2C software timeout
+[11:29:41][E][pcf85063:092]: Can't write I2C data.
+[11:29:41][W][component:421]: sntp.time took a long time for an operation (104 ms), max is 50 ms
+[11:29:41][W][component:313]: wifi cleared Warning flag
+[11:29:41][D][esp-idf:000]: E (9710) i2c.master: I2C software timeout

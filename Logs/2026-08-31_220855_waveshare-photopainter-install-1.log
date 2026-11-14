@@ -1,0 +1,157 @@
+esptool.js
+Serial port WebSerial VendorID 0x303a ProductID 0x1001
+Connecting...
+
+Detecting chip type... 
+ESP32-S3
+Chip Revision: 0
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: Wi-Fi,BLE,Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+MAC: <mac-5>
+Uploading stub...
+Running stub...
+Stub running...
+Flash ID: 184046
+*** building configuration bundle for remote build ***
+INFO ESPHome 2026.8.2
+INFO Reading configuration /config/esphome/waveshare-photopainter.yaml...
+WARNING Bundle contains secrets (e.g. Wi-Fi passwords). Do not share it with untrusted parties.
+INFO Bundle created: /tmp/tmpzhh00gu2.tar.gz (2 files, 24.0 KB)
+*** bundle ready (24 KiB); sending to build server ***
+INFO ESPHome 2026.8.2
+INFO Reading configuration /config/.esphome/.remote_builds/9CGd2Lta/waveshare-photopainter/waveshare-photopainter.yaml...
+INFO Generating C++ source...
+INFO Applying optimized lwip settings: 65KB TCP windows, 64 mailbox sizes
+INFO Applying optimized WiFi settings: 64 RX buffers, 64 TX buffers
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 17 (TCP=11 [api=3, captive_portal=3, web_server=5], UDP=3 [captive_portal=1, mdns=2], TCP_LISTEN=3 [api=1, ota=1, web_server_base=1])
+INFO Detected timezone 'America/Los_Angeles'
+INFO Compiling app... Build path: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter
+INFO Checking ESP-IDF 5.5.5 framework ...
+INFO Checking ESP-IDF 5.5.5 framework installation ...
+INFO Checking ESP-IDF 5.5.5 Python environment ...
+Executing action: all (aliases: build)
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja all"...
+[0/2] Re-checking globbed directories...[K
+[1/11] Performing build step for 'bootloader'[K
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[2/11] No install step for 'bootloader'[K
+[3/11] Completed 'bootloader'[K
+[4/11] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/build_info_data.cpp.obj[K
+[5/11] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/main.cpp.obj[K
+[6/11] Linking C static library esp-idf/src/libsrc.a[K
+[7/11] Generating esp-idf/esp_system/ld/sections.ld[K
+[8/11] Linking CXX executable waveshare-photopainter.elf[K
+[9/11] Generating binary image from built executable[K
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin
+[10/11] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin[K
+waveshare-photopainter.bin binary size 0x140ed0 bytes. Smallest app partition is 0x7c0000 bytes. 0x67f130 bytes (84%) free.
+Executing action: size
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja all"...
+[0/2] Re-checking globbed directories...[K
+[1/5] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin[K
+waveshare-photopainter.bin binary size 0x140ed0 bytes. Smallest app partition is 0x7c0000 bytes. 0x67f130 bytes (84%) free.
+[2/5] Performing build step for 'bootloader'[K
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[3/5] No install step for 'bootloader'[K
+[4/5] Completed 'bootloader'[KRunning ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja size"...
+[0/2] Re-checking globbed directories...
+[0/2] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build && /root/.cache/esphome/idf/tools/cmake/3.30.2/bin/cmake -D "IDF_SIZE_TOOL=/root/.cache/esphome/idf/penvs/5.5.5/bin/python;-m;esp_idf_size" -D MAP_FILE=/data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.map -D OUTPUT_JSON= -P /root/.cache/esphome/idf/frameworks/5.5.5/tools/cmake/run_size_tool.cmake
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory Type/Section ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Code          │       960184 │          │                │               │
+│    .text            │       960184 │          │                │               │
+│ Flash Data          │       255068 │          │                │               │
+│    .rodata          │       254812 │          │                │               │
+│    .appdesc         │          256 │          │                │               │
+│ DIRAM               │       122703 │     35.9 │         219057 │        341760 │
+│    .text            │        62751 │    18.36 │                │               │
+│    .bss             │        39816 │    11.65 │                │               │
+│    .data            │        19976 │     5.85 │                │               │
+│    .noinit          │          160 │     0.05 │                │               │
+│ IRAM                │        16384 │    100.0 │              0 │         16384 │
+│    .text            │        15356 │    93.73 │                │               │
+│    .vectors         │         1028 │     6.27 │                │               │
+│ RTC SLOW            │           32 │     0.39 │           8160 │          8192 │
+│    .force_slow      │           32 │     0.39 │                │               │
+│ RTC FAST            │           24 │     0.29 │           8168 │          8192 │
+│    .rtc_reserved    │           24 │     0.29 │                │               │
+└─────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+Total image size: 1314395 bytes (.bin may be padded larger)
+RAM:   [====      ]  35.9% (used 122703 bytes from 341760 bytes)
+Flash: [==        ]  16.2% (used 1314395 bytes from 8126464 bytes)
+INFO Creating factory.bin...
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.factory.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.ota.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.elf
+INFO Build Info: config_hash=0xf9e85aef build_time_str=2026-08-31 22:03:57 -0700
+INFO Successfully compiled program.
+Not changing the image
+Compressed 1380048 bytes to 894388...
+Writing at 0x0... (1%)
+Writing at 0x10c88... (3%)
+Writing at 0x1ba7e... (5%)
+Writing at 0x29c8f... (7%)
+Writing at 0x33fd8... (9%)
+Writing at 0x39a56... (10%)
+Writing at 0x3e07f... (12%)
+Writing at 0x43109... (14%)
+Writing at 0x4a809... (16%)
+Writing at 0x534fc... (18%)
+Writing at 0x58b46... (20%)
+Writing at 0x5e17a... (21%)
+Writing at 0x638e9... (23%)
+Writing at 0x690f7... (25%)
+Writing at 0x6e515... (27%)
+Writing at 0x73a22... (29%)
+Writing at 0x78ed0... (30%)
+Writing at 0x7e528... (32%)
+Writing at 0x84e59... (34%)
+Writing at 0x8a013... (36%)
+Writing at 0x8fbe0... (38%)
+Writing at 0x9555d... (40%)
+Writing at 0x9ade9... (41%)
+Writing at 0xa07e2... (43%)
+Writing at 0xa5af5... (45%)
+Writing at 0xaae89... (47%)
+Writing at 0xb02e4... (49%)
+Writing at 0xb5a7e... (50%)
+Writing at 0xbb7cc... (52%)
+Writing at 0xc0c09... (54%)
+Writing at 0xc5c71... (56%)
+Writing at 0xcb186... (58%)
+Writing at 0xd0763... (60%)
+Writing at 0xd5a27... (61%)
+Writing at 0xdac70... (63%)
+Writing at 0xdfbc4... (65%)
+Writing at 0xe544f... (67%)
+Writing at 0xeac8a... (69%)
+Writing at 0xf010e... (70%)
+Writing at 0xf5668... (72%)
+Writing at 0xfadd1... (74%)
+Writing at 0x100c59... (76%)
+Writing at 0x105d9a... (78%)
+Writing at 0x10b062... (80%)
+Writing at 0x1105c2... (81%)
+Writing at 0x115d35... (83%)
+Writing at 0x11b2bd... (85%)
+Writing at 0x12149d... (87%)
+Writing at 0x128939... (89%)
+Writing at 0x12ef18... (90%)
+Writing at 0x134646... (92%)
+Writing at 0x13a659... (94%)
+Writing at 0x141ef2... (96%)
+Writing at 0x147e9f... (98%)
+Writing at 0x14d689... (100%)
+Wrote 1380048 bytes (894388 compressed) at 0x0 in 8.04 seconds.
+Leaving...

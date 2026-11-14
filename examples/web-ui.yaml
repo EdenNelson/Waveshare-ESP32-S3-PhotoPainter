@@ -1,0 +1,13 @@
+# Validation fixture: the board package with the optional web UI grouping and no
+# demo or diagnostic layer. web_server needs a network component; an access-point
+# only wifi: keeps the fixture free of credentials.
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter.yaml
+  photopainter_web_ui: !include ../packages/waveshare-esp32-s3-photopainter-web-ui.yaml
+
+esphome:
+  name: photopainter-web-ui
+  friendly_name: PhotoPainter Web UI
+
+wifi:
+  ap:

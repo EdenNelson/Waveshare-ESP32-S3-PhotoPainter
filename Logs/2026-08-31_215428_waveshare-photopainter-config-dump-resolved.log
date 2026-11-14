@@ -1,0 +1,3034 @@
+INFO ESPHome 2026.5.1
+INFO Reading configuration Waveshare-PhotoPainter.yaml...
+INFO Detected timezone 'America/Los_Angeles'
+INFO Detected timezone 'America/Los_Angeles'
+substitutions:
+  name: waveshare-photopainter
+  friendly_name: PhotoPainter
+  location: Waveshare
+esphome:
+  name: waveshare-photopainter
+  friendly_name: Waveshare - PhotoPainter
+  includes:
+    - <esp_vfs_fat.h>
+    - <sdmmc_cmd.h>
+    - <driver/i2c_master.h>
+    - <esphome/core/preferences.h>
+    - <esp_heap_caps.h>
+    - <esp_flash.h>
+    - <esp_partition.h>
+  on_boot:
+    - priority: 790.0
+      then:
+        - lambda: !lambda |-
+            // @diag-only begin boot-pmic-diagnostics
+            // Set to 'false' to mute diagnostic logs once working
+            const bool VERBOSE_LOGGING = true;
+            // @diag-only end boot-pmic-diagnostics
+
+            const uint8_t PMIC_ADDR   = 0x34; // AXP2101 PMIC
+            const uint8_t RTC_ADDR    = 0x51; // PCF85063 Real-Time Clock
+            const uint8_t SENSOR_ADDR = 0x70; // SHTC3 Temp/Humidity Sensor
+            const uint8_t ADC_ADDR    = 0x40; // ES7210 Audio ADC
+            const uint8_t CODEC_ADDR  = 0x18; // ES8311 Audio Codec
+            const bool DISPLAY_BOOT_ENABLED = !id(no_display_at_boot);
+
+            uint32_t start_time = millis();
+            id(shared_i2c_available) = false;
+
+            // @diag-only begin boot-pmic-diagnostics
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("axp_diag", "[+%4lu ms] === Starting PMIC & Peripheral Init ===", millis() - start_time);
+            }
+            // @diag-only end boot-pmic-diagnostics
+
+            auto read_reg = [&](uint8_t reg, uint8_t &val) -> bool {
+              return id(pmic_i2c).write_readv(PMIC_ADDR, &reg, 1, &val, 1) == esphome::i2c::ERROR_OK;
+            };
+
+            auto write_reg = [&](uint8_t reg, uint8_t val) -> bool {
+              uint8_t data[2] = {reg, val};
+              return id(pmic_i2c).write(PMIC_ADDR, data, 2) == esphome::i2c::ERROR_OK;
+            };
+
+            auto probe_address = [&](uint8_t addr) -> bool {
+              uint8_t dummy = 0;
+              return id(pmic_i2c).write_readv(addr, nullptr, 0, &dummy, 1) == esphome::i2c::ERROR_OK;
+            };
+
+            // 1. Bus recovery & PMIC connection check
+            uint8_t chip_id = 0;
+            bool bus_ok = false;
+            int attempts = 0;
+
+            for (attempts = 1; attempts <= 10; attempts++) {
+              if (read_reg(0x03, chip_id)) {
+                bus_ok = true;
+                break;
+              }
+              // @diag-only begin boot-pmic-diagnostics
+              if (VERBOSE_LOGGING) {
+                ESP_LOGW("axp_diag", "[+%4lu ms] Try %d: I2C bus busy/unresponsive. Retrying in 20ms...", millis() - start_time, attempts);
+              }
+              // @diag-only end boot-pmic-diagnostics
+              delay(20);
+            }
+
+            if (!bus_ok) {
+              ESP_LOGE("axp_diag", "[+%4lu ms] CRITICAL: AXP2101 PMIC failed to respond after %d attempts.", millis() - start_time, attempts - 1);
+              return;
+            }
+            id(shared_i2c_available) = true;
+
+            // @diag-only begin boot-pmic-diagnostics
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("axp_diag", "[+%4lu ms] PMIC responsive on try %d! Chip ID: 0x%02X", millis() - start_time, attempts, chip_id);
+            }
+            // @diag-only end boot-pmic-diagnostics
+
+            // 2. Fetch baseline state
+            uint8_t dcdc1 = 0, aldo3 = 0, aldo4 = 0, ldo_en = 0;
+            read_reg(0x82, dcdc1);
+            read_reg(0x94, aldo3);
+            read_reg(0x95, aldo4);
+            read_reg(0x90, ldo_en);
+
+            // @diag-only begin boot-pmic-diagnostics
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("axp_diag", "[+%4lu ms] Baseline State -> DCDC1: 0x%02X, ALDO3: 0x%02X, ALDO4: 0x%02X, LDO_EN: 0x%02X",
+                       millis() - start_time, dcdc1, aldo3, aldo4, ldo_en);
+            }
+            // @diag-only end boot-pmic-diagnostics
+
+            // 3. Evaluate configuration state & apply power if missing
+            bool display_rail_configured = DISPLAY_BOOT_ENABLED
+                ? (((aldo4 & 0x1F) == 0x1C) && ((ldo_en & 0x08) != 0))
+                : ((ldo_en & 0x08) == 0);
+            bool is_configured = (dcdc1 == 0x12) &&
+                                 ((aldo3 & 0x1F) == 0x1C) &&
+                                 ((ldo_en & 0x04) != 0) &&
+                                 display_rail_configured;
+
+            if (is_configured) {
+              // @diag-only begin boot-pmic-diagnostics
+              if (VERBOSE_LOGGING) {
+                ESP_LOGI("axp_diag", "[+%4lu ms] Power rails already active (Warm boot). Skipping power write.", millis() - start_time);
+              }
+              // @diag-only end boot-pmic-diagnostics
+            } else {
+              // @diag-only begin boot-pmic-diagnostics
+              if (VERBOSE_LOGGING) {
+                ESP_LOGI("axp_diag", "[+%4lu ms] Applying startup rails: ALDO3/audio=ON ALDO4/display=%s.",
+                         millis() - start_time, DISPLAY_BOOT_ENABLED ? "ON" : "OFF");
+              }
+              // @diag-only end boot-pmic-diagnostics
+
+              write_reg(0x82, 0x12);                  // DCDC1 -> 3.3V
+              write_reg(0x94, (aldo3 & 0xE0) | 0x1C);  // ALDO3 -> 3.3V
+              if (DISPLAY_BOOT_ENABLED) {
+                write_reg(0x95, (aldo4 & 0xE0) | 0x1C);  // ALDO4 -> 3.3V
+              }
+              uint8_t desired_ldo_enable = ldo_en | 0x04;  // Always allow static audio setup
+              desired_ldo_enable = DISPLAY_BOOT_ENABLED
+                  ? static_cast<uint8_t>(desired_ldo_enable | 0x08)
+                  : static_cast<uint8_t>(desired_ldo_enable & ~0x08);
+              write_reg(0x90, desired_ldo_enable);      // Change ALDO3/ALDO4 only; preserve every other LDO
+
+              // Verification readback
+              read_reg(0x82, dcdc1);
+              read_reg(0x94, aldo3);
+              read_reg(0x95, aldo4);
+              read_reg(0x90, ldo_en);
+
+              // @diag-only begin boot-pmic-diagnostics
+              if (VERBOSE_LOGGING) {
+                ESP_LOGI("axp_diag", "[+%4lu ms] Readback Post-Write -> DCDC1: 0x%02X, ALDO3: 0x%02X, ALDO4: 0x%02X, LDO_EN: 0x%02X",
+                         millis() - start_time, dcdc1, aldo3, aldo4, ldo_en);
+              }
+              // @diag-only end boot-pmic-diagnostics
+
+              delay(100); // Wait for power rails and downstream components to stabilize
+            }
+
+            // 4. Selective I2C device probing (Runs safely ONLY after power rails are active)
+            // @diag-only begin boot-pmic-diagnostics
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("axp_diag", "[+%4lu ms] Probing target downstream I2C devices...", millis() - start_time);
+
+              bool rtc_found = probe_address(RTC_ADDR);
+              ESP_LOGI("axp_diag", "[+%4lu ms] RTC (0x%02X): %s",
+                       millis() - start_time, RTC_ADDR, rtc_found ? "PRESENT" : "NOT RESPONDING");
+
+              // SHTC3 requires a 16-bit Wakeup Command (0x3517) before it will ACK on I2C
+              bool sensor_found = false;
+              uint8_t shtc3_wakeup[2] = {0x35, 0x17};
+              if (id(pmic_i2c).write(SENSOR_ADDR, shtc3_wakeup, 2) == esphome::i2c::ERROR_OK) {
+                sensor_found = true;
+                delayMicroseconds(300);
+                // Put SHTC3 back to sleep (0xB098) until the ESPHome component initializes
+                uint8_t shtc3_sleep[2] = {0xB0, 0x98};
+                id(pmic_i2c).write(SENSOR_ADDR, shtc3_sleep, 2);
+              }
+              ESP_LOGI("axp_diag", "[+%4lu ms] SHTC3 Sensor (0x%02X): %s",
+                       millis() - start_time, SENSOR_ADDR, sensor_found ? "PRESENT (Woken from Sleep)" : "NOT RESPONDING");
+
+              bool adc_found = probe_address(ADC_ADDR);
+              ESP_LOGI("axp_diag", "[+%4lu ms] ES7210 Audio ADC (0x%02X): %s",
+                       millis() - start_time, ADC_ADDR, adc_found ? "PRESENT" : "NOT RESPONDING");
+
+              bool codec_found = probe_address(CODEC_ADDR);
+              ESP_LOGI("axp_diag", "[+%4lu ms] ES8311 Audio Codec (0x%02X): %s",
+                       millis() - start_time, CODEC_ADDR, codec_found ? "PRESENT" : "NOT RESPONDING");
+            }
+            // @diag-only end boot-pmic-diagnostics
+
+            // @diag-only begin boot-pmic-diagnostics
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("axp_diag", "[+%4lu ms] Initialization complete. Handing over to display component.", millis() - start_time);
+            }
+            // @diag-only end boot-pmic-diagnostics
+
+            // @diag-only begin peripheral-register-dumps
+            // --- ES8311 Codec Register Dump ---
+            if (VERBOSE_LOGGING) {
+              // Wait for downstream audio_dac/i2s_audio components to finish setup()
+              delay(500);
+
+              ESP_LOGI("es8311_diag", "=== ES8311 Post-Init Detailed Register Dump ===");
+
+              auto read_codec_reg = [&](uint8_t reg, uint8_t &val) -> bool {
+                return id(pmic_i2c).write_readv(CODEC_ADDR, &reg, 1, &val, 1) == esphome::i2c::ERROR_OK;
+              };
+
+              const char *wl_str[8]  = {"24-bit", "20-bit", "18-bit", "16-bit", "32-bit", "Unk", "Unk", "Unk"};
+              const char *fmt_str[4] = {"I2S", "Left-Justified", "Reserved", "DSP/PCM"};
+
+              uint8_t consecutive_i2c_fails = 0;
+
+              auto dump_reg = [&](uint8_t reg, const char *category) -> bool {
+                uint8_t val = 0;
+
+                // 1. I2C Fault Protection: Abort if hardware becomes unresponsive mid-dump
+                if (!read_codec_reg(reg, val)) {
+                  consecutive_i2c_fails++;
+                  if (consecutive_i2c_fails >= 3) {
+                    ESP_LOGE("es8311_diag", "I2C bus unresponsive at reg 0x%02X. Aborting dump.", reg);
+                    return false;
+                  }
+                  return true;
+                }
+                consecutive_i2c_fails = 0;
+
+                // 2. Buffer Overflow Protection: Zero-initialized, bounded stack buffer
+                char extra[96] = {0};
+
+                switch (reg) {
+                  case 0x00: // RESET/CTRL
+                    snprintf(extra, sizeof(extra), "| CSM:%s, Mode:%s, ResetsActive:0x%02X",
+                             (val & 0x80) ? "ON" : "OFF", (val & 0x40) ? "Master" : "Slave", val & 0x1F);
+                    break;
+                  case 0x01: // CLK_MGR
+                    snprintf(extra, sizeof(extra), "| Src:%s, MCLK:%s, BCLK:%s, ADC_CLK:%s, DAC_CLK:%s",
+                             (val & 0x80) ? "BCLK" : "MCLK", (val & 0x20) ? "ON" : "OFF",
+                             (val & 0x10) ? "ON" : "OFF", (val & 0x08) ? "ON" : "OFF", (val & 0x04) ? "ON" : "OFF");
+                    break;
+                  case 0x09: // SDP IN (DAC Format)
+                    snprintf(extra, sizeof(extra), "| DAC In Mute:%s, WL:%s, Format:%s",
+                             (val & 0x40) ? "YES" : "NO", wl_str[(val >> 2) & 0x07], fmt_str[val & 0x03]);
+                    break;
+                  case 0x0A: // SDP OUT (ADC Format)
+                    snprintf(extra, sizeof(extra), "| ADC Out Mute:%s, WL:%s, Format:%s",
+                             (val & 0x40) ? "YES" : "NO", wl_str[(val >> 2) & 0x07], fmt_str[val & 0x03]);
+                    break;
+                  case 0x0D: // SYSTEM POWER 1
+                    snprintf(extra, sizeof(extra), "| AnalogPwr:%s, VMID:%u",
+                             (val & 0x80) ? "DOWN" : "UP", val & 0x03);
+                    break;
+                  case 0x0E: // SYSTEM POWER 2
+                    snprintf(extra, sizeof(extra), "| PGA:%s, ADC_Modulator:%s",
+                             (val & 0x40) ? "DOWN" : "UP", (val & 0x20) ? "DOWN" : "UP");
+                    break;
+                  case 0x12: // SYSTEM POWER 3
+                    snprintf(extra, sizeof(extra), "| DAC:%s, RefBuf:%s",
+                             (val & 0x02) ? "DOWN" : "UP", (val & 0x01) ? "ON" : "OFF");
+                    break;
+                  case 0x13: // OUTPUT DRIVER
+                    snprintf(extra, sizeof(extra), "| Output Drive:%s",
+                             (val & 0x10) ? "Headphone Driver" : "Line Out");
+                    break;
+                  case 0x14: // MIC/PGA GAIN
+                    snprintf(extra, sizeof(extra), "| DMIC:%s, Input:%s, PGA Gain:+%udB",
+                             (val & 0x40) ? "ON" : "OFF", (val & 0x10) ? "MIC1P-MIC1N" : "None",
+                             ((val & 0x0F) <= 10) ? (val & 0x0F) * 3 : 30);
+                    break;
+                  case 0x16: // ADC SCALE
+                    snprintf(extra, sizeof(extra), "| ADC Digital Scale Up:+%udB", (val & 0x07) * 6);
+                    break;
+                  case 0x17: // ADC VOLUME
+                    snprintf(extra, sizeof(extra), "| ADC Digital Vol: %.1fdB", (val * 0.5f) - 95.5f);
+                    break;
+                  case 0x18: // ALC CONTROL
+                    snprintf(extra, sizeof(extra), "| ALC:%s, AutoMute:%s",
+                             (val & 0x80) ? "ENABLED" : "Disabled", (val & 0x40) ? "ENABLED" : "Disabled");
+                    break;
+                  case 0x31: // DAC MUTE
+                    snprintf(extra, sizeof(extra), "| DSM Mute:%s, DEM Mute:%s, PhaseInvert:%s",
+                             (val & 0x40) ? "MUTED" : "unmuted", (val & 0x20) ? "MUTED" : "unmuted",
+                             (val & 0x10) ? "180 deg" : "Normal");
+                    break;
+                  case 0x32: // DAC VOLUME
+                    snprintf(extra, sizeof(extra), "| DAC Vol: %.1fdB", (val * 0.5f) - 95.5f);
+                    break;
+                  case 0x34: // DRC CONTROL
+                    snprintf(extra, sizeof(extra), "| Dynamic Range Compression:%s",
+                             (val & 0x80) ? "ENABLED" : "Disabled");
+                    break;
+                  case 0x44: // ROUTING / LOOPBACK
+                    snprintf(extra, sizeof(extra), "| Direct Hardware Loopback (ADC->DAC):%s",
+                             (val & 0x80) ? "ENABLED" : "Disabled");
+                    break;
+                  case 0xFD: // CHIP_ID1
+                  case 0xFE: // CHIP_ID2
+                  case 0xFF: // CHIP_VER
+                    snprintf(extra, sizeof(extra), "| Chip Hardware Identification Byte");
+                    break;
+                }
+
+                ESP_LOGI("es8311_diag", "Reg 0x%02X (%-10s): 0x%02X %s", reg, category, val, extra);
+                return true;
+              };
+
+              // 3. Integer Overflow Protection: Using uint16_t iterators prevents wraparound at 0xFF
+              auto dump_range = [&](uint16_t start, uint16_t end, const char *category) -> bool {
+                for (uint16_t r = start; r <= end; r++) {
+                  if (!dump_reg(static_cast<uint8_t>(r), category))
+                    return false;
+
+                  // 4. Task Watchdog Feeding: Reset FreeRTOS TWDT explicitly & yield execution
+                  esphome::App.feed_wdt();
+                  delay(1);
+                }
+                return true;
+              };
+
+              bool ok = true;
+              if (ok) ok = dump_range(0x00, 0x00, "RESET/CTRL");
+              if (ok) ok = dump_range(0x01, 0x08, "CLK_MGR");
+              if (ok) ok = dump_range(0x09, 0x0A, "SDP");
+              if (ok) ok = dump_range(0x0B, 0x14, "SYSTEM");
+              if (ok) ok = dump_range(0x15, 0x1D, "ADC");
+              if (ok) ok = dump_range(0x1E, 0x30, "ADCEQ");
+              if (ok) ok = dump_range(0x31, 0x37, "DAC");
+              if (ok) ok = dump_range(0x38, 0x43, "DACEQ");
+              if (ok) ok = dump_range(0x44, 0x44, "GPIO");
+              if (ok) ok = dump_range(0x45, 0x45, "GP");
+              if (ok) ok = dump_range(0xFA, 0xFA, "I2C");
+              if (ok) ok = dump_range(0xFC, 0xFC, "FLAG");
+              if (ok) ok = dump_range(0xFD, 0xFF, "CHIP_ID");
+
+              ESP_LOGI("es8311_diag", "=== End ES8311 Register Dump ===");
+            }
+
+            // --- ES7210 Audio ADC Register Dump ---
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("es7210_diag", "=== ES7210 Post-Init Detailed Register Dump ===");
+
+              auto read_adc_reg = [&](uint8_t reg, uint8_t &val) -> bool {
+                return id(pmic_i2c).write_readv(ADC_ADDR, &reg, 1, &val, 1) == esphome::i2c::ERROR_OK;
+              };
+
+              const char *wl_str[8]  = {"24-bit", "20-bit", "18-bit", "16-bit", "32-bit", "Unk", "Unk", "Unk"};
+              const char *fmt_str[4] = {"I2S", "Left-Justified", "Reserved", "DSP/PCM"};
+              const char *csm_str[4] = {"Power Down", "Init", "Normal", "Power Up"};
+              const char *vbias_str[8] = {"2.18V", "2.26V", "2.36V", "2.45V", "2.55V", "2.66V", "2.78V", "2.87V"};
+              static const float pga_gain_tbl[16] = {0.0f, 3.0f, 6.0f, 9.0f, 12.0f, 15.0f, 18.0f, 21.0f, 24.0f, 27.0f, 30.0f, 33.0f, 34.5f, 36.0f, 37.5f, 37.5f};
+
+              uint8_t consecutive_i2c_fails = 0;
+
+              auto dump_adc_reg = [&](uint8_t reg, const char *category) -> bool {
+                uint8_t val = 0;
+
+                // 1. I2C Fault Protection
+                if (!read_adc_reg(reg, val)) {
+                  consecutive_i2c_fails++;
+                  if (consecutive_i2c_fails >= 3) {
+                    ESP_LOGE("es7210_diag", "I2C bus unresponsive at reg 0x%02X. Aborting dump.", reg);
+                    return false;
+                  }
+                  return true;
+                }
+                consecutive_i2c_fails = 0;
+
+                // 2. Buffer Overflow Protection
+                char extra[96] = {0};
+
+                switch (reg) {
+                  case 0x00: // RESET CONTROL
+                    snprintf(extra, sizeof(extra), "| CSM:%s, AutoSeq:%s, ResetsActive:0x%02X",
+                             (val & 0x01) ? "ON" : "OFF", (val & 0x08) ? "Disabled" : "Enabled", val & 0x76);
+                    break;
+                  case 0x01: // CLOCK OFF
+                    snprintf(extra, sizeof(extra), "| MCLK:%s, MasterCLK:%s, ADC12_CLK:%s, ADC34_CLK:%s",
+                             (val & 0x01) ? "OFF" : "ON", (val & 0x20) ? "OFF" : "ON",
+                             (val & 0x08) ? "OFF" : "ON", (val & 0x10) ? "OFF" : "ON");
+                    break;
+                  case 0x02: // MAIN CLK CONTROL
+                    {
+                      const char *mult_str[4] = {"x4", "x8", "x1", "x2"};
+                      snprintf(extra, sizeof(extra), "| Mult:%s, Div:%u", mult_str[(val >> 6) & 0x03], val & 0x1F);
+                    }
+                    break;
+                  case 0x03: // MASTER CLK CONTROL
+                    snprintf(extra, sizeof(extra), "| MCLK Src:%s, SCLK Div:%u",
+                             (val & 0x80) ? "Doubler" : "Pad", val & 0x7F);
+                    break;
+                  case 0x06: // POWER DOWN
+                    snprintf(extra, sizeof(extra), "| DLL Pwr:%s, TDMIN PullDown:%s, PullUps:%s",
+                             (val & 0x04) ? "DOWN" : "UP", (val & 0x02) ? "OFF" : "ON", (val & 0x01) ? "OFF" : "ON");
+                    break;
+                  case 0x08: // MODE CONFIG
+                    snprintf(extra, sizeof(extra), "| ClockMode:%s, Speed:%s, EQ:%s, SCLK Invert:%s",
+                             (val & 0x01) ? "Master" : "Slave", (val & 0x02) ? "Double" : "Single",
+                             (val & 0x04) ? "OFF" : "ON", (val & 0x08) ? "YES" : "NO");
+                    break;
+                  case 0x0B: // CHIP STATUS
+                    snprintf(extra, sizeof(extra), "| CSM State:%s", csm_str[val & 0x03]);
+                    break;
+                  case 0x10: // DMIC CONTROL
+                    snprintf(extra, sizeof(extra), "| DMIC12:%s, DMIC34:%s, Gain12:+%udB, Gain34:+%udB",
+                             (val & 0x40) ? "ON" : "OFF", (val & 0x80) ? "ON" : "OFF",
+                             (val & 0x07) * 6, ((val >> 3) & 0x07) * 6);
+                    break;
+                  case 0x11: // SDP INTERFACE 1
+                    snprintf(extra, sizeof(extra), "| WL:%s, Format:%s, LRP:%s",
+                             wl_str[(val >> 5) & 0x07], fmt_str[val & 0x03], (val & 0x10) ? "Inverted" : "Normal");
+                    break;
+                  case 0x12: // SDP INTERFACE 2
+                    {
+                      const char *sdout_mode[4] = {"ADC12->SDOUT1/ADC34->SDOUT2", "TDM DSP/PCM", "TDM I2S/LJ", "Multi-LRCK TDM"};
+                      snprintf(extra, sizeof(extra), "| Mode:%s, SDOUT1 Tri:%s, SDOUT2 Tri:%s",
+                               sdout_mode[val & 0x03], (val & 0x10) ? "YES" : "NO", (val & 0x20) ? "YES" : "NO");
+                    }
+                    break;
+                  case 0x16: // ALC SELECT
+                    snprintf(extra, sizeof(extra), "| ALC12 Mode:0x%X, ALC34 Mode:0x%X", (val >> 2) & 0x03, val & 0x03);
+                    break;
+                  case 0x1B: // ADC4 GAIN
+                  case 0x1C: // ADC3 GAIN
+                  case 0x1D: // ADC2 GAIN
+                  case 0x1E: // ADC1 GAIN
+                    {
+                      float db = (val <= 0xBF) ? (val * 0.5f - 95.5f) : ((val - 0xBF) * 0.5f);
+                      snprintf(extra, sizeof(extra), "| Vol/Max Gain: %.1fdB", db);
+                    }
+                    break;
+                  case 0x3D: // CHIP_ID1
+                  case 0x3E: // CHIP_ID0
+                  case 0x3F: // CHIP_VER
+                    snprintf(extra, sizeof(extra), "| Chip Hardware Identification Byte");
+                    break;
+                  case 0x40: // ANALOG SYSTEM
+                    snprintf(extra, sizeof(extra), "| Analog Pwr:%s, VX2OFF:%s",
+                             (val & 0x80) ? "DOWN" : "UP", (val & 0x40) ? "OFF (3.3V)" : "ON");
+                    break;
+                  case 0x41: // MIC1/2 BIAS
+                  case 0x42: // MIC3/4 BIAS
+                    snprintf(extra, sizeof(extra), "| Bias Voltage Level: %s", vbias_str[(val >> 4) & 0x07]);
+                    break;
+                  case 0x43: // MIC1 GAIN
+                  case 0x44: // MIC2 GAIN
+                  case 0x45: // MIC3 GAIN
+                  case 0x46: // MIC4 GAIN
+                    snprintf(extra, sizeof(extra), "| Input Select:%s, PGA Gain: +%.1fdB",
+                             (val & 0x10) ? "SELECTED" : "Deselected", pga_gain_tbl[val & 0x0F]);
+                    break;
+                  case 0x4B: // MIC1/2 POWER DOWN
+                  case 0x4C: // MIC3/4 POWER DOWN
+                    snprintf(extra, sizeof(extra), "| VREF_PDN:%d, MICBIAS_PDN:%d, PGA_PDN:0x%X, MOD_PDN:0x%X",
+                             (val & 0x80) >> 7, (val & 0x40) >> 6, (val >> 4) & 0x03, (val >> 2) & 0x03);
+                    break;
+                }
+
+                ESP_LOGI("es7210_diag", "Reg 0x%02X (%-10s): 0x%02X %s", reg, category, val, extra);
+                return true;
+              };
+
+              // 3. Integer Overflow Protection (uint16_t bounds)
+              auto dump_adc_range = [&](uint16_t start, uint16_t end, const char *category) -> bool {
+                for (uint16_t r = start; r <= end; r++) {
+                  if (!dump_adc_reg(static_cast<uint8_t>(r), category))
+                    return false;
+
+                  // 4. Task Watchdog Feeding
+                  esphome::App.feed_wdt();
+                  delay(1);
+                }
+                return true;
+              };
+
+              bool ok_adc = true;
+              if (ok_adc) ok_adc = dump_adc_range(0x00, 0x00, "RESET");
+              if (ok_adc) ok_adc = dump_adc_range(0x01, 0x05, "CLK_MGR");
+              if (ok_adc) ok_adc = dump_adc_range(0x06, 0x0A, "SYS_TIME");
+              if (ok_adc) ok_adc = dump_adc_range(0x0B, 0x0D, "STATUS/INT");
+              if (ok_adc) ok_adc = dump_adc_range(0x10, 0x12, "SDP/DMIC");
+              if (ok_adc) ok_adc = dump_adc_range(0x13, 0x15, "ADC_CTRL");
+              if (ok_adc) ok_adc = dump_adc_range(0x16, 0x1E, "ALC/GAIN");
+              if (ok_adc) ok_adc = dump_adc_range(0x20, 0x23, "HPF");
+              if (ok_adc) ok_adc = dump_adc_range(0x24, 0x37, "EQ");
+              if (ok_adc) ok_adc = dump_adc_range(0x3D, 0x3F, "CHIP_ID");
+              if (ok_adc) ok_adc = dump_adc_range(0x40, 0x42, "ANALOG");
+              if (ok_adc) ok_adc = dump_adc_range(0x43, 0x4A, "MIC_GAIN");
+              if (ok_adc) ok_adc = dump_adc_range(0x4B, 0x4C, "PWR_DOWN");
+
+              ESP_LOGI("es7210_diag", "=== End ES7210 Register Dump ===");
+            }
+
+            // --- PCF85063ATL Full Register Dump (0x00-0x11) with Crash-Safe Decoding ---
+            if (VERBOSE_LOGGING) {
+              ESP_LOGI("rtc_diag", "=== PCF85063ATL Register Dump ===");
+
+              auto read_rtc_reg = [&](uint8_t reg, uint8_t &val) -> bool {
+                return id(pmic_i2c).write_readv(RTC_ADDR, &reg, 1, &val, 1) == esphome::i2c::ERROR_OK;
+              };
+
+              const char *rtc_names[] = {
+                "Control_1", "Control_2", "Offset", "RAM_byte",
+                "Seconds", "Minutes", "Hours", "Days",
+                "Weekdays", "Months", "Years",
+                "Second_alarm", "Minute_alarm", "Hour_alarm",
+                "Day_alarm", "Weekday_alarm", "Timer_value", "Timer_mode"
+              };
+              const size_t num_rtc_regs = sizeof(rtc_names) / sizeof(rtc_names[0]);
+
+              const char *cof_str[] = {"32.768kHz", "16.384kHz", "8.192kHz", "4.096kHz", "2.048kHz", "1.024kHz", "1Hz", "DISABLED"};
+              const char *tcf_str[] = {"4.096kHz", "64Hz", "1Hz", "1/60Hz"};
+
+              for (uint8_t r = 0x00; r <= 0x11; r++) {
+                // Safety Guard 1: Prevent out-of-bounds array read if register bounds change
+                const char *reg_name = (r < num_rtc_regs) ? rtc_names[r] : "Unknown_Reg";
+
+                uint8_t val = 0;
+                if (!read_rtc_reg(r, val)) {
+                  ESP_LOGW("rtc_diag", "Reg 0x%02X (%-13s): read failed", r, reg_name);
+                  continue;
+                }
+
+                // Safety Guard 2: Stack buffer sized comfortably with snprintf null-termination
+                char extra[96] = "";
+
+                switch (r) {
+                  case 0x00: // Control_1
+                    snprintf(extra, sizeof(extra), "| STOP:%s, 12/24h:%s, CapSel:%s",
+                             (val & 0x20) ? "STOPPED" : "RUNNING",
+                             (val & 0x02) ? "12-hour" : "24-hour",
+                             (val & 0x01) ? "12.5pF" : "7pF");
+                    break;
+
+                  case 0x01: { // Control_2
+                    // Safety Guard 3: Explicit bitmask ensures index stays strictly within [0..7]
+                    uint8_t cof_idx = val & 0x07;
+                    snprintf(extra, sizeof(extra), "| AIE:%s, AF:%s, TF:%s, CLKOUT:%s",
+                             (val & 0x80) ? "ON" : "OFF",
+                             (val & 0x40) ? "SET" : "CLEAR",
+                             (val & 0x08) ? "SET" : "CLEAR",
+                             cof_str[cof_idx]);
+                    break;
+                  }
+
+                  case 0x02: { // Offset
+                    // Safety Guard 4: Convert 7-bit 2's complement (-64 to +63) to signed int8_t safely
+                    int8_t offset_val = (val & 0x40) ? (int8_t)(val | 0x80) : (int8_t)(val & 0x7F);
+                    snprintf(extra, sizeof(extra), "| Mode:%s, OffsetVal:%d LSBs",
+                             (val & 0x80) ? "Fast (4min)" : "Normal (2h)",
+                             offset_val);
+                    break;
+                  }
+
+                  case 0x04: // Seconds
+                    snprintf(extra, sizeof(extra), "| OS Flag:%s, Sec:%02X",
+                             (val & 0x80) ? "STOPPED (Integrity Lost)" : "OK",
+                             val & 0x7F);
+                    break;
+
+                  case 0x05: // Minutes
+                  case 0x06: // Hours
+                  case 0x07: // Days
+                  case 0x09: // Months
+                  case 0x0A: // Years
+                    snprintf(extra, sizeof(extra), "| Raw BCD: 0x%02X", val & 0x7F);
+                    break;
+
+                  case 0x11: { // Timer_mode
+                    // Safety Guard 5: Explicit bitmask ensures index stays strictly within [0..3]
+                    uint8_t tcf_idx = (val >> 3) & 0x03;
+                    snprintf(extra, sizeof(extra), "| TE:%s, TIE:%s, Mode:%s, ClockSrc:%s",
+                             (val & 0x04) ? "ENABLED" : "Disabled",
+                             (val & 0x02) ? "ENABLED" : "Disabled",
+                             (val & 0x01) ? "Pulse" : "Level",
+                             tcf_str[tcf_idx]);
+                    break;
+                  }
+                }
+
+                ESP_LOGI("rtc_diag", "Reg 0x%02X (%-13s): 0x%02X %s", r, reg_name, val, extra);
+              }
+
+              ESP_LOGI("rtc_diag", "=== End PCF85063ATL Register Dump ===");
+            }
+            // @diag-only end peripheral-register-dumps
+
+            // Mount SD Card over SPI3_HOST
+        - lambda: !lambda |-
+            sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+            host.slot = SPI3_HOST;
+
+            sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+            slot_config.gpio_cs = GPIO_NUM_38;
+            slot_config.host_id = SPI3_HOST;
+
+            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+                .format_if_mount_failed = false,
+                .max_files = 5,
+                .allocation_unit_size = 16 * 1024
+            };
+
+            sdmmc_card_t *card;
+            esp_err_t ret = esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+
+            if (ret == ESP_OK) {
+              id(sd_mounted) = true;
+              ESP_LOGI("sd_card", "SD Card mounted successfully at /sdcard");
+            } else {
+              id(sd_mounted) = false;
+              ESP_LOGE("sd_card", "SD Card mount failed: %s", esp_err_to_name(ret));
+            }
+        - lambda: !lambda |-
+            // PollingComponent::call_setup() would otherwise schedule the first
+            // refresh within a few seconds of setup(), often before slower
+            // sensors (SD space, battery level) have reported their own first
+            // value, leaving the dashboard showing blank placeholders. Suppress
+            // it here regardless of the saved display preference; when display
+            // should be ON, apply_restored_power_state_script re-enables it
+            // later, after sensors have had time to report.
+            id(epaper_display).set_update_interval(UINT32_MAX);
+            if (id(no_display_at_boot)) {
+              ESP_LOGI("display_power", "Saved display state is OFF; initial e-paper refresh is suppressed and ALDO4 remains OFF.");
+            }
+        - delay: 1ms
+        - lambda: !lambda |-
+            // Publish the requested effective state immediately. Hardware OFF
+            // sequencing may continue asynchronously after component setup, but
+            // the live switches should reflect the saved startup intent at boot.
+            id(audio_runtime_active) = !id(no_audio_at_boot);
+            id(display_runtime_active) = !id(no_display_at_boot);
+            ESP_LOGI("power_control", "Restored startup preferences: audio=%s display=%s.",
+                     id(no_audio_at_boot) ? "OFF" : "ON",
+                     id(no_display_at_boot) ? "OFF" : "ON");
+        - delay: 5s
+        - script.execute:
+            id: apply_restored_power_state_script
+  min_version: 2026.5.1
+  build_path: build/waveshare-photopainter
+  platformio_options: {}
+  environment_variables: {}
+  includes_c: []
+  libraries: []
+  name_add_mac_suffix: false
+  debug_scheduler: false
+  areas: []
+  devices: []
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: ESP32S3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESPTOOLPY_FLASHMODE_QIO: y
+    advanced:
+      include_builtin_idf_components:
+        - fatfs
+        - sdmmc
+        - esp_driver_sdspi
+      compiler_optimization: SIZE
+      enable_idf_experimental_features: false
+      enable_lwip_assert: true
+      ignore_efuse_custom_mac: false
+      ignore_efuse_mac_crc: false
+      sram1_as_iram: false
+      enable_lwip_mdns_queries: true
+      enable_lwip_bridge_interface: false
+      enable_lwip_tcpip_core_locking: true
+      enable_lwip_check_thread_safety: true
+      disable_libc_locks_in_iram: true
+      disable_vfs_support_termios: true
+      disable_vfs_support_select: true
+      disable_vfs_support_dir: true
+      freertos_in_iram: false
+      ringbuf_in_iram: false
+      heap_in_iram: false
+      execute_from_psram: false
+      loop_task_stack_size: 8192
+      enable_ota_rollback: true
+      use_full_certificate_bundle: false
+      enable_full_printf: false
+      disable_debug_stubs: true
+      disable_ocd_aware: true
+      disable_usb_serial_jtag_secondary: true
+      disable_dev_null_vfs: true
+      disable_mbedtls_peer_cert: true
+      disable_mbedtls_pkcs7: true
+      disable_regi2c_in_iram: true
+      adc_oneshot_in_iram: false
+      disable_fatfs: true
+    version: 5.5.4
+    log_level: ERROR
+    components: []
+    platform_version: https://github.com/pioarduino/platform-espressif32/releases/download/55.03.38-1/platform-espressif32.zip
+    source: pioarduino/framework-espidf@https://github.com/pioarduino/esp-idf/releases/download/v5.5.4/esp-idf-v5.5.4.tar.xz
+  watchdog_timeout: 5s
+  cpu_frequency: 240MHZ
+logger:
+  level: DEBUG
+  task_log_buffer_size: 4096
+  baud_rate: 115200
+  tx_buffer_size: 512
+  deassert_rts_dtr: false
+  hardware_uart: USB_SERIAL_JTAG
+  logs: {}
+  runtime_tag_levels: false
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: \033[8m<api-encryption-key>\033[28m
+  port: 6053
+  batch_delay: 100ms
+  custom_services: false
+  homeassistant_services: false
+  homeassistant_states: false
+  listen_backlog: 4
+  max_connections: 5
+  max_send_queue: 8
+ota:
+  - platform: web_server
+  - platform: esphome
+    version: 2
+    port: 3232
+    allow_partition_access: false
+wifi:
+  ap:
+    ssid: \033[8m<fallback-ap-ssid>\033[28m
+    password: \033[8m<fallback-ap-password>\033[28m
+    ap_timeout: 90s
+  domain: .local
+  reboot_timeout: 15min
+  power_save_mode: LIGHT
+  fast_connect: false
+  enable_btm: false
+  enable_rrm: false
+  passive_scan: false
+  enable_on_boot: true
+  post_connect_roaming: true
+  min_auth_mode: WPA2
+  networks:
+    - ssid: \033[8m!secret 'wifi_password'\033[28m
+      password: \033[8m!secret 'wifi_password'\033[28m
+      priority: 0
+  use_address: waveshare-photopainter.local
+captive_portal:
+  compression: gzip
+web_server:
+  port: 80
+  version: 2
+  enable_private_network_access: true
+  include_internal: false
+  log: true
+  compression: gzip
+  css_url: ''
+  js_url: https://oi.esphome.io/v2/www.js
+psram:
+  mode: octal
+  speed: 80MHZ
+  enable_ecc: false
+  disabled: false
+  ignore_not_found: true
+debug:
+  update_interval: 60s
+globals:
+  - id: sd_mounted
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: rec_file
+    type: FILE*
+    initial_value: nullptr
+    restore_value: false
+  - id: rec_bytes
+    type: uint32_t
+    initial_value: '0'
+    restore_value: false
+  - id: rec_cb_registered
+    type: bool
+    initial_value: 'false'
+    restore_value: false
+  - id: mic_gain_multiplier
+    type: int32_t
+    initial_value: '16'
+    restore_value: false
+  - id: unread_voice_note
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+    update_interval: 1s
+  - id: no_audio_at_boot
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+    update_interval: 1s
+  - id: audio_runtime_active
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: shared_i2c_available
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: shared_i2c_recovery_attempts
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: no_display_at_boot
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+    update_interval: 1s
+  - id: display_runtime_active
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: display_render_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: axp_status1
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: axp_status2
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: axp_ldo_enable
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: rtc_seconds_reg
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: axp_state_valid
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: rtc_state_valid
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: es8311_present
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: es7210_present
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+script:
+  - id: shared_i2c_recovery_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          const char *const TAG = "i2c_recovery";
+          const uint8_t PMIC_ADDR = 0x34;
+          const uint8_t RTC_ADDR = 0x51;
+          const uint8_t SENSOR_ADDR = 0x70;
+
+          // @diag-only begin i2c-recovery-diagnostics
+          ESP_LOGI(TAG, "=== Shared I2C Recovery Started ===");
+          // @diag-only end i2c-recovery-diagnostics
+
+          i2c_master_bus_handle_t bus_handle = nullptr;
+          esp_err_t handle_result = i2c_master_get_bus_handle(
+              static_cast<i2c_port_num_t>(id(pmic_i2c).get_port()), &bus_handle);
+          if (handle_result != ESP_OK || bus_handle == nullptr) {
+            ESP_LOGE(TAG, "Cannot obtain ESP-IDF I2C bus handle: %s.", esp_err_to_name(handle_result));
+            id(shared_i2c_available) = false;
+            return;
+          }
+
+          for (uint8_t attempt = 1; attempt <= 3; attempt++) {
+            id(shared_i2c_recovery_attempts)++;
+            const int before_sda = gpio_get_level(GPIO_NUM_47);
+            const int before_scl = gpio_get_level(GPIO_NUM_48);
+            // @diag-only begin i2c-recovery-diagnostics
+            ESP_LOGW(TAG,
+                     "Recovery attempt %u (lifetime %lu): before reset SDA=%d SCL=%d.",
+                     attempt, static_cast<unsigned long>(id(shared_i2c_recovery_attempts)),
+                     before_sda, before_scl);
+            // @diag-only end i2c-recovery-diagnostics
+
+            esp_err_t reset_result = i2c_master_bus_reset(bus_handle);
+            delay(25);
+
+            const int after_sda = gpio_get_level(GPIO_NUM_47);
+            const int after_scl = gpio_get_level(GPIO_NUM_48);
+            uint8_t pmic_id = 0;
+            uint8_t rtc_control = 0;
+            bool pmic_ok = false;
+            bool rtc_ok = false;
+            bool sensor_ok = false;
+
+            if (after_sda == 1 && after_scl == 1) {
+              uint8_t reg = 0x03;
+              pmic_ok = id(pmic_i2c).write_readv(PMIC_ADDR, &reg, 1, &pmic_id, 1) == esphome::i2c::ERROR_OK;
+
+              reg = 0x00;
+              rtc_ok = id(pmic_i2c).write_readv(RTC_ADDR, &reg, 1, &rtc_control, 1) == esphome::i2c::ERROR_OK;
+
+              uint8_t wake_command[2] = {0x35, 0x17};
+              sensor_ok = id(pmic_i2c).write(SENSOR_ADDR, wake_command, sizeof(wake_command)) == esphome::i2c::ERROR_OK;
+              if (sensor_ok) {
+                delayMicroseconds(300);
+                uint8_t sleep_command[2] = {0xB0, 0x98};
+                sensor_ok = id(pmic_i2c).write(SENSOR_ADDR, sleep_command, sizeof(sleep_command)) == esphome::i2c::ERROR_OK;
+              }
+            }
+
+            // @diag-only begin i2c-recovery-diagnostics
+            ESP_LOGW(TAG,
+                     "Recovery attempt %u result: reset=%s SDA=%d SCL=%d AXP2101=%s PCF85063=%s SHTC3=%s.",
+                     attempt, esp_err_to_name(reset_result), after_sda, after_scl,
+                     pmic_ok ? "OK" : "FAILED", rtc_ok ? "OK" : "FAILED",
+                     sensor_ok ? "OK" : "FAILED");
+            // @diag-only end i2c-recovery-diagnostics
+
+            if (pmic_ok && rtc_ok) {
+              id(shared_i2c_available) = true;
+              ESP_LOGI(TAG,
+                       "Shared I2C recovered: AXP2101 ID=0x%02X PCF85063 Control_1=0x%02X; SHTC3=%s.",
+                       pmic_id, rtc_control, sensor_ok ? "OK" : "FAILED");
+              return;
+            }
+
+            App.feed_wdt();
+            delay(100);
+          }
+
+          id(shared_i2c_available) = false;
+          ESP_LOGE(TAG,
+                   "Shared I2C recovery exhausted. The bus remains failed and will be retried; no device errors are being masked.");
+    parameters: {}
+  - id: record_voice_note_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          if (!id(sd_mounted)) {
+            ESP_LOGE("voice_note", "Voice notes are disabled: an SD card is needed and none is mounted.");
+            return;
+          }
+
+          id(rec_file) = fopen("/sdcard/voice.wav", "wb");
+          if (!id(rec_file)) {
+            ESP_LOGE("voice_note", "Failed to open /sdcard/voice.wav: %s (errno %d)", strerror(errno), errno);
+            return;
+          }
+
+          uint8_t dummy_header[44] = {0};
+          fwrite(dummy_header, 1, 44, id(rec_file));
+          id(rec_bytes) = 0;
+
+          if (!id(rec_cb_registered)) {
+            id(board_mic).add_data_callback([](const std::vector<uint8_t> &data) {
+              if (id(rec_file) != nullptr && !data.empty()) {
+                static std::vector<uint8_t> mono_buf;
+                mono_buf.clear();
+                mono_buf.reserve(data.size() / 2);
+
+                const int32_t DIGITAL_GAIN = id(mic_gain_multiplier); // set by the "Audio: Mic Gain" number
+
+                // @patched-pending-test begin finding-1-mic-sample-decode
+                // PATCHED 2026-08-31 (code review finding 1) -- NOT YET TESTED ON HARDWARE.
+                // Compiles clean; correctness confirmed only by reading the
+                // i2s_audio microphone source, not by listening to a recording.
+                //
+                // board_mic delivers mono 32-bit slots at 16 kHz, not interleaved
+                // 16-bit stereo: the i2s_audio microphone reports
+                // AudioStreamInfo(32, 1, 16000) and hands the raw I2S words to this
+                // callback untouched. Each 4-byte group is therefore ONE sample whose
+                // meaningful magnitude sits in the high half word; the low half word
+                // is the ADC's least-significant bits and is noise at this scale.
+                for (size_t i = 0; i + 3 < data.size(); i += 4) {
+                  int32_t word = (int32_t)((uint32_t)data[i] |
+                                           ((uint32_t)data[i + 1] << 8) |
+                                           ((uint32_t)data[i + 2] << 16) |
+                                           ((uint32_t)data[i + 3] << 24));
+
+                  // Arithmetic shift keeps the sign; >> 16 is the 16-bit sample.
+                  int32_t mix = (word >> 16) * DIGITAL_GAIN;
+
+                  // Saturation clamping to prevent 16-bit audio clipping
+                  if (mix > 32767) mix = 32767;
+                  if (mix < -32768) mix = -32768;
+
+                  int16_t sample = (int16_t)mix;
+                  mono_buf.push_back((uint8_t)(sample & 0xFF));
+                  mono_buf.push_back((uint8_t)((sample >> 8) & 0xFF));
+                }
+                // @patched-pending-test end finding-1-mic-sample-decode
+
+                if (!mono_buf.empty()) {
+                  size_t written = fwrite(mono_buf.data(), 1, mono_buf.size(), id(rec_file));
+                  id(rec_bytes) += written;
+                }
+              }
+            });
+            id(rec_cb_registered) = true;
+          }
+
+          ESP_LOGI("voice_note", "Recording 5-second voice note...");
+          id(board_mic).start();
+      - delay: 5s
+      - lambda: !lambda |-
+          id(board_mic).stop();
+
+          FILE *f_final = id(rec_file);
+          id(rec_file) = nullptr;
+
+          if (f_final != nullptr) {
+            fseek(f_final, 0, SEEK_SET);
+            uint32_t sample_rate = 16000;
+            uint16_t channels = 1;
+            uint16_t bits_per_sample = 16;
+            uint32_t byte_rate = sample_rate * channels * (bits_per_sample / 8);
+            uint16_t block_align = channels * (bits_per_sample / 8);
+            uint32_t total_bytes = id(rec_bytes);
+            uint32_t chunk_size = 36 + total_bytes;
+
+            uint8_t header[44] = {
+              'R', 'I', 'F', 'F',
+              (uint8_t)(chunk_size & 0xFF), (uint8_t)((chunk_size >> 8) & 0xFF),
+              (uint8_t)((chunk_size >> 16) & 0xFF), (uint8_t)((chunk_size >> 24) & 0xFF),
+              'W', 'A', 'V', 'E', 'f', 'm', 't', ' ',
+              16, 0, 0, 0, 1, 0, (uint8_t)channels, 0,
+              (uint8_t)(sample_rate & 0xFF), (uint8_t)((sample_rate >> 8) & 0xFF),
+              (uint8_t)((sample_rate >> 16) & 0xFF), (uint8_t)((sample_rate >> 24) & 0xFF),
+              (uint8_t)(byte_rate & 0xFF), (uint8_t)((byte_rate >> 8) & 0xFF),
+              (uint8_t)((byte_rate >> 16) & 0xFF), (uint8_t)((byte_rate >> 24) & 0xFF),
+              (uint8_t)block_align, 0, (uint8_t)bits_per_sample, 0,
+              'd', 'a', 't', 'a',
+              (uint8_t)(total_bytes & 0xFF), (uint8_t)((total_bytes >> 8) & 0xFF),
+              (uint8_t)((total_bytes >> 16) & 0xFF), (uint8_t)((total_bytes >> 24) & 0xFF)
+            };
+
+            fwrite(header, 1, 44, f_final);
+            fclose(f_final);
+
+            // @patched-pending-test fragile-13-redundant-publish-state
+            // PATCHED 2026-08-31 (code review fragile item 13) -- NOT YET TESTED ON HARDWARE.
+            // unread_voice_note_sensor's lambda returns this global and is
+            // re-evaluated every main-loop pass, so an explicit publish_state
+            // here was overwritten within a millisecond.
+            id(unread_voice_note) = true;
+
+            ESP_LOGI("voice_note", "Voice note saved (%lu bytes) to /sdcard/voice.wav", (unsigned long)total_bytes);
+          }
+    parameters: {}
+  - id: play_voice_note_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          if (!id(sd_mounted)) {
+            ESP_LOGE("voice_note", "Voice notes are disabled: an SD card is needed and none is mounted.");
+            return;
+          }
+          id(board_speaker).start();
+      - wait_until:
+          condition:
+            lambda: !lambda |-
+              return id(board_speaker).is_running();
+      - switch.turn_on:
+          id: amplifier_enable
+      - delay: 50ms
+      - lambda: !lambda |-
+          FILE *f = fopen("/sdcard/voice.wav", "rb");
+          if (!f) {
+            ESP_LOGW("voice_note", "No voice note found at /sdcard/voice.wav");
+            return;
+          }
+
+          fseek(f, 44, SEEK_SET);
+          ESP_LOGI("voice_note", "Streaming voice note to speaker...");
+
+          uint8_t buffer[512];
+          size_t bytes_read = 0;
+
+          while ((bytes_read = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+            size_t bytes_written = 0;
+
+            while (bytes_written < bytes_read) {
+              size_t written = id(board_speaker).play(buffer + bytes_written, bytes_read - bytes_written);
+              bytes_written += written;
+
+              if (bytes_written < bytes_read) {
+                esphome::App.feed_wdt();
+                delay(5);
+              }
+            }
+            esphome::App.feed_wdt();
+          }
+
+          fclose(f);
+      - wait_until:
+          condition:
+            lambda: !lambda |-
+              return !id(board_speaker).has_buffered_data();
+      - delay: 200ms
+      - lambda: !lambda |-
+          id(board_speaker).stop();
+          // @patched-pending-test fragile-13-redundant-publish-state
+          id(unread_voice_note) = false;
+          ESP_LOGI("voice_note", "Playback complete.");
+    parameters: {}
+  - id: pmic_audio_power_action_script
+    mode: single
+    parameters:
+      pmic_action: int
+    then:
+      - lambda: !lambda |-
+          ESP_LOGW("pmic_power_diag", "=== PMIC AUDIO-SAFE POWER ACTION %d REQUESTED ===", pmic_action);
+      - script.stop:
+          id: record_voice_note_script
+      - script.stop:
+          id: play_voice_note_script
+      - media_player.stop:
+          id: photo_speaker_media_player
+          announcement: false
+      - rtttl.stop:
+          id: rtttl_player
+      - microphone.stop_capture:
+          id: board_mic
+      - speaker.stop:
+          id: board_speaker
+      - switch.turn_off:
+          id: amplifier_enable
+      - delay: 250ms
+      - lambda: !lambda |-
+          const char *const TAG = "pmic_power_diag";
+          const uint8_t PMIC_ADDR = 0x34;
+          const uint8_t ES8311_ADDR = 0x18;
+          const uint8_t ES7210_ADDR = 0x40;
+
+          if (pmic_action < 0 || pmic_action > 2) {
+            ESP_LOGE(TAG, "ABORT: unsupported PMIC action %d.", pmic_action);
+            return;
+          }
+
+          // A stopped recording script does not execute its normal finalization.
+          if (id(rec_file) != nullptr) {
+            fclose(id(rec_file));
+            id(rec_file) = nullptr;
+            id(rec_bytes) = 0;
+            ESP_LOGW(TAG, "Closed interrupted voice-note file; its WAV header may be invalid.");
+          }
+
+          ESP_LOGI(TAG, "Audio clients stopped; amplifier GPIO7 is %s.",
+                   id(amplifier_enable).state ? "ON (unexpected)" : "OFF");
+
+          auto read_reg = [&](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(pmic_i2c).write_readv(address, &reg, 1, &value, 1) == esphome::i2c::ERROR_OK;
+          };
+          auto write_reg = [&](uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            uint8_t data[2] = {reg, value};
+            return id(pmic_i2c).write(address, data, sizeof(data)) == esphome::i2c::ERROR_OK;
+          };
+          auto logged_read = [&](const char *device, uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            bool ok = read_reg(address, reg, value);
+            // @diag-only begin pmic-power-diagnostics
+            if (ok) {
+              ESP_LOGI(TAG, "%s read  [0x%02X] = 0x%02X: OK", device, reg, value);
+            }
+            // @diag-only end pmic-power-diagnostics
+            if (!ok) {
+              ESP_LOGE(TAG, "%s read  [0x%02X]: FAILED", device, reg);
+            }
+            return ok;
+          };
+          auto logged_write = [&](const char *device, uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            bool ok = write_reg(address, reg, value);
+            // @diag-only begin pmic-power-diagnostics
+            ESP_LOGI(TAG, "%s write [0x%02X] = 0x%02X: %s", device, reg, value,
+                     ok ? "OK" : "FAILED");
+            // @diag-only end pmic-power-diagnostics
+            return ok;
+          };
+          auto update_bits = [&](const char *device, uint8_t address, uint8_t reg,
+                                 uint8_t clear_mask, uint8_t set_mask) -> bool {
+            uint8_t before = 0;
+            if (!logged_read(device, address, reg, before)) return false;
+            uint8_t desired = (before & static_cast<uint8_t>(~clear_mask)) | set_mask;
+            // @diag-only begin pmic-power-diagnostics
+            ESP_LOGI(TAG, "%s update[0x%02X]: before=0x%02X desired=0x%02X",
+                     device, reg, before, desired);
+            // @diag-only end pmic-power-diagnostics
+            return logged_write(device, address, reg, desired);
+          };
+
+          // @diag-only begin pmic-power-diagnostics
+          ESP_LOGI(TAG, "Step 1/3: requesting ES8311 power-down state.");
+          // @diag-only end pmic-power-diagnostics
+          bool codec_ok = true;
+          codec_ok &= update_bits("ES8311", ES8311_ADDR, 0x31, 0x00, 0x60);
+          codec_ok &= update_bits("ES8311", ES8311_ADDR, 0x00, 0x80, 0x00);
+          delay(50);
+          uint8_t es8311_csm = 0;
+          codec_ok &= logged_read("ES8311", ES8311_ADDR, 0xFC, es8311_csm);
+          // @diag-only begin pmic-power-diagnostics
+          if (codec_ok) {
+            ESP_LOGI(TAG, "ES8311 CSM state=%u (expected 0/S0).", (es8311_csm >> 4) & 0x07);
+          }
+          // @diag-only end pmic-power-diagnostics
+          codec_ok &= update_bits("ES8311", ES8311_ADDR, 0x01, 0x3F, 0x00);
+
+          // @diag-only begin pmic-power-diagnostics
+          ESP_LOGI(TAG, "Step 2/3: requesting ES7210 power-down state.");
+          // @diag-only end pmic-power-diagnostics
+          bool adc_ok = true;
+          adc_ok &= update_bits("ES7210", ES7210_ADDR, 0x00, 0x01, 0x00);
+          delay(50);
+          uint8_t es7210_csm = 0;
+          adc_ok &= logged_read("ES7210", ES7210_ADDR, 0x0B, es7210_csm);
+          // @diag-only begin pmic-power-diagnostics
+          if (adc_ok) {
+            ESP_LOGI(TAG, "ES7210 CSM state=%u (expected 0/power-down).", es7210_csm & 0x03);
+          }
+          // @diag-only end pmic-power-diagnostics
+          adc_ok &= logged_write("ES7210", ES7210_ADDR, 0x4B, 0xFF);
+          adc_ok &= logged_write("ES7210", ES7210_ADDR, 0x4C, 0xFF);
+          adc_ok &= update_bits("ES7210", ES7210_ADDR, 0x40, 0x00, 0x80);
+          adc_ok &= update_bits("ES7210", ES7210_ADDR, 0x01, 0x00, 0x7F);
+          adc_ok &= update_bits("ES7210", ES7210_ADDR, 0x06, 0x00, 0x07);
+
+          if (!codec_ok || !adc_ok) {
+            ESP_LOGE(TAG, "ABORT: at least one codec shutdown operation failed; PMIC command will not be sent.");
+            return;
+          }
+
+          id(audio_runtime_active) = false;
+          // @patched-pending-test fragile-13-redundant-publish-state
+          // The status lambdas read these globals every main-loop pass.
+          id(es8311_present) = false;
+          id(es7210_present) = false;
+
+          if (pmic_action == 0) {
+            ESP_LOGI(TAG, "Logical audio shutdown complete. ALDO3 remains ON and shared I2C remains available.");
+            return;
+          }
+
+          // @diag-only begin pmic-power-diagnostics
+          ESP_LOGI(TAG, "Step 3/3: validating AXP2101 before the terminal power command.");
+          // @diag-only end pmic-power-diagnostics
+          uint8_t ldo_enable = 0;
+          uint8_t common_config = 0;
+          if (!logged_read("AXP2101", PMIC_ADDR, 0x90, ldo_enable) ||
+              !logged_read("AXP2101", PMIC_ADDR, 0x10, common_config)) {
+            ESP_LOGE(TAG, "ABORT: AXP2101 state could not be read safely.");
+            return;
+          }
+          // @diag-only begin pmic-power-diagnostics
+          ESP_LOGI(TAG, "AXP2101 rails before command: REG90=0x%02X ALDO3=%s ALDO4=%s.",
+                   ldo_enable, (ldo_enable & 0x04) ? "ON" : "OFF",
+                   (ldo_enable & 0x08) ? "ON" : "OFF");
+          ESP_LOGI(TAG, "AXP2101 REG10=0x%02X internal off-discharge=%s.",
+                   common_config, (common_config & 0x20) ? "ENABLED" : "disabled");
+          ESP_LOGI(TAG, "I2C levels before command: SDA/GPIO47=%d SCL/GPIO48=%d.",
+                   gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+          // @diag-only end pmic-power-diagnostics
+
+          if ((ldo_enable & 0x04) == 0) {
+            ESP_LOGE(TAG, "ABORT: ALDO3 is already off; refusing a terminal command from an unstable bus state.");
+            return;
+          }
+
+          // Enable the AXP2101's global internal off-discharge while preserving
+          // every unrelated REG10 bit. Set exactly one terminal command bit.
+          uint8_t desired = common_config | 0x20;
+          if (pmic_action == 1) {
+            desired = (desired & static_cast<uint8_t>(~0x01)) | 0x02;
+            ESP_LOGW(TAG, "FINAL COMMAND: REG10 0x%02X -> 0x%02X; PMIC power-off/power-on restart should begin now.",
+                     common_config, desired);
+            ESP_LOGW(TAG, "This is a board power cycle, not an ESP32 soft reset: USB serial will drop now and the "
+                          "ESP32 will cold-boot when the PMIC reapplies power. This is expected; reconnect after boot.");
+          } else {
+            desired = (desired & static_cast<uint8_t>(~0x02)) | 0x01;
+            ESP_LOGW(TAG, "FINAL COMMAND: REG10 0x%02X -> 0x%02X; full soft power-off should begin now.",
+                     common_config, desired);
+            ESP_LOGW(TAG, "USB serial will drop now; this is expected. To power back on, use the physical PWRON "
+                          "button; USB removal/reinsertion is the fallback.");
+          }
+
+          // Give the asynchronous logger time to emit the final pre-power-loss lines.
+          delay(250);
+          bool command_ack = write_reg(PMIC_ADDR, 0x10, desired);
+          ESP_LOGI(TAG, "AXP2101 terminal command write returned: %s", command_ack ? "OK" : "FAILED/POWER LOST");
+          delay(2000);
+          ESP_LOGE(TAG, "PMIC command did not remove power within two seconds; inspect REG10 behavior before retrying.");
+  - id: audio_logical_power_up_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          const char *const TAG = "audio_power";
+          if (!id(shared_i2c_available)) {
+            ESP_LOGE(TAG, "Cannot restart codecs: the shared I2C bus is electrically unavailable.");
+            return;
+          }
+
+          ESP_LOGI(TAG, "Re-running the ESPHome ES8311 and ES7210 setup routines.");
+          id(es8311_dac).setup();
+          id(es7210_adc).setup();
+          delay(100);
+
+          uint8_t es8311_reg = 0xFD, es8311_id = 0;
+          uint8_t es7210_reg = 0x3D, es7210_id = 0;
+          bool codec_ok = id(pmic_i2c).write_readv(0x18, &es8311_reg, 1, &es8311_id, 1) == esphome::i2c::ERROR_OK;
+          bool adc_ok = id(pmic_i2c).write_readv(0x40, &es7210_reg, 1, &es7210_id, 1) == esphome::i2c::ERROR_OK;
+          id(audio_runtime_active) = codec_ok && adc_ok;
+          // Seed the cache so the status entities do not lag a deliberate
+          // power-up by up to one peripheral_state_poll period.
+          // @patched-pending-test fragile-13-redundant-publish-state
+          id(es8311_present) = codec_ok;
+          id(es7210_present) = adc_ok;
+          ESP_LOGI(TAG, "Logical audio restart: ES8311=%s (ID 0x%02X), ES7210=%s (ID 0x%02X).",
+                   codec_ok ? "OK" : "FAILED", es8311_id, adc_ok ? "OK" : "FAILED", es7210_id);
+    parameters: {}
+  - id: display_prepare_for_restart_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          ESP_LOGI("display_power", "Waiting for a safe display shutdown point; stopping future refreshes.");
+          id(epaper_display).stop_poller();
+      - wait_until:
+          condition:
+            lambda: !lambda |-
+              return id(display_render_started_ms) == 0 ||
+                     (millis() - id(display_render_started_ms)) >= 40000;
+      - lambda: !lambda |-
+          id(display_render_started_ms) = 0;
+      - wait_until:
+          timeout: 5s
+          condition:
+            lambda: !lambda |-
+              return gpio_get_level(GPIO_NUM_13) == 1;
+      - lambda: !lambda |-
+          if (gpio_get_level(GPIO_NUM_13) != 1) {
+            ESP_LOGI("display_power", "BUSY/GPIO13 did not read idle-high within 5s; the panel is very likely "
+                                       "already asleep from its last completed refresh. Proceeding with shutdown.");
+          }
+      - delay: 1s
+      - lambda: !lambda |-
+          // The Spectra E6 driver already powers off and deep-sleeps after an
+          // update. Reissuing its safe-shutdown hook is harmless and explicit.
+          id(epaper_display).on_safe_shutdown();
+          // @diag-only begin display-power-diagnostics
+          ESP_LOGI("display_power", "=== Display safe-shutdown sequence complete ===");
+          // @diag-only end display-power-diagnostics
+    parameters: {}
+  - id: display_power_down_script
+    mode: single
+    then:
+      - script.execute:
+          id: display_prepare_for_restart_script
+      - script.wait:
+          id: display_prepare_for_restart_script
+      - delay: 100ms
+      - lambda: !lambda |-
+          if (!id(shared_i2c_available)) {
+            ESP_LOGE("display_power", "Cannot disable ALDO4: the shared I2C bus is electrically unavailable.");
+            return;
+          }
+          uint8_t reg = 0x90, before = 0;
+          if (id(pmic_i2c).write_readv(0x34, &reg, 1, &before, 1) != esphome::i2c::ERROR_OK) {
+            ESP_LOGE("display_power", "Cannot read AXP2101 REG90; ALDO4 remains unchanged.");
+            id(epaper_display).start_poller();
+            return;
+          }
+          const uint8_t desired = before & static_cast<uint8_t>(~0x08);
+          uint8_t data[2] = {0x90, desired};
+          ESP_LOGW("display_power", "FINAL DISPLAY RAIL COMMAND: REG90 0x%02X -> 0x%02X; clearing ALDO4 only.",
+                   before, desired);
+          if (id(pmic_i2c).write(0x34, data, sizeof(data)) != esphome::i2c::ERROR_OK) {
+            ESP_LOGE("display_power", "AXP2101 did not acknowledge the ALDO4-disable write.");
+            id(epaper_display).start_poller();
+            return;
+          }
+          id(display_runtime_active) = false;
+          id(epaper_display).set_update_interval(UINT32_MAX);
+          ESP_LOGI("display_power", "Display controller is asleep and ALDO4 is OFF.");
+    parameters: {}
+  - id: display_power_up_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          if (!id(shared_i2c_available)) {
+            ESP_LOGE("display_power", "Cannot enable ALDO4 live: the shared I2C bus is electrically unavailable. Apply the staged startup state and restart.");
+            return;
+          }
+          uint8_t reg90 = 0x90, reg95 = 0x95;
+          uint8_t enables = 0, aldo4_voltage = 0;
+          if (id(pmic_i2c).write_readv(0x34, &reg90, 1, &enables, 1) != esphome::i2c::ERROR_OK ||
+              id(pmic_i2c).write_readv(0x34, &reg95, 1, &aldo4_voltage, 1) != esphome::i2c::ERROR_OK) {
+            ESP_LOGE("display_power", "Cannot read AXP2101 display-rail state.");
+            return;
+          }
+          uint8_t voltage_data[2] = {0x95, static_cast<uint8_t>((aldo4_voltage & 0xE0) | 0x1C)};
+          uint8_t enable_data[2] = {0x90, static_cast<uint8_t>(enables | 0x08)};
+          bool voltage_ok = id(pmic_i2c).write(0x34, voltage_data, sizeof(voltage_data)) == esphome::i2c::ERROR_OK;
+          bool enable_ok = id(pmic_i2c).write(0x34, enable_data, sizeof(enable_data)) == esphome::i2c::ERROR_OK;
+          if (!voltage_ok || !enable_ok) {
+            ESP_LOGE("display_power", "Failed to configure or enable ALDO4.");
+            return;
+          }
+          ESP_LOGI("display_power", "ALDO4 is ON; allowing the rail and controller to stabilize before reset/update.");
+      - delay: 100ms
+      - lambda: !lambda |-
+          // start_poller() alone is enough to trigger the refresh: ESPHome's
+          // scheduler fires an interval's first execution after a random 0-5s
+          // offset, not after the full interval. Also calling update() here
+          // raced that near-immediate poller fire against the manual one,
+          // logging a spurious "Display already in state POWER_OFF" once the
+          // second, redundant update() call was correctly rejected mid-refresh.
+          id(display_runtime_active) = true;
+          id(epaper_display).set_update_interval(900000);
+          id(epaper_display).start_poller();
+          ESP_LOGI("display_power", "A reset-driven full display refresh has been requested.");
+    parameters: {}
+  - id: apply_restored_power_state_script
+    mode: single
+    then:
+      - lambda: !lambda |-
+          // @diag-only begin power-state-diagnostics
+          ESP_LOGI("power_control", "=== Reconciling restored startup power state ===");
+          // @diag-only end power-state-diagnostics
+      - if:
+          condition:
+            lambda: !lambda |-
+              return !id(no_audio_at_boot);
+          then:
+            - script.execute:
+                id: audio_logical_power_up_script
+            - script.wait:
+                id: audio_logical_power_up_script
+      - if:
+          condition:
+            lambda: !lambda |-
+              return id(no_display_at_boot);
+          then:
+            - lambda: !lambda |-
+                // Early boot already kept ALDO4 off and suppressed the initial
+                // poll, so no SPI shutdown sequence is appropriate here.
+                id(epaper_display).stop_poller();
+                id(epaper_display).set_update_interval(UINT32_MAX);
+                id(display_runtime_active) = false;
+                ESP_LOGI("display_power", "Saved display state is OFF; display remains unpowered with no refresh.");
+          else:
+            - lambda: !lambda |-
+                // ALDO4 was restored before component setup, but the initial
+                // poller start was suppressed at boot (see on_boot) so the
+                // first refresh isn't racing slower sensors. Re-enable it now
+                // that setup has finished and sensors have had time to report.
+                id(display_runtime_active) = true;
+                id(epaper_display).set_update_interval(900000);
+                id(epaper_display).start_poller();
+                ESP_LOGI("display_power", "Saved display state is ON; requesting the delayed first boot refresh.");
+      - if:
+          condition:
+            lambda: !lambda |-
+              return id(no_audio_at_boot);
+          then:
+            - script.execute:
+                id: pmic_audio_power_action_script
+                pmic_action: 0
+    parameters: {}
+interval:
+  - interval: 15s
+    startup_delay: 15s
+    then:
+      - if:
+          condition:
+            lambda: !lambda |-
+              return !id(shared_i2c_available);
+          then:
+            - script.execute:
+                id: shared_i2c_recovery_script
+  - id: peripheral_state_poll
+    interval: 10s
+    then:
+      - if:
+          condition:
+            lambda: !lambda |-
+              return id(shared_i2c_available);
+          then:
+            - lambda: !lambda |-
+                auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+                  return id(pmic_i2c).write_readv(address, &reg, 1, &value, 1) == esphome::i2c::ERROR_OK;
+                };
+
+                uint8_t status1 = 0, status2 = 0, ldo_enable = 0;
+                bool axp_ok = read_reg(0x34, 0x00, status1) &&
+                              read_reg(0x34, 0x01, status2) &&
+                              read_reg(0x34, 0x90, ldo_enable);
+                if (axp_ok) {
+                  id(axp_status1) = status1;
+                  id(axp_status2) = status2;
+                  id(axp_ldo_enable) = ldo_enable;
+                }
+                id(axp_state_valid) = axp_ok;
+
+                uint8_t seconds_reg = 0;
+                bool rtc_ok = read_reg(0x51, 0x04, seconds_reg);
+                if (rtc_ok) {
+                  id(rtc_seconds_reg) = seconds_reg;
+                }
+                id(rtc_state_valid) = rtc_ok;
+
+                // Probing a de-energized codec is pointless and only adds bus
+                // traffic; audio_runtime_active already gates the entities.
+                if (id(audio_runtime_active)) {
+                  uint8_t scratch = 0;
+                  id(es8311_present) = read_reg(0x18, 0x00, scratch);
+                  id(es7210_present) = id(pmic_i2c).write_readv(0x40, nullptr, 0, &scratch, 1) ==
+                                       esphome::i2c::ERROR_OK;
+                }
+    startup_delay: 0s
+i2c:
+  - id: pmic_i2c
+    sda: 47
+    scl: 48
+    frequency: 100000.0
+    scan: false
+    sda_pullup_enabled: true
+    scl_pullup_enabled: true
+spi:
+  - id: display_spi
+    interface: spi2
+    clk_pin:
+      number: 10
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    mosi_pin:
+      number: 11
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    type: single
+    interface_index: 0
+  - id: sd_spi
+    interface: spi3
+    clk_pin:
+      number: 39
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    mosi_pin:
+      number: 41
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    miso_pin:
+      number: 40
+      mode:
+        input: true
+        output: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    type: single
+    interface_index: 1
+font:
+  - file:
+      family: Roboto
+      weight: 400
+      italic: false
+      refresh: 1d
+      type: gfonts
+    id: font_title
+    size: 32
+    glyphs:
+      - ' '
+      - '!'
+      - '"'
+      - '#'
+      - $
+      - '%'
+      - '&'
+      - ''''
+      - (
+      - )
+      - '*'
+      - +
+      - ','
+      - '-'
+      - .
+      - /
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+      - '9'
+      - ':'
+      - ;
+      - <
+      - '='
+      - '>'
+      - '?'
+      - '@'
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - G
+      - H
+      - I
+      - J
+      - K
+      - L
+      - M
+      - N
+      - O
+      - P
+      - Q
+      - R
+      - S
+      - T
+      - U
+      - V
+      - W
+      - X
+      - Y
+      - Z
+      - '['
+      - \
+      - ']'
+      - ^
+      - _
+      - '`'
+      - a
+      - b
+      - c
+      - d
+      - e
+      - f
+      - g
+      - h
+      - i
+      - j
+      - k
+      - l
+      - m
+      - n
+      - o
+      - p
+      - q
+      - r
+      - s
+      - t
+      - u
+      - v
+      - w
+      - x
+      - y
+      - z
+      - '{'
+      - '|'
+      - '}'
+      - '~'
+      -  
+      - ¢
+      - £
+      - ¥
+      - ©
+      - ®
+      - °
+      - ·
+      - ×
+      - ÷
+      - –
+      - —
+      - ‘
+      - ’
+      - “
+      - ”
+      - •
+      - …
+      - €
+      - ™
+      - −
+    glyphsets: []
+    ignore_missing_glyphs: false
+    bpp: 1
+    extras: []
+  - file:
+      family: Roboto
+      weight: 400
+      italic: false
+      refresh: 1d
+      type: gfonts
+    id: font_header
+    size: 20
+    glyphs:
+      - ' '
+      - '!'
+      - '"'
+      - '#'
+      - $
+      - '%'
+      - '&'
+      - ''''
+      - (
+      - )
+      - '*'
+      - +
+      - ','
+      - '-'
+      - .
+      - /
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+      - '9'
+      - ':'
+      - ;
+      - <
+      - '='
+      - '>'
+      - '?'
+      - '@'
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - G
+      - H
+      - I
+      - J
+      - K
+      - L
+      - M
+      - N
+      - O
+      - P
+      - Q
+      - R
+      - S
+      - T
+      - U
+      - V
+      - W
+      - X
+      - Y
+      - Z
+      - '['
+      - \
+      - ']'
+      - ^
+      - _
+      - '`'
+      - a
+      - b
+      - c
+      - d
+      - e
+      - f
+      - g
+      - h
+      - i
+      - j
+      - k
+      - l
+      - m
+      - n
+      - o
+      - p
+      - q
+      - r
+      - s
+      - t
+      - u
+      - v
+      - w
+      - x
+      - y
+      - z
+      - '{'
+      - '|'
+      - '}'
+      - '~'
+      -  
+      - ¢
+      - £
+      - ¥
+      - ©
+      - ®
+      - °
+      - ·
+      - ×
+      - ÷
+      - –
+      - —
+      - ‘
+      - ’
+      - “
+      - ”
+      - •
+      - …
+      - €
+      - ™
+      - −
+    glyphsets: []
+    ignore_missing_glyphs: false
+    bpp: 1
+    extras: []
+  - file:
+      family: Roboto
+      weight: 400
+      italic: false
+      refresh: 1d
+      type: gfonts
+    id: font_body
+    size: 18
+    glyphs:
+      - ' '
+      - '!'
+      - '"'
+      - '#'
+      - $
+      - '%'
+      - '&'
+      - ''''
+      - (
+      - )
+      - '*'
+      - +
+      - ','
+      - '-'
+      - .
+      - /
+      - '0'
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+      - '5'
+      - '6'
+      - '7'
+      - '8'
+      - '9'
+      - ':'
+      - ;
+      - <
+      - '='
+      - '>'
+      - '?'
+      - '@'
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - G
+      - H
+      - I
+      - J
+      - K
+      - L
+      - M
+      - N
+      - O
+      - P
+      - Q
+      - R
+      - S
+      - T
+      - U
+      - V
+      - W
+      - X
+      - Y
+      - Z
+      - '['
+      - \
+      - ']'
+      - ^
+      - _
+      - '`'
+      - a
+      - b
+      - c
+      - d
+      - e
+      - f
+      - g
+      - h
+      - i
+      - j
+      - k
+      - l
+      - m
+      - n
+      - o
+      - p
+      - q
+      - r
+      - s
+      - t
+      - u
+      - v
+      - w
+      - x
+      - y
+      - z
+      - '{'
+      - '|'
+      - '}'
+      - '~'
+      -  
+      - ¢
+      - £
+      - ¥
+      - ©
+      - ®
+      - °
+      - ·
+      - ×
+      - ÷
+      - –
+      - —
+      - ‘
+      - ’
+      - “
+      - ”
+      - •
+      - …
+      - €
+      - ™
+      - −
+    glyphsets: []
+    ignore_missing_glyphs: false
+    bpp: 1
+    extras: []
+time:
+  - platform: pcf85063
+    id: pcf_rtc
+    i2c_id: pmic_i2c
+    address: 0x51
+    update_interval: 4294967295ms
+    timezone: PST8PDT,M3.2.0,M11.1.0
+  - platform: sntp
+    id: sntp_time
+    on_time_sync:
+      - then:
+          - pcf85063.write_time: {}
+    timezone: PST8PDT,M3.2.0,M11.1.0
+    update_interval: 15min
+    servers:
+      - 0.pool.ntp.org
+      - 1.pool.ntp.org
+      - 2.pool.ntp.org
+switch:
+  - platform: gpio
+    pin:
+      number: 7
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    id: amplifier_enable
+    name: 'Audio: Amplifier Power'
+    restore_mode: ALWAYS_ON
+    inverted: false
+    disabled_by_default: false
+    interlock_wait_time: 0ms
+  - platform: template
+    name: 'Audio: Codecs Enabled'
+    id: audio_codecs_enabled
+    icon: mdi:audio-input-stereo-minijack
+    restore_mode: DISABLED
+    lambda: !lambda |-
+      return id(audio_runtime_active);
+    turn_off_action:
+      then:
+        - lambda: !lambda |-
+            id(no_audio_at_boot) = true;
+            esphome::global_preferences->sync();
+        - script.execute:
+            id: pmic_audio_power_action_script
+            pmic_action: 0
+    turn_on_action:
+      then:
+        - lambda: !lambda |-
+            id(no_audio_at_boot) = false;
+            esphome::global_preferences->sync();
+        - script.execute:
+            id: audio_logical_power_up_script
+    disabled_by_default: false
+    optimistic: false
+    assumed_state: false
+  - platform: template
+    name: 'Display: Enabled'
+    id: display_enabled
+    icon: mdi:monitor
+    restore_mode: DISABLED
+    lambda: !lambda |-
+      return id(display_runtime_active);
+    turn_off_action:
+      then:
+        - lambda: !lambda |-
+            id(no_display_at_boot) = true;
+            esphome::global_preferences->sync();
+        - script.execute:
+            id: display_power_down_script
+    turn_on_action:
+      then:
+        - lambda: !lambda |-
+            id(no_display_at_boot) = false;
+            esphome::global_preferences->sync();
+        - script.execute:
+            id: display_power_up_script
+    disabled_by_default: false
+    optimistic: false
+    assumed_state: false
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: pmic_i2c
+    address: 0x18
+    bits_per_sample: 16.0
+    mic_gain: 42DB
+    sample_rate: 16000
+    use_mclk: true
+    use_microphone: false
+audio_adc:
+  - platform: es7210
+    id: es7210_adc
+    i2c_id: pmic_i2c
+    address: 0x40
+    mic_gain: 30.0
+    bits_per_sample: 16.0
+    sample_rate: 16000
+i2s_audio:
+  - id: i2s_output
+    i2s_mclk_pin: 14
+    i2s_bclk_pin: 15
+    i2s_lrclk_pin: 16
+speaker:
+  - platform: i2s_audio
+    id: board_speaker
+    i2s_audio_id: i2s_output
+    i2s_dout_pin: 17
+    audio_dac: es8311_dac
+    channel: mono
+    sample_rate: 16000
+    bits_per_sample: 16.0
+    i2s_mode: primary
+    use_apll: false
+    mclk_multiple: 256
+    buffer_duration: 500ms
+    timeout: 500ms
+    i2s_comm_fmt: stand_i2s
+    spdif_mode: false
+    dac_type: external
+    num_channels: 1
+    min_bits_per_sample: 8
+    max_bits_per_sample: 32
+    min_channels: 1
+    max_channels: 2
+    min_sample_rate: 16000
+    max_sample_rate: 48000
+media_player:
+  - platform: speaker
+    name: 'Audio: Speaker'
+    id: photo_speaker_media_player
+    volume_min: 0.0
+    volume_max: 1.0
+    announcement_pipeline:
+      speaker: board_speaker
+      format: FLAC
+      num_channels: 1
+      sample_rate: 16000
+    disabled_by_default: false
+    buffer_size: 1000000
+    volume_increment: 0.05
+    volume_initial: 0.5
+microphone:
+  - platform: i2s_audio
+    id: board_mic
+    i2s_audio_id: i2s_output
+    i2s_din_pin: 18
+    pdm: false
+    channel: right
+    sample_rate: 16000
+    bits_per_sample: 32.0
+    i2s_mode: primary
+    use_apll: false
+    mclk_multiple: 256
+    correct_dc_offset: false
+    adc_type: external
+    num_channels: 1
+    min_bits_per_sample: 32.0
+    max_bits_per_sample: 32.0
+    min_channels: 1
+    max_channels: 1
+    min_sample_rate: 16000
+    max_sample_rate: 16000
+number:
+  - platform: template
+    name: 'Audio: Volume'
+    id: audio_scaled_volume
+    icon: mdi:volume-high
+    min_value: 0.0
+    max_value: 100.0
+    step: 5.0
+    unit_of_measurement: '%'
+    initial_value: 50.0
+    restore_value: true
+    optimistic: true
+    on_value:
+      - then:
+          - speaker.volume_set:
+              id: board_speaker
+              volume: !lambda |-
+                return 0.30f + ((x / 100.0f) * 0.55f);
+    disabled_by_default: false
+    mode: AUTO
+    update_interval: 60s
+  - platform: template
+    name: 'Audio: Mic Gain'
+    id: mic_gain_slider
+    icon: mdi:microphone-plus
+    min_value: 8.0
+    max_value: 32.0
+    step: 1.0
+    initial_value: 16.0
+    restore_value: true
+    optimistic: true
+    on_value:
+      - then:
+          - lambda: !lambda |-
+              id(mic_gain_multiplier) = static_cast<int32_t>(x);
+    disabled_by_default: false
+    mode: AUTO
+    update_interval: 60s
+rtttl:
+  - id: rtttl_player
+    speaker: board_speaker
+    gain: 0.6
+button:
+  - platform: template
+    name: 'Audio: Play Final Countdown'
+    id: play_tune_button
+    icon: mdi:music-note
+    on_press:
+      - then:
+          - switch.turn_on:
+              id: amplifier_enable
+          - rtttl.play:
+              id: rtttl_player
+              rtttl: FinalCount:d=4,o=5,b=125:8a#,8g#,2a#,2d#,2p,8a#,8g#,2a#,2f,2d#,8a#,8g#,2a#,2d#,2c#,8c,8c#,8c,2a#
+    disabled_by_default: false
+  - platform: template
+    name: 'Audio: Record Voice Note (5s)'
+    id: record_voice_note_button
+    icon: mdi:microphone
+    on_press:
+      - then:
+          - if:
+              condition:
+                lambda: !lambda |-
+                  return id(audio_runtime_active) && !id(board_speaker).is_running();
+              then:
+                - script.execute:
+                    id: record_voice_note_script
+              else:
+                - logger.log:
+                    tag: voice_note
+                    level: WARN
+                    format: 'Record ignored: audio is powered down or the speaker
+                      holds the I2S bus.'
+                    args: []
+    disabled_by_default: false
+  - platform: template
+    name: 'Audio: Play Voice Note'
+    id: play_voice_note_button
+    icon: mdi:volume-high
+    on_press:
+      - then:
+          - if:
+              condition:
+                lambda: !lambda |-
+                  return id(audio_runtime_active) && !id(board_mic).is_running();
+              then:
+                - script.execute:
+                    id: play_voice_note_script
+              else:
+                - logger.log:
+                    tag: voice_note
+                    level: WARN
+                    format: 'Playback ignored: audio is powered down or the microphone
+                      holds the I2S bus.'
+                    args: []
+    disabled_by_default: false
+  - platform: template
+    name: 'Power: Restart'
+    id: power_restart_button
+    icon: mdi:restart
+    on_press:
+      - then:
+          - if:
+              condition:
+                lambda: !lambda |-
+                  return id(display_runtime_active);
+              then:
+                - script.execute:
+                    id: display_prepare_for_restart_script
+                - script.wait:
+                    id: display_prepare_for_restart_script
+          - if:
+              condition:
+                lambda: !lambda |-
+                  return id(shared_i2c_available);
+              then:
+                - script.execute:
+                    id: pmic_audio_power_action_script
+                    pmic_action: 1
+              else:
+                - logger.log:
+                    tag: power_control
+                    level: WARN
+                    format: Shared I2C is unavailable; using the verified ESP restart
+                      path so startup can restore the audio rail.
+                    args: []
+                - lambda: !lambda |-
+                    App.safe_reboot();
+    disabled_by_default: false
+sensor:
+  - platform: shtcx
+    id: environment_sensor
+    i2c_id: pmic_i2c
+    temperature:
+      id: temperature
+      name: 'Environment: Temperature'
+      disabled_by_default: false
+      force_update: false
+      unit_of_measurement: °C
+      accuracy_decimals: 1
+      device_class: temperature
+      state_class: measurement
+    humidity:
+      id: humidity
+      name: 'Environment: Humidity'
+      disabled_by_default: false
+      force_update: false
+      unit_of_measurement: '%'
+      accuracy_decimals: 1
+      device_class: humidity
+      state_class: measurement
+    address: 0x70
+    update_interval: 60s
+  - platform: template
+    name: 'Power USB-C: Voltage'
+    id: usb_voltage
+    unit_of_measurement: V
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: !lambda |-
+      // Check if USB power is present (REG 0x00 bit 5)
+      uint8_t status = 0, reg_status = 0x00;
+      if (id(pmic_i2c).write_readv(0x34, &reg_status, 1, &status, 1) != esphome::i2c::ERROR_OK)
+        return {};
+      if ((status & 0x20) == 0) return 0.0f; // USB unplugged
+
+      // Ensure VBUS ADC channel is enabled (REG 0x30 bit 2)
+      uint8_t adc_en = 0, reg_adc = 0x30;
+      if (id(pmic_i2c).write_readv(0x34, &reg_adc, 1, &adc_en, 1) == esphome::i2c::ERROR_OK) {
+        if ((adc_en & 0x04) == 0) {
+          uint8_t write_data[2] = {0x30, static_cast<uint8_t>(adc_en | 0x04)};
+          id(pmic_i2c).write(0x34, write_data, 2);
+        }
+      }
+
+      // Read VBUS 14-bit ADC registers (0x38 MSB, 0x39 LSB)
+      uint8_t msb = 0, lsb = 0;
+      uint8_t reg_msb = 0x38, reg_lsb = 0x39;
+      if (id(pmic_i2c).write_readv(0x34, &reg_msb, 1, &msb, 1) == esphome::i2c::ERROR_OK &&
+          id(pmic_i2c).write_readv(0x34, &reg_lsb, 1, &lsb, 1) == esphome::i2c::ERROR_OK) {
+        uint16_t mv = ((msb & 0x3F) << 8) | lsb; // 1 LSB = 1 mV
+        return mv / 1000.0f;
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: template
+    name: 'Power Li-ion Battery: Voltage'
+    id: battery_voltage
+    unit_of_measurement: V
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: !lambda |-
+      uint8_t st = 0, sreg = 0x00;
+      if (id(pmic_i2c).write_readv(0x34, &sreg, 1, &st, 1) != esphome::i2c::ERROR_OK)
+        return {};
+      if ((st & 0x08) == 0) return {};        // no battery present -> unavailable
+      uint8_t msb = 0, lsb = 0;
+      uint8_t reg_msb = 0x34, reg_lsb = 0x35;
+      if (id(pmic_i2c).write_readv(0x34, &reg_msb, 1, &msb, 1) == esphome::i2c::ERROR_OK &&
+          id(pmic_i2c).write_readv(0x34, &reg_lsb, 1, &lsb, 1) == esphome::i2c::ERROR_OK) {
+        uint16_t mv = ((msb & 0x3F) << 8) | lsb;   // 14-bit: REG 0x34[5:0]=vbat[13:8], 0x35=vbat[7:0]
+        return mv / 1000.0f;
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: template
+    name: 'Power Li-ion Battery: Level'
+    id: battery_level
+    unit_of_measurement: '%'
+    device_class: battery
+    accuracy_decimals: 0
+    update_interval: 180s
+    lambda: !lambda |-
+      uint8_t st = 0, sreg = 0x00;
+      if (id(pmic_i2c).write_readv(0x34, &sreg, 1, &st, 1) != esphome::i2c::ERROR_OK)
+        return {};
+      if ((st & 0x08) == 0) return {};        // no battery present -> unavailable
+      uint8_t pct = 0;
+      uint8_t reg = 0xA4;
+      if (id(pmic_i2c).write_readv(0x34, &reg, 1, &pct, 1) == esphome::i2c::ERROR_OK) {
+        if (pct <= 100) return (float)pct;
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: template
+    name: 'SD Card: Total Space'
+    id: sd_total_space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: !lambda |-
+      if (!id(sd_mounted)) return {};
+      uint64_t total = 0, free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) == ESP_OK) {
+        return total / (1024.0 * 1024.0);
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: template
+    name: 'SD Card: Free Space'
+    id: sd_free_space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: !lambda |-
+      if (!id(sd_mounted)) return {};
+      uint64_t total = 0, free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) == ESP_OK) {
+        return free / (1024.0 * 1024.0);
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: template
+    name: 'SD Card: Used Space'
+    id: sd_used_space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: !lambda |-
+      if (!id(sd_mounted)) return {};
+      uint64_t total = 0, free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) == ESP_OK) {
+        return (total - free) / (1024.0 * 1024.0);
+      }
+      return {};
+    disabled_by_default: false
+    force_update: false
+  - platform: wifi_signal
+    name: 'Status: WiFi Signal'
+    id: wifi_signal_dbm
+    update_interval: 60s
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: dBm
+    accuracy_decimals: 0
+    device_class: signal_strength
+    state_class: measurement
+    entity_category: diagnostic
+  - platform: uptime
+    name: 'Status: Uptime'
+    id: uptime_seconds
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: s
+    icon: mdi:timer-outline
+    accuracy_decimals: 0
+    device_class: duration
+    state_class: total_increasing
+    entity_category: diagnostic
+    update_interval: 60s
+    type: seconds
+  - platform: debug
+    free:
+      name: 'Status: Free Heap'
+      id: free_heap_bytes
+      disabled_by_default: false
+      force_update: false
+      unit_of_measurement: B
+      icon: mdi:counter
+      accuracy_decimals: 0
+      state_class: measurement
+      entity_category: diagnostic
+    psram:
+      name: 'Status: Free PSRAM'
+      id: free_psram_bytes
+      disabled_by_default: false
+      force_update: false
+      unit_of_measurement: B
+      icon: mdi:counter
+      accuracy_decimals: 0
+      state_class: measurement
+      entity_category: diagnostic
+binary_sensor:
+  - platform: template
+    name: 'Power Li-ion Battery: Charging'
+    id: battery_charging
+    device_class: battery_charging
+    lambda: !lambda |-
+      // Cached by peripheral_state_poll; this lambda runs every main-loop pass.
+      if (!id(axp_state_valid)) return {};
+      return (id(axp_status2) & 0x60) == 0x20;  // bits 6:5 == 01 = charge
+    disabled_by_default: false
+  - platform: gpio
+    pin:
+      number: 4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+        output: false
+        open_drain: false
+        pulldown: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    name: 'Button: KEY'
+    on_press:
+      - then:
+          - button.press:
+              id: play_tune_button
+    disabled_by_default: false
+    use_interrupt: true
+    interrupt_type: ANY
+  - platform: gpio
+    pin:
+      number: 0
+      ignore_strapping_warning: true
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+        output: false
+        open_drain: false
+        pulldown: false
+      ignore_pin_validation_error: false
+      drive_strength: 20.0
+    name: 'Button: BOOT'
+    disabled_by_default: false
+    use_interrupt: true
+    interrupt_type: ANY
+  - platform: template
+    name: 'Power Connected: USB-C'
+    id: usb_connected
+    device_class: plug
+    lambda: !lambda |-
+      // Cached by peripheral_state_poll; this lambda runs every main-loop pass.
+      if (!id(axp_state_valid)) return {};
+      return (id(axp_status1) & 0x20) != 0; // Checks Bit 5 (VBUS Present)
+    disabled_by_default: false
+  - platform: template
+    name: 'Power Connected: Li-ion Battery'
+    id: battery_connected
+    device_class: power
+    lambda: !lambda |-
+      // Cached by peripheral_state_poll; this lambda runs every main-loop pass.
+      if (!id(axp_state_valid)) return {};
+      return (id(axp_status1) & 0x08) != 0; // Checks Bit 3 (BAT_PRESENT)
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: TF Connector (TFX-18-001P) Mounted'
+    id: sd_card_mounted
+    lambda: !lambda |-
+      return id(sd_mounted);
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: RTC (PCF85063ATL)'
+    id: rtc_running
+    lambda: !lambda |-
+      // PCF85063 REG 0x04 bit 7 (OS): 1 = oscillator stopped / clock integrity lost.
+      // Reported inverted: TRUE = running/healthy. Note: the pcf85063 component and
+      // SNTP write_time clear this bit, so after first time-sync it reads healthy
+      // unless the clock actually lost power since. It is an integrity flag, not a
+      // live "is the crystal ticking right now" probe.
+      // Cached by peripheral_state_poll; this lambda runs every main-loop pass.
+      if (!id(rtc_state_valid)) return {};
+      return (id(rtc_seconds_reg) & 0x80) == 0;
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Display (7.3in Spectra E6)'
+    id: display_status
+    lambda: !lambda |-
+      return id(display_runtime_active);
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Display Power Rail (ALDO4)'
+    id: aldo4_rail_status
+    device_class: power
+    lambda: !lambda |-
+      // ON = AXP2101 REG 0x90 bit 3 (ALDO4 enable) is set. Sourced from the
+      // PMIC register rather than display_runtime_active, so this still
+      // reflects the actual rail state if software tracking drifts from it.
+      // Cached by peripheral_state_poll; this lambda runs every main-loop pass.
+      if (!id(axp_state_valid)) return {};
+      return (id(axp_ldo_enable) & 0x08) != 0;
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Audio Amp (NS4150B)'
+    id: ns4150b_status
+    lambda: !lambda |-
+      return id(amplifier_enable).state;
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Audio DAC (ES8311)'
+    id: es8311_status
+    lambda: !lambda |-
+      if (!id(audio_runtime_active)) return false;
+      // ON = codec ACKs on I2C (0x18) = powered and present. Probed by
+      // peripheral_state_poll; this lambda runs every main-loop pass.
+      return id(es8311_present);
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Audio ADC (ES7210)'
+    id: es7210_status
+    lambda: !lambda |-
+      if (!id(audio_runtime_active)) return false;
+      // ON = ADC ACKs on I2C (0x40) = powered and present. Probed by
+      // peripheral_state_poll; this lambda runs every main-loop pass.
+      return id(es7210_present);
+    disabled_by_default: false
+  - platform: template
+    name: 'Status: Audio New Voice Note'
+    id: unread_voice_note_sensor
+    icon: mdi:email-mark-as-unread
+    lambda: !lambda |-
+      return id(unread_voice_note);
+    disabled_by_default: false
+output:
+  - platform: gpio
+    pin:
+      number: 42
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    id: led_1_out_act_amber
+    inverted: true
+  - platform: gpio
+    pin:
+      number: 45
+      ignore_strapping_warning: true
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      drive_strength: 20.0
+    id: led_2_out_pwd_red
+    inverted: true
+light:
+  - platform: binary
+    name: 'LED: ACT'
+    id: led_act_light
+    output: led_1_out_act_amber
+    disabled_by_default: false
+    restore_mode: ALWAYS_OFF
+  - platform: binary
+    name: 'LED: PWR'
+    id: led_pwr_light
+    output: led_2_out_pwd_red
+    disabled_by_default: false
+    restore_mode: ALWAYS_OFF
+display:
+  - platform: epaper_spi
+    spi_id: display_spi
+    id: epaper_display
+    model: 7.3IN-SPECTRA-E6
+    cs_pin:
+      number: 9
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    dc_pin:
+      number: 8
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    busy_pin:
+      number: 13
+      inverted: true
+      mode:
+        input: true
+        output: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    reset_pin:
+      number: 12
+      mode:
+        output: true
+        input: false
+        open_drain: false
+        pullup: false
+        pulldown: false
+      inverted: false
+      ignore_pin_validation_error: false
+      ignore_strapping_warning: false
+      drive_strength: 20.0
+    update_interval: 900s
+    rotation: 180
+    lambda: !lambda |-
+      id(display_render_started_ms) = millis();
+      Color COLOR_BLACK(0, 0, 0);
+      Color COLOR_WHITE(255, 255, 255);
+      Color COLOR_YELLOW(255, 255, 0);
+      Color COLOR_RED(255, 0, 0);
+      Color COLOR_BLUE(0, 0, 255);
+      Color COLOR_GREEN(0, 255, 0);
+
+      it.fill(COLOR_WHITE);
+
+      // Helper function: Dithered (Light Blue) Rectangle
+        auto draw_dithered_rectangle = [&](int rx, int ry, int rw, int rh, Color c1, Color c2) {
+          for (int py = ry; py < ry + rh; py++) {
+            for (int px = rx; px < rx + rw; px++) {
+              // Alternating 50/50 checkerboard pattern
+              if ((px + py) % 2 == 0) {
+                it.draw_pixel_at(px, py, c1);
+              } else {
+                it.draw_pixel_at(px, py, c2);
+              }
+            }
+          }
+        };
+
+        // ESPHome Logo with Dithered Light-Blue Background
+        auto draw_esphome_logo = [&](int x, int y) {
+          // Roof (Dithered Blue + White)
+          for (int i = 0; i < 18; i++) {
+            for (int px = x + 18 - i; px <= x + 18 + i; px++) {
+              if ((px + (y + i)) % 2 == 0) {
+                it.draw_pixel_at(px, y + i, COLOR_BLUE);
+              } else {
+                it.draw_pixel_at(px, y + i, COLOR_WHITE);
+              }
+            }
+          }
+
+          // House Base (50% Dithered Light-Blue)
+          draw_dithered_rectangle(x + 2, y + 18, 33, 17, COLOR_BLUE, COLOR_WHITE);
+
+          // PCB Antenna Meander Trace (Solid White)
+          it.filled_rectangle(x + 9, y + 14, 3, 18, COLOR_WHITE);
+          it.filled_rectangle(x + 9, y + 14, 18, 2, COLOR_WHITE);
+          it.filled_rectangle(x + 25, y + 14, 2, 4, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 17, 13, 2, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 17, 2, 4, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 20, 13, 2, COLOR_WHITE);
+          it.filled_rectangle(x + 25, y + 20, 2, 4, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 23, 13, 2, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 23, 2, 4, COLOR_WHITE);
+          it.filled_rectangle(x + 14, y + 26, 13, 2, COLOR_WHITE);
+        };
+
+        draw_esphome_logo(30, 20);
+
+      // Header Bar (Title shifted right to X = 75)
+      it.print(75, 25, id(font_title), COLOR_RED, "Waveshare ESP32-S3-PhotoPainter");
+
+      // Phone-style status icons (signal bars + battery), no identifying text
+      {
+        bool wifi_ok = id(wifi_signal_dbm).has_state();
+        float rssi = wifi_ok ? id(wifi_signal_dbm).state : -100.0f;
+        int bars_lit = 0;
+        if (rssi >= -55) bars_lit = 4;
+        else if (rssi >= -65) bars_lit = 3;
+        else if (rssi >= -75) bars_lit = 2;
+        else if (rssi >= -85) bars_lit = 1;
+
+        const int bar_w = 6, bar_gap = 3, bar_baseline = 28;
+        const int bar_heights[4] = {6, 11, 16, 21};
+        int bar_x = 693;
+        for (int i = 0; i < 4; i++) {
+          int h = bar_heights[i];
+          Color fill = (wifi_ok && i < bars_lit) ? COLOR_BLACK : COLOR_WHITE;
+          it.filled_rectangle(bar_x, bar_baseline - h, bar_w, h, fill);
+          it.rectangle(bar_x, bar_baseline - h, bar_w, h, COLOR_BLACK);
+          bar_x += bar_w + bar_gap;
+        }
+
+        if (id(battery_connected).has_state() && id(battery_connected).state) {
+          const int bx = 736, by = 10, bw = 26, bh = 14;
+          it.rectangle(bx, by, bw, bh, COLOR_BLACK);
+          it.filled_rectangle(bx + bw, by + 4, 3, bh - 8, COLOR_BLACK);
+
+          float level = id(battery_level).has_state() ? id(battery_level).state : 0.0f;
+          bool charging = id(battery_charging).has_state() && id(battery_charging).state;
+          int fill_w = static_cast<int>((bw - 4) * (level / 100.0f));
+          if (fill_w < 0) fill_w = 0;
+          if (fill_w > bw - 4) fill_w = bw - 4;
+          if (fill_w > 0) {
+            Color fill = charging ? COLOR_YELLOW : (level < 20 ? COLOR_RED : COLOR_GREEN);
+            it.filled_rectangle(bx + 2, by + 2, fill_w, bh - 4, fill);
+          }
+        }
+      }
+
+      // Timestamp (Font size reduced to font_body)
+      if (id(pcf_rtc).now().is_valid()) {
+        it.strftime(770, 32, id(font_body), COLOR_BLACK, TextAlign::TOP_RIGHT, "%Y-%m-%d  %H:%M", id(pcf_rtc).now());
+      } else {
+        it.print(770, 32, id(font_body), COLOR_BLACK, TextAlign::TOP_RIGHT, "Syncing time...");
+      }
+
+      // Uptime, grouped with the date/time rather than the System box below
+      if (id(uptime_seconds).has_state()) {
+        uint32_t secs = static_cast<uint32_t>(id(uptime_seconds).state);
+        uint32_t days = secs / 86400;
+        uint32_t hours = (secs % 86400) / 3600;
+        uint32_t mins = (secs % 3600) / 60;
+        if (days > 0) {
+          it.printf(770, 52, id(font_body), COLOR_BLACK, TextAlign::TOP_RIGHT, "Up: %lud %luh", days, hours);
+        } else {
+          it.printf(770, 52, id(font_body), COLOR_BLACK, TextAlign::TOP_RIGHT, "Up: %luh %lum", hours, mins);
+        }
+      } else {
+        it.print(770, 52, id(font_body), COLOR_BLACK, TextAlign::TOP_RIGHT, "Up: --");
+      }
+
+      it.line(30, 75, 770, 75, COLOR_BLACK);
+
+      // Section 1: Environment -- two boxes sharing the original outline
+      it.rectangle(28, 83, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 85, 174, 145, COLOR_GREEN);
+      it.rectangle(31, 86, 172, 143, COLOR_GREEN);
+      it.print(45, 95, id(font_header), COLOR_BLACK, "ENVIRONMENT");
+
+      if (id(temperature).has_state()) {
+        it.printf(45, 130, id(font_body), COLOR_BLACK, "Temp: %.1f °C", id(temperature).state);
+      } else {
+        it.print(45, 130, id(font_body), COLOR_BLACK, "Temp: -- °C");
+      }
+
+      if (id(humidity).has_state()) {
+        it.printf(45, 165, id(font_body), COLOR_BLACK, "Humidity: %.1f %%", id(humidity).state);
+      } else {
+        // @patched-pending-test finding-3-literal-percent
+        // PATCHED 2026-08-31 (code review finding 3) -- NOT YET TESTED ON HARDWARE.
+        it.print(45, 165, id(font_body), COLOR_BLACK, "Humidity: -- %");
+      }
+
+      it.rectangle(210, 85, 175, 145, COLOR_GREEN);
+      it.rectangle(211, 86, 173, 143, COLOR_GREEN);
+      it.print(225, 95, id(font_header), COLOR_BLACK, "AUDIO");
+
+      // @patched-pending-test begin fragile-16-unguarded-number-state
+      // PATCHED 2026-08-31 (code review fragile item 16) -- NOT YET TESTED ON HARDWARE.
+      // These were the only two values on the panel read without has_state();
+      // safe in practice because TemplateNumber::setup() publishes
+      // initial_value, but they would render "nan" if that ever stopped being
+      // true. Guarded to match every other field here.
+      if (id(audio_scaled_volume).has_state()) {
+        it.printf(225, 130, id(font_body), COLOR_BLACK, "Volume: %.0f %%", id(audio_scaled_volume).state);
+      } else {
+        it.print(225, 130, id(font_body), COLOR_BLACK, "Volume: -- %");
+      }
+
+      if (id(mic_gain_slider).has_state()) {
+        it.printf(225, 165, id(font_body), COLOR_BLACK, "Mic Gain: %.0f", id(mic_gain_slider).state);
+      } else {
+        it.print(225, 165, id(font_body), COLOR_BLACK, "Mic Gain: --");
+      }
+      // @patched-pending-test end fragile-16-unguarded-number-state
+
+      bool voice_note_unread = id(unread_voice_note_sensor).has_state() && id(unread_voice_note_sensor).state;
+      it.printf(225, 200, id(font_body), voice_note_unread ? COLOR_GREEN : COLOR_BLACK,
+                "Voice Note: %s", voice_note_unread ? "Unread" : "None");
+
+      // Section 2: Power & Battery
+      it.rectangle(413, 83, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 85, 355, 145, COLOR_BLUE);
+      it.rectangle(416, 86, 353, 143, COLOR_BLUE);
+      it.print(430, 95, id(font_header), COLOR_BLACK, "POWER & BATTERY");
+
+      bool usb_on = id(usb_connected).has_state() && id(usb_connected).state;
+      bool bat_on = id(battery_connected).has_state() && id(battery_connected).state;
+      bool is_charging = id(battery_charging).has_state() && id(battery_charging).state;
+
+      // Left Column (X = 430)
+      it.printf(430, 130, id(font_body), COLOR_BLACK, "USB: %s",
+                usb_on ? "Connected" : "Disconnected");
+
+      if (id(usb_voltage).has_state()) {
+        it.printf(430, 170, id(font_body), COLOR_BLACK, "Voltage: %.2f V", id(usb_voltage).state);
+      } else {
+        it.print(430, 170, id(font_body), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      // Right Column (Center of rectangle: X = 592)
+      it.printf(592, 130, id(font_body), COLOR_BLACK, "Li-ion: %s",
+                bat_on ? "Present" : "Missing");
+
+      if (id(battery_level).has_state()) {
+        it.printf(592, 150, id(font_body), COLOR_BLACK, "Level: %.0f %%", id(battery_level).state);
+      } else {
+        // @patched-pending-test finding-3-literal-percent
+        // PATCHED 2026-08-31 (code review finding 3) -- NOT YET TESTED ON HARDWARE.
+        it.print(592, 150, id(font_body), COLOR_BLACK, "Level: -- %");
+      }
+
+      if (id(battery_voltage).has_state()) {
+        it.printf(592, 170, id(font_body), COLOR_BLACK, "Voltage: %.2f V", id(battery_voltage).state);
+      } else {
+        it.print(592, 170, id(font_body), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      it.printf(592, 190, id(font_body), is_charging ? COLOR_GREEN : COLOR_BLACK,
+                "Charging: %s", is_charging ? "YES" : "NO");
+
+      // Section 3: SD Card + System -- two boxes sharing the original outline
+      it.rectangle(28, 243, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 245, 174, 145, COLOR_YELLOW);
+      it.rectangle(31, 246, 172, 143, COLOR_YELLOW);
+      it.print(45, 255, id(font_header), COLOR_BLACK, "SD CARD");
+
+      bool sd_mounted_st = id(sd_card_mounted).has_state() && id(sd_card_mounted).state;
+      it.printf(45, 285, id(font_body), sd_mounted_st ? COLOR_GREEN : COLOR_RED,
+                "Mounted: %s", sd_mounted_st ? "Yes" : "No");
+
+      if (sd_mounted_st && id(sd_free_space).has_state()) {
+        it.printf(45, 308, id(font_body), COLOR_BLACK, "Free: %.0f MB", id(sd_free_space).state);
+      } else {
+        it.print(45, 308, id(font_body), COLOR_BLACK, "Free: -- MB");
+      }
+
+      if (sd_mounted_st && id(sd_used_space).has_state()) {
+        it.printf(45, 331, id(font_body), COLOR_BLACK, "Used: %.0f MB", id(sd_used_space).state);
+      } else {
+        it.print(45, 331, id(font_body), COLOR_BLACK, "Used: -- MB");
+      }
+
+      if (sd_mounted_st && id(sd_total_space).has_state()) {
+        it.printf(45, 354, id(font_body), COLOR_BLACK, "Total: %.0f MB", id(sd_total_space).state);
+      } else {
+        it.print(45, 354, id(font_body), COLOR_BLACK, "Total: -- MB");
+      }
+
+      it.rectangle(210, 245, 175, 145, COLOR_YELLOW);
+      it.rectangle(211, 246, 173, 143, COLOR_YELLOW);
+      it.print(225, 255, id(font_header), COLOR_BLACK, "FREE MEMORY");
+
+      // "Free" is already the box header; item labels omit the word so they
+      // don't overrun the box width.
+      if (id(free_heap_bytes).has_state()) {
+        it.printf(225, 285, id(font_body), COLOR_BLACK, "Heap: %.0f KB", id(free_heap_bytes).state / 1024.0f);
+      } else {
+        it.print(225, 285, id(font_body), COLOR_BLACK, "Heap: --");
+      }
+
+      if (id(free_psram_bytes).has_state()) {
+        it.printf(225, 308, id(font_body), COLOR_BLACK, "PSRAM: %.0f KB", id(free_psram_bytes).state / 1024.0f);
+      } else {
+        it.print(225, 308, id(font_body), COLOR_BLACK, "PSRAM: --");
+      }
+
+      // Flash space claimed by no partition (otadata/app0/app1/nvs/phy_init).
+      uint32_t flash_total_bytes = 0;
+      esp_flash_get_size(nullptr, &flash_total_bytes);
+      uint32_t partitions_total_bytes = 0;
+      esp_partition_iterator_t part_it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+      while (part_it != nullptr) {
+        partitions_total_bytes += esp_partition_get(part_it)->size;
+        part_it = esp_partition_next(part_it);
+      }
+      esp_partition_iterator_release(part_it);
+      it.printf(225, 331, id(font_body), COLOR_BLACK, "Flash: %.0f KB",
+                (flash_total_bytes - partitions_total_bytes) / 1024.0f);
+
+      // Section 4: Hardware Status
+      it.rectangle(413, 243, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 245, 355, 145, COLOR_RED);
+      it.rectangle(416, 246, 353, 143, COLOR_RED);
+      it.print(430, 255, id(font_header), COLOR_BLACK, "HARDWARE STATUS");
+
+      bool rtc_ok = id(rtc_running).has_state() && id(rtc_running).state;
+      bool codec_ok = id(es8311_status).has_state() && id(es8311_status).state;
+      bool adc_ok = id(es7210_status).has_state() && id(es7210_status).state;
+      bool amp_on = id(ns4150b_status).has_state() && id(ns4150b_status).state;
+
+      // @patched-pending-test begin finding-2-led-status-source
+      // PATCHED 2026-08-31 (code review finding 2) -- NOT YET TESTED ON HARDWARE.
+      // Needs a lit LED plus a forced refresh to confirm on the panel.
+      //
+      // The LED pins are driven as GPIO_MODE_OUTPUT, which leaves the pad's input
+      // buffer disabled; gpio_get_level() is defined to return 0 for such a pin
+      // regardless of what is being driven, so read the light state instead. The
+      // `inverted: true` on each output means lit == pin LOW, and is_on() already
+      // reports the logical (lit) state.
+      bool act_on = id(led_act_light).current_values.is_on();
+      bool pwr_on = id(led_pwr_light).current_values.is_on();
+
+      // GPIO0/GPIO4 are configured as inputs by their binary_sensor entries, so
+      // these reads are valid (Active-Low: LOW / 0 = pressed).
+      bool boot_pressed = (gpio_get_level(GPIO_NUM_0) == 0);
+      bool key_pressed = (gpio_get_level(GPIO_NUM_4) == 0);
+
+      // Left Column (X = 430)
+      it.printf(430, 285, id(font_body), COLOR_BLACK, "RTC: %s", rtc_ok ? "OK" : "ERR");
+      it.printf(430, 308, id(font_body), COLOR_BLACK, "ADC: %s", adc_ok ? "OK" : "ERR");
+      it.printf(430, 331, id(font_body), COLOR_BLACK, "DAC: %s", codec_ok ? "OK" : "ERR");
+      it.printf(430, 354, id(font_body), COLOR_BLACK, "Amp: %s", amp_on ? "ON" : "OFF");
+
+      // Right Column (Center of rectangle: X = 592)
+      it.printf(592, 285, id(font_body), COLOR_BLACK, "LED-ACT: %s", act_on ? "ON" : "OFF");
+      it.printf(592, 308, id(font_body), COLOR_BLACK, "LED-PWR: %s", pwr_on ? "ON" : "OFF");
+      // @patched-pending-test end finding-2-led-status-source
+      it.printf(592, 331, id(font_body), COLOR_BLACK, "BTN-KEY: %s", key_pressed ? "PRESSED" : "IDLE");
+      it.printf(592, 354, id(font_body), COLOR_BLACK, "BTN-BOOT: %s", boot_pressed ? "PRESSED" : "IDLE");
+
+      // Color Palette Swatches
+      it.filled_rectangle(50, 405, 100, 45, COLOR_BLACK);
+      it.rectangle(50, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(170, 405, 100, 45, COLOR_WHITE);
+      it.rectangle(170, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(290, 405, 100, 45, COLOR_YELLOW);
+      it.rectangle(290, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(410, 405, 100, 45, COLOR_RED);
+      it.rectangle(410, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(530, 405, 100, 45, COLOR_BLUE);
+      it.rectangle(530, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(650, 405, 100, 45, COLOR_GREEN);
+      it.rectangle(650, 405, 100, 45, COLOR_BLACK);
+    auto_clear_enabled: unspecified
+    data_rate: 20000000.0
+    spi_mode: MODE0
+    full_update_every: 1
+
+INFO Configuration is valid!

@@ -1,0 +1,70 @@
+# Web UI grouping for the demo layer. Requires web_ui/core.yaml and the demo
+# layer; it adds the Deep Sleep and Voice Notes groups.
+web_server:
+  sorting_groups:
+    - id: photopainter_group_deep_sleep
+      name: "Deep Sleep"
+      sorting_weight: 25
+    - id: photopainter_group_voice_notes
+      name: "Voice Notes"
+      sorting_weight: 35
+
+select:
+  - id: !extend photopainter_display_page
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 20
+
+switch:
+  - id: !extend photopainter_rotate_pages
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 30
+
+text_sensor:
+  - id: !extend photopainter_displayed_page
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 40
+  - id: !extend photopainter_sleep_wake_cause
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 30
+
+button:
+  - id: !extend photopainter_sleep_button
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 10
+  - id: !extend photopainter_demo_record_button
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 10
+  - id: !extend photopainter_demo_play_button
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 20
+  - id: !extend photopainter_demo_audio_stop
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 30
+  - id: !extend photopainter_demo_play_tune
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 40
+
+number:
+  - id: !extend photopainter_sleep_fallback_minutes
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 20
+  - id: !extend photopainter_demo_mic_gain_control
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 50
+
+binary_sensor:
+  - id: !extend photopainter_demo_voice_note_unread
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 50

@@ -1,0 +1,216 @@
+INFO ESPHome 2026.5.1
+INFO Reading configuration Waveshare-PhotoPainter.yaml...
+INFO Detected timezone 'America/Los_Angeles'
+INFO Detected timezone 'America/Los_Angeles'
+INFO Generating C++ source...
+INFO Applying optimized lwip settings: 65KB TCP windows, 64 mailbox sizes
+INFO Applying optimized WiFi settings: 64 RX buffers, 64 TX buffers
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 17 (TCP=11 [api=3, captive_portal=3, web_server=5], UDP=3 [captive_portal=1, mdns=2], TCP_LISTEN=3 [api=1, ota=1, web_server_base=1])
+INFO Compiling app... Build path: <home-1>/Documents/GitHub/Waveshare-ESP32-S3-PhotoPrinter/ESPHome/.esphome/build/waveshare-photopainter
+Processing [36m[1mwaveshare-photopainter[0m (board: esp32-s3-devkitc-1; framework: espidf; platform: https://github.com/pioarduino/platform-espressif32/releases/download/55.03.38-1/platform-espressif32.zip)
+[1m--------------------------------------------------------------------------------[0m
+[0mHARDWARE: ESP32S3 240MHz, 320KB RAM, 16MB Flash
+[0m - contrib-piohome @ 3.4.4 
+[0m - framework-espidf @ 3.50504.0 (5.5.4) 
+[0m - tool-cmake @ 4.0.3 
+[0m - tool-esp-rom-elfs @ 2024.10.11 
+[0m - tool-esptoolpy @ 5.2.0 
+[0m - tool-ninja @ 1.13.1 
+[0m - tool-scons @ 4.40801.0 (4.8.1) 
+[0m - tool-xtensa-esp-elf-gdb @ 16.3.0+20250913 
+[0m - toolchain-xtensa-esp-elf @ 14.2.0+20260121
+[33mUsing Python 3.14.6 environment at: <home-1>/.platformio/penv/.espidf-5.5.4
+[0mReading CMake configuration...
+[0mDependency Graph
+[0m|-- noise-c @ 0.1.11
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_connection.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_frame_helper.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_frame_helper_noise.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_overflow_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_pb2.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_pb2_service.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/api_server.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/list_entities.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/proto.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/api/subscribe_state.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/audio/audio.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/audio/audio_decoder.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/audio/audio_reader.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/audio/audio_resampler.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/audio/audio_transfer_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/binary_sensor/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/binary_sensor/binary_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/binary_sensor/filter.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/button/button.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/captive_portal/captive_portal.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/captive_portal/dns_server_esp32_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/debug/debug_component.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/debug/debug_esp32.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/display/display.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/display/display_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/display/rect.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_spi.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_spi_jd79660.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_spi_mono.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_spi_spectra_e6.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_spi_ssd1683.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_waveshare.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/epaper_spi/epaper_weact_3c.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/es7210/es7210.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/es8311/es8311.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/core.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/crash_handler.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/gpio.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/hal.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/helpers.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esp32/preferences.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/esphome/ota/ota_esphome.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/font/font.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/gpio/binary_sensor/gpio_binary_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/gpio/output/gpio_binary_output.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/gpio/switch/gpio_switch.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2c/i2c.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2c/i2c_bus_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2s_audio/microphone/i2s_audio_microphone.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2s_audio/speaker/i2s_audio_spdif.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2s_audio/speaker/i2s_audio_speaker.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2s_audio/speaker/i2s_audio_speaker_standard.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/i2s_audio/speaker/spdif_encoder.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/json/json_util.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/addressable_light.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/esp_color_correction.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/esp_hsv_color.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/esp_range_view.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/light_call.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/light_effect.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/light_json_schema.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/light_output.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/light/light_state.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/logger/logger.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/logger/logger_esp32.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/logger/task_log_buffer_esp32.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/md5/md5.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/mdns/mdns_component.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/mdns/mdns_esp32.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/media_player/media_player.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/microphone/microphone_source.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/network/util.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/number/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/number/number.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/number/number_call.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/number/number_traits.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/ota/ota_backend.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/ota/ota_backend_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/ota/ota_bootloader_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/ota/ota_partitions_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/output/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/output/float_output.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/pcf85063/pcf85063.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/psram/psram.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/ring_buffer/ring_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/rtttl/rtttl.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/safe_mode/safe_mode.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/script/script.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sensirion_common/i2c_sensirion.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sensor/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sensor/filter.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sensor/sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sha256/sha256.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/shtcx/shtcx.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/sntp/sntp_component.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/socket/bsd_sockets_impl.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/socket/socket.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/speaker/media_player/audio_pipeline.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/speaker/media_player/speaker_media_player.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/spi/spi.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/spi/spi_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/split_buffer/split_buffer.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/switch/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/switch/switch.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/template/binary_sensor/template_binary_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/template/number/template_number.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/template/sensor/template_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/template/switch/template_switch.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/time/automation.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/time/posix_tz.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/time/real_time_clock.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/uptime/sensor/uptime_seconds_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/uptime/sensor/uptime_timestamp_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/watchdog/watchdog.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server/list_entities.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server/ota/ota_web_server.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server/web_server.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server_base/web_server_base.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server_idf/multipart.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/web_server_idf/web_server_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/wifi/wifi_component.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/wifi/wifi_component_esp_idf.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/components/wifi_signal/wifi_signal_sensor.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/application.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/build_info_data.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/color.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/component.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/component_iterator.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/controller_registry.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/entity_base.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/gpio.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/helpers.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/log.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/scheduler.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/time.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/util.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/esphome/core/wake/wake_freertos.cpp.o
+[0mCompiling .pioenvs/waveshare-photopainter/src/main.cpp.o
+[0mLinking .pioenvs/waveshare-photopainter/firmware.elf
+[0m                            Memory Type Usage Summary                             
+[0m┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory Type/Section ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+[0m┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Code          │       942192 │          │                │               │
+[0m│    .text            │       942192 │          │                │               │
+[0m│ Flash Data          │       252896 │          │                │               │
+[0m│    .rodata          │       252640 │          │                │               │
+[0m│    .appdesc         │          256 │          │                │               │
+[0m│ DIRAM               │       121423 │    35.53 │         220337 │        341760 │
+[0m│    .text            │        61711 │    18.06 │                │               │
+[0m│    .bss             │        39552 │    11.57 │                │               │
+[0m│    .data            │        20008 │     5.85 │                │               │
+[0m│    .noinit          │          152 │     0.04 │                │               │
+[0m│ IRAM                │        16384 │    100.0 │              0 │         16384 │
+[0m│    .text            │        15356 │    93.73 │                │               │
+[0m│    .vectors         │         1028 │     6.27 │                │               │
+[0m└─────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+[0m[33mTotal image size: 1293191 bytes (.bin may be padded larger)
+[0m[33mNote: The reported total sizes may be smaller than those in the technical reference manual due to reserved memory and application configuration. The total flash size available for the application is not included by default, as it cannot be reliably determined due to the presence of other data like the bootloader, partition table, and application partition size.
+[0mRAM:   [==        ]  18.2% (used 59712 bytes from 327680 bytes)
+[0mFlash: [==        ]  15.9% (used 1292935 bytes from 8126464 bytes)
+[0mBuilding .pioenvs/waveshare-photopainter/firmware.bin
+[0mCreating ESP32-S3 image...
+[0mSuccessfully created ESP32-S3 image.
+[0mCreating binary "firmware.factory.bin" with:
+[0m    Offset   | File
+[0m -  0x0      | bootloader.bin
+[0m -  0x8000   | partitions.bin
+[0m -  0x9000   | ota_data_initial.bin
+[0m -  0x10000  | firmware.bin
+Successfully created combined binary image.
+[0msign_firmware([".pioenvs/waveshare-photopainter/firmware.bin"], [".pioenvs/waveshare-photopainter/firmware.elf"])
+[0mmerge_factory_bin([".pioenvs/waveshare-photopainter/firmware.bin"], [".pioenvs/waveshare-photopainter/firmware.elf"])
+[0mInfo: bootloader.bin not found - skipping
+[0mInfo: partition-table.bin not found - skipping
+[0mInfo: ota_data_initial.bin not found - skipping
+[0mInfo: waveshare-photopainter.bin not found - skipping
+[0mUsing FLASH_EXTRA_IMAGES from PlatformIO environment
+[0mMerging binaries into <home-1>/Documents/GitHub/Waveshare-ESP32-S3-PhotoPrinter/ESPHome/.esphome/build/waveshare-photopainter/.pioenvs/waveshare-photopainter/firmware.factory.bin
+[0mMerging binaries with esptool
+[0mSHA digest in image updated.
+[0mWrote 0x14bc20 bytes to file '<home-1>/Documents/GitHub/Waveshare-ESP32-S3-PhotoPrinter/ESPHome/.esphome/build/waveshare-photopainter/.pioenvs/waveshare-photopainter/firmware.factory.bin', ready to flash to offset 0x0.
+[0mSuccessfully created <home-1>/Documents/GitHub/Waveshare-ESP32-S3-PhotoPrinter/ESPHome/.esphome/build/waveshare-photopainter/.pioenvs/waveshare-photopainter/firmware.factory.bin
+[0mesp32_copy_ota_bin([".pioenvs/waveshare-photopainter/firmware.bin"], [".pioenvs/waveshare-photopainter/firmware.elf"])
+[0mCopied firmware to <home-1>/Documents/GitHub/Waveshare-ESP32-S3-PhotoPrinter/ESPHome/.esphome/build/waveshare-photopainter/.pioenvs/waveshare-photopainter/firmware.ota.bin
+[0m========================= [[32m[1mSUCCESS[0m] Took 25.25 seconds =========================[0m
+INFO Build Info: config_hash=0x744983d0 build_time_str=2026-08-31 19:29:31 -0700
+INFO Successfully compiled program.
+exit=0

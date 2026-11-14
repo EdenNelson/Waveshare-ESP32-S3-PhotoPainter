@@ -1,0 +1,13 @@
+# Battery-oriented, not yet power-characterized. This composition keeps ALDO3
+# energized, slows polling, and places the audio path in its verified logical
+# low-power state after boot. It makes no measured-current claim.
+
+substitutions:
+  photopainter_peripheral_poll_interval: 60s
+  photopainter_environment_update_interval: 300s
+  photopainter_power_update_interval: 300s
+  photopainter_battery_level_update_interval: 900s
+
+packages:
+  - !include waveshare-esp32-s3-photopainter.yaml
+  - !include waveshare-esp32-s3-photopainter/policies/battery.yaml

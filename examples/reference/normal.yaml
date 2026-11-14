@@ -1,0 +1,9 @@
+# Rendering input: normal standalone download includes the demo dashboard/audio.
+packages:
+  - !include site.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-demo.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui-demo.yaml
+
+esphome:
+  comment: PhotoPainter package reference - normal demo profile

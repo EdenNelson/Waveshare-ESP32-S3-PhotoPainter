@@ -1,0 +1,18 @@
+# Web UI grouping for the diagnostic layer. Requires web_ui/core.yaml and the
+# diagnostic layer.
+
+sensor:
+  - id: !extend photopainter_free_heap
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 20
+  - id: !extend photopainter_free_psram
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 30
+
+button:
+  - id: !extend photopainter_diagnostic_snapshot_button
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 40

@@ -1,0 +1,297 @@
+esptool.js
+Serial port WebSerial VendorID 0x303a ProductID 0x1001
+Connecting...
+
+Detecting chip type... 
+ESP32-S3
+Chip Revision: 0
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: Wi-Fi,BLE,Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+MAC: <mac-5>
+Uploading stub...
+Running stub...
+Stub running...
+Flash ID: 184046
+*** building configuration bundle for remote build ***
+INFO ESPHome 2026.8.2
+INFO Reading configuration /config/esphome/waveshare-photopainter.yaml...
+WARNING Bundle contains secrets (e.g. Wi-Fi passwords). Do not share it with untrusted parties.
+INFO Bundle created: /tmp/tmpdbclw8bl.tar.gz (2 files, 24.5 KB)
+*** bundle ready (24 KiB); sending to build server ***
+INFO ESPHome 2026.8.2
+INFO Reading configuration /config/.esphome/.remote_builds/9CGd2Lta/waveshare-photopainter/waveshare-photopainter.yaml...
+INFO Generating C++ source...
+INFO Applying optimized lwip settings: 65KB TCP windows, 64 mailbox sizes
+INFO Applying optimized WiFi settings: 64 RX buffers, 64 TX buffers
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 17 (TCP=11 [api=3, captive_portal=3, web_server=5], UDP=3 [captive_portal=1, mdns=2], TCP_LISTEN=3 [api=1, ota=1, web_server_base=1])
+INFO Detected timezone 'America/Los_Angeles'
+INFO Compiling app... Build path: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter
+INFO Checking ESP-IDF 5.5.5 framework ...
+INFO Checking ESP-IDF 5.5.5 framework installation ...
+INFO Checking ESP-IDF 5.5.5 Python environment ...
+Executing action: all (aliases: build)
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja all"...
+[0/2] Re-checking globbed directories...[K
+[1/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/binary_sensor/filter.cpp.obj[K
+[2/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/crash_handler.cpp.obj[K
+[3/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/audio/audio.cpp.obj[K
+[4/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_buffer.cpp.obj[K
+[5/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_overflow_buffer.cpp.obj[K
+[6/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/audio/audio_resampler.cpp.obj[K
+[7/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/gpio.cpp.obj[K
+[8/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/audio/audio_decoder.cpp.obj[K
+[9/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/preferences.cpp.obj[K
+[10/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/captive_portal/dns_server_esp32_idf.cpp.obj[K
+[11/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/es8311/es8311.cpp.obj[K
+[12/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/es7210/es7210.cpp.obj[K
+[13/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/helpers.cpp.obj[K
+[14/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/hal.cpp.obj[K
+[15/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/audio/audio_reader.cpp.obj[K
+[16/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/audio/audio_transfer_buffer.cpp.obj[K
+[17/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/gpio/output/gpio_binary_output.cpp.obj[K
+[18/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2s_audio/speaker/i2s_audio_spdif.cpp.obj[K
+[19/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2s_audio/speaker/spdif_encoder.cpp.obj[K
+[20/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/proto.cpp.obj[K
+[21/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/button/button.cpp.obj[K
+[22/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/binary_sensor/automation.cpp.obj[K
+[23/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/gpio/binary_sensor/gpio_binary_sensor.cpp.obj[K
+[24/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/font/font.cpp.obj[K
+[25/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_pb2.cpp.obj[K
+[26/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/binary_sensor/binary_sensor.cpp.obj[K
+[27/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_frame_helper.cpp.obj[K
+[28/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/debug/debug_component.cpp.obj[K
+[29/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esp32/core.cpp.obj[K
+[30/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/display/display_buffer.cpp.obj[K
+[31/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/debug/debug_esp32.cpp.obj[K
+[32/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/display/display.cpp.obj[K
+[33/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_inkplate6color.cpp.obj[K
+[34/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_waveshare_bwr.cpp.obj[K
+[35/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_waveshare.cpp.obj[K
+[36/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_weact_3c.cpp.obj[K
+[37/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_mono.cpp.obj[K
+[38/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_spectra_e6.cpp.obj[K
+[39/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_ssd1683.cpp.obj[K
+[40/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_waveshare_b.cpp.obj[K
+[41/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_4bpp.cpp.obj[K
+[42/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_inkplate2.cpp.obj[K
+[43/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi.cpp.obj[K
+[44/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_jd79660.cpp.obj[K
+[45/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/epaper_spi/epaper_spi_t133a01.cpp.obj[K
+[46/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/subscribe_state.cpp.obj[K
+[47/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/captive_portal/captive_portal.cpp.obj[K
+[48/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_pb2_service.cpp.obj[K
+[49/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_frame_helper_noise.cpp.obj[K
+[50/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/list_entities.cpp.obj[K
+[51/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sensor/filter.cpp.obj[K
+[52/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_server.cpp.obj[K
+[53/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/esphome/ota/ota_esphome.cpp.obj[K
+[54/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/gpio/switch/gpio_switch.cpp.obj[K
+[55/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/api/api_connection.cpp.obj[K
+[56/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2c/i2c.cpp.obj[K
+[57/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2s_audio/microphone/i2s_audio_microphone.cpp.obj[K
+[58/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/esp_hsv_color.cpp.obj[K
+[59/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2s_audio/speaker/i2s_audio_speaker_standard.cpp.obj[K
+[60/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/esp_color_correction.cpp.obj[K
+[61/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2c/i2c_bus_esp_idf.cpp.obj[K
+[62/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/addressable_light.cpp.obj[K
+[63/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/light_effect.cpp.obj[K
+[64/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/automation.cpp.obj[K
+[65/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/esp_range_view.cpp.obj[K
+[66/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/light_output.cpp.obj[K
+[67/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/light_call.cpp.obj[K
+[68/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/json/json_util.cpp.obj[K
+[69/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/light_json_schema.cpp.obj[K
+[70/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/logger/task_log_buffer_esp32.cpp.obj[K
+[71/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/i2s_audio/speaker/i2s_audio_speaker.cpp.obj[K
+[72/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/md5/md5.cpp.obj[K
+[73/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/microphone/microphone_source.cpp.obj[K
+[74/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/network/network_component.cpp.obj[K
+[75/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/time/posix_tz.cpp.obj[K
+[76/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/ota/ota_bootloader_esp_idf.cpp.obj[K
+[77/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/ota/ota_partitions_esp_idf.cpp.obj[K
+[78/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/output/float_output.cpp.obj[K
+[79/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/psram/psram.cpp.obj[K
+[80/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/ota/ota_backend.cpp.obj[K
+[81/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/ota/ota_backend_esp_idf.cpp.obj[K
+[82/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sensirion_common/i2c_sensirion.cpp.obj[K
+[83/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sha256/sha256.cpp.obj[K
+[84/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/build_info_data.cpp.obj[K
+[85/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/logger/logger_esp32.cpp.obj[K
+[86/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/speaker/media_player/audio_pipeline.cpp.obj[K
+[87/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/light/light_state.cpp.obj[K
+[88/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/logger/logger.cpp.obj[K
+[89/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/number/automation.cpp.obj[K
+[90/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/mdns/mdns_esp32.cpp.obj[K
+[91/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/media_player/media_player.cpp.obj[K
+[92/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/number/number_call.cpp.obj[K
+[93/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/number/number.cpp.obj[K
+[94/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/output/automation.cpp.obj[K
+[95/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/rtttl/rtttl.cpp.obj[K
+[96/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/pcf85063/pcf85063.cpp.obj[K
+[97/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/network/util.cpp.obj[K
+[98/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sensor/automation.cpp.obj[K
+[99/151] Performing build step for 'bootloader'[K
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[100/151] No install step for 'bootloader'[K
+[101/151] Completed 'bootloader'[K
+[102/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/script/script.cpp.obj[K
+[103/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/shtcx/shtcx.cpp.obj[K
+[104/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sensor/sensor.cpp.obj[K
+[105/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/sntp/sntp_component.cpp.obj[K
+[106/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/mdns/mdns_component.cpp.obj[K
+[107/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/socket/socket.cpp.obj[K
+[108/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/socket/bsd_sockets_impl.cpp.obj[K
+[109/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/safe_mode/safe_mode.cpp.obj[K
+[110/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/template/binary_sensor/template_binary_sensor.cpp.obj[K
+[111/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/switch/automation.cpp.obj[K
+[112/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/spi/spi_esp_idf.cpp.obj[K
+[113/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/spi/spi.cpp.obj[K
+[114/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/switch/switch.cpp.obj[K
+[115/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/speaker/media_player/speaker_media_player.cpp.obj[K
+[116/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server_idf/multipart.cpp.obj[K
+[117/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/color.cpp.obj[K
+[118/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/template/number/template_number.cpp.obj[K
+[119/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/template/sensor/template_sensor.cpp.obj[K
+[120/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/template/switch/template_switch.cpp.obj[K
+[121/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/uptime/sensor/uptime_seconds_sensor.cpp.obj[K
+[122/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/time/real_time_clock.cpp.obj[K
+[123/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/uptime/sensor/uptime_timestamp_sensor.cpp.obj[K
+[124/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/time/automation.cpp.obj[K
+[125/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/watchdog/watchdog.cpp.obj[K
+[126/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/time.cpp.obj[K
+[127/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/wake/wake_freertos.cpp.obj[K
+[128/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server_base/web_server_base.cpp.obj[K
+[129/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server/ota/ota_web_server.cpp.obj[K
+[130/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/wifi_signal/wifi_signal_sensor.cpp.obj[K
+[131/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server/list_entities.cpp.obj[K
+[132/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/component.cpp.obj[K
+[133/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/application.cpp.obj[K
+[134/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/controller_registry.cpp.obj[K
+[135/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/log.cpp.obj[K
+[136/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/component_iterator.cpp.obj[K
+[137/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/entity_base.cpp.obj[K
+[138/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/helpers.cpp.obj[K
+[139/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/wifi/wifi_component_esp_idf.cpp.obj[K
+[140/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server_idf/web_server_idf.cpp.obj[K
+[141/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/scheduler.cpp.obj[K
+[142/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/wifi/wifi_component.cpp.obj[K
+[143/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/components/web_server/web_server.cpp.obj[K
+[144/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/esphome/core/util.cpp.obj[K
+[145/151] Building CXX object esp-idf/src/CMakeFiles/__idf_src.dir/main.cpp.obj[K
+[146/151] Linking C static library esp-idf/src/libsrc.a[K
+[147/151] Generating esp-idf/esp_system/ld/sections.ld[K
+[148/151] Linking CXX executable waveshare-photopainter.elf[K
+[149/151] Generating binary image from built executable[K
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin
+[150/151] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin[K
+waveshare-photopainter.bin binary size 0x1415f0 bytes. Smallest app partition is 0x7c0000 bytes. 0x67ea10 bytes (84%) free.
+Executing action: size
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja all"...
+[0/2] Re-checking globbed directories...[K
+[1/5] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.bin[K
+waveshare-photopainter.bin binary size 0x1415f0 bytes. Smallest app partition is 0x7c0000 bytes. 0x67ea10 bytes (84%) free.
+[2/5] Performing build step for 'bootloader'[K
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[3/5] No install step for 'bootloader'[K
+[4/5] Completed 'bootloader'[KRunning ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build
+Executing "ninja size"...
+[0/2] Re-checking globbed directories...
+[0/2] cd /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build && /root/.cache/esphome/idf/tools/cmake/3.30.2/bin/cmake -D "IDF_SIZE_TOOL=/root/.cache/esphome/idf/penvs/5.5.5/bin/python;-m;esp_idf_size" -D MAP_FILE=/data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/waveshare-photopainter.map -D OUTPUT_JSON= -P /root/.cache/esphome/idf/frameworks/5.5.5/tools/cmake/run_size_tool.cmake
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory Type/Section ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Code          │       961616 │          │                │               │
+│    .text            │       961616 │          │                │               │
+│ Flash Data          │       255468 │          │                │               │
+│    .rodata          │       255212 │          │                │               │
+│    .appdesc         │          256 │          │                │               │
+│ DIRAM               │       122831 │    35.94 │         218929 │        341760 │
+│    .text            │        62751 │    18.36 │                │               │
+│    .bss             │        39944 │    11.69 │                │               │
+│    .data            │        19976 │     5.85 │                │               │
+│    .noinit          │          160 │     0.05 │                │               │
+│ IRAM                │        16384 │    100.0 │              0 │         16384 │
+│    .text            │        15356 │    93.73 │                │               │
+│    .vectors         │         1028 │     6.27 │                │               │
+│ RTC SLOW            │           32 │     0.39 │           8160 │          8192 │
+│    .force_slow      │           32 │     0.39 │                │               │
+│ RTC FAST            │           24 │     0.29 │           8168 │          8192 │
+│    .rtc_reserved    │           24 │     0.29 │                │               │
+└─────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+Total image size: 1316227 bytes (.bin may be padded larger)
+RAM:   [====      ]  35.9% (used 122831 bytes from 341760 bytes)
+Flash: [==        ]  16.2% (used 1316227 bytes from 8126464 bytes)
+INFO Creating factory.bin...
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.factory.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.ota.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/waveshare-photopainter/build/firmware.elf
+INFO Build Info: config_hash=0xfa00342c build_time_str=2026-09-01 07:58:29 -0700
+INFO Successfully compiled program.
+Not changing the image
+Compressed 1381872 bytes to 895494...
+Writing at 0x0... (1%)
+Writing at 0x10c89... (3%)
+Writing at 0x1b9d9... (5%)
+Writing at 0x29be3... (7%)
+Writing at 0x3409e... (9%)
+Writing at 0x39b40... (10%)
+Writing at 0x3e15f... (12%)
+Writing at 0x431b8... (14%)
+Writing at 0x4a7d0... (16%)
+Writing at 0x5341c... (18%)
+Writing at 0x58a76... (20%)
+Writing at 0x5e0de... (21%)
+Writing at 0x63886... (23%)
+Writing at 0x690bc... (25%)
+Writing at 0x6e4b3... (27%)
+Writing at 0x7399f... (29%)
+Writing at 0x78ec2... (30%)
+Writing at 0x7e4f0... (32%)
+Writing at 0x84504... (34%)
+Writing at 0x89ff5... (36%)
+Writing at 0x8fba3... (38%)
+Writing at 0x954cc... (40%)
+Writing at 0x9ad48... (41%)
+Writing at 0xa07a7... (43%)
+Writing at 0xa5b00... (45%)
+Writing at 0xaad76... (47%)
+Writing at 0xb0237... (49%)
+Writing at 0xb5966... (50%)
+Writing at 0xbb782... (52%)
+Writing at 0xc0b94... (54%)
+Writing at 0xc5bdd... (56%)
+Writing at 0xcb144... (58%)
+Writing at 0xd06d5... (60%)
+Writing at 0xd59a6... (61%)
+Writing at 0xdabd0... (63%)
+Writing at 0xdfb51... (65%)
+Writing at 0xe5404... (67%)
+Writing at 0xeabf5... (69%)
+Writing at 0xf009c... (70%)
+Writing at 0xf5483... (72%)
+Writing at 0xfab32... (74%)
+Writing at 0x100bb2... (76%)
+Writing at 0x105d55... (78%)
+Writing at 0x10affb... (80%)
+Writing at 0x1104ff... (81%)
+Writing at 0x115d00... (83%)
+Writing at 0x11b213... (85%)
+Writing at 0x121384... (87%)
+Writing at 0x128944... (89%)
+Writing at 0x12ecb7... (90%)
+Writing at 0x13468e... (92%)
+Writing at 0x13a544... (94%)
+Writing at 0x141f92... (96%)
+Writing at 0x147e23... (98%)
+Writing at 0x14d7e6... (100%)
+Wrote 1381872 bytes (895494 compressed) at 0x0 in 55.993 seconds.
+Leaving...

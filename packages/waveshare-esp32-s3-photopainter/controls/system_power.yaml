@@ -1,0 +1,14 @@
+# System restart. This is ESPHome's ESP32-only restart: it reboots the
+# microcontroller and leaves every AXP2101 rail untouched, so ALDO3 stays on and
+# the shared I2C bus cannot clamp.
+#
+# The package deliberately offers no PMIC power-off or PMIC restart. Both cycle
+# every rail, ALDO3 included; with ALDO3 de-energized the audio codecs clamp the
+# shared bus, and the board then needs a full power drain of at least one minute
+# to recover (see HARDWARE.md). They were research-phase controls and are not
+# part of the supported configuration.
+button:
+  - platform: restart
+    id: photopainter_esp_restart
+    name: "PhotoPainter Restart"
+    icon: "mdi:restart"

@@ -1,0 +1,761 @@
+# Optional application-level dashboard: the six-colour status page drawn on the
+# 7.3-inch Spectra E6 panel. The board package keeps photopainter_display free of
+# UI and stopped (update_interval: never); this layer attaches the drawing lambda
+# and starts the poller only after every reading the page draws is available.
+#
+# Composition requirements:
+#   - demos/audio.yaml provides the microphone-gain number and the new-voice-note
+#     flag drawn in the AUDIO panel. Every demo composition includes it.
+#   - Wi-Fi is optional and consumer-owned. The signal bars read the RSSI of the
+#     consumer's wifi: connection directly; without Wi-Fi they draw empty and
+#     the readiness gate exempts the signal reading.
+#   - The clock is deliberately not gated. A working screen is the first sign a
+#     board is alive, so the first refresh never waits on network time; the
+#     clock draws "--" until SNTP or a set RTC supplies it and appears on the
+#     next refresh. The release line states clock=valid|pending.
+#
+# Pages: "PhotoPainter Display Page" selects the dashboard or a sample image,
+# and "PhotoPainter Rotate Pages" alternates them on each scheduled refresh. The
+# sample is Waveshare's own pre-dithered six-colour 800x480 bitmap, downloaded
+# at compile time from an immutable commit of the vendor repository, so this
+# package never redistributes it. Its pixels already use the panel's six exact
+# colours, so it is embedded as RGB with no further dithering.
+#
+# Free heap and free PSRAM are read from the ESP-IDF heap allocator at render
+# time, using the same calls as ESPHome's debug sensors, so this layer does not
+# depend on, or duplicate, the diagnostic layer's debug entities.
+font:
+  - file: "gfonts://Roboto"
+    id: photopainter_dashboard_title_font
+    size: 32
+  - file: "gfonts://Roboto"
+    id: photopainter_dashboard_header_font
+    size: 20
+  - file: "gfonts://Roboto"
+    id: photopainter_dashboard_body_font
+    size: 18
+
+globals:
+  # Set when the readiness gate releases the first refresh; page changes before
+  # then are stored but do not redraw, so the gate stays the only first path.
+  - id: photopainter_dashboard_released
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  # Page drawn by the last refresh: -1 none yet, 0 dashboard, 1 sample image.
+  - id: photopainter_dashboard_rendered_page
+    type: int
+    restore_value: false
+    initial_value: "-1"
+
+  - id: photopainter_dashboard_gate_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+  # Readings exempted from the first-refresh gate because their source is in an
+  # error state. Written once when the gate releases; read by the release log.
+  - id: photopainter_dashboard_gate_exempt
+    type: std::string
+    restore_value: false
+
+esphome:
+  on_boot:
+    - priority: -100.0
+      then:
+        - component.update: photopainter_environment
+        - component.update: photopainter_usb_voltage
+        - component.update: photopainter_battery_voltage
+        - component.update: photopainter_battery_level
+        - lambda: |-
+            id(photopainter_dashboard_gate_started_ms) = millis();
+            id(photopainter_dashboard_gate_exempt).clear();
+        # RULE: every reading the panel draws must be present before the first
+        # refresh after a reset or reboot. Each PollingComponent's first update
+        # lands at an independent random offset, so wait on the readings
+        # themselves; no fixed delay or timeout releases this gate. A reading
+        # whose source is in an error state is exempted and named instead of
+        # blocking. A reading that never arrives without an error state keeps
+        # the gate closed and is named in every first_refresh_wait line.
+        - wait_until:
+            condition:
+              lambda: |-
+                static std::string last_report_key;
+                static uint32_t last_report_ms = 0;
+
+                // Power initialization has not finished: nothing is readable yet.
+                // Power initialization failed: release here; the branch below
+                // reports the power error and requests no refresh.
+                const bool init_complete = id(photopainter_power_init_complete);
+                if (init_complete && !id(photopainter_power_ready)) return true;
+
+                std::string missing;
+                std::string exempt;
+                auto append = [](std::string &list, const char *key) {
+                  if (!list.empty()) list += ",";
+                  list += key;
+                };
+                // ready: the entity has published (a published NAN, such as an
+                // absent cell, counts; the panel draws "--" for it).
+                // error_state: the reading cannot arrive because its source failed.
+                auto need = [&](const char *key, bool ready, bool error_state) {
+                  if (ready) return;
+                  append(error_state ? exempt : missing, key);
+                };
+
+                if (!init_complete) {
+                  append(missing, "power_init");
+                } else {
+                  const bool pmic_error = !id(photopainter_axp_state_valid);
+                  const bool rtc_error = !id(photopainter_rtc_state_valid);
+                  const bool environment_error = id(photopainter_environment).is_failed();
+                  const bool sd_unmounted = !id(photopainter_sd_mounted);
+                  // No Wi-Fi configured, Wi-Fi disabled, or the station connection
+                  // abandoned (fallback AP up): neither the signal reading nor SNTP
+                  // time can arrive.
+                #ifdef USE_WIFI
+                  auto *const wifi_component = wifi::global_wifi_component;
+                  const bool wifi_connected =
+                      wifi_component != nullptr && wifi_component->is_connected();
+                  const bool network_error =
+                      wifi_component == nullptr || wifi_component->is_disabled() ||
+                      wifi_component->is_ap_active();
+                #else
+                  const bool wifi_connected = false;
+                  const bool network_error = true;
+                #endif
+
+                  need("wifi_signal", wifi_connected, network_error);
+                  need("uptime", id(photopainter_uptime).has_state(), false);
+                  need("temperature", id(photopainter_temperature).has_state(), environment_error);
+                  need("humidity", id(photopainter_humidity).has_state(), environment_error);
+                  need("volume", id(photopainter_speaker_volume).has_state(), false);
+                  need("mic_gain", id(photopainter_demo_mic_gain_control).has_state(), false);
+                  need("voice_note_unread", id(photopainter_demo_voice_note_unread).has_state(), false);
+                  need("usb_connected", id(photopainter_usb_connected).has_state(), pmic_error);
+                  need("usb_voltage", id(photopainter_usb_voltage).has_state(), pmic_error);
+                  need("battery_connected", id(photopainter_battery_connected).has_state(), pmic_error);
+                  need("battery_level", id(photopainter_battery_level).has_state(), pmic_error);
+                  need("battery_voltage", id(photopainter_battery_voltage).has_state(), pmic_error);
+                  need("battery_charging", id(photopainter_battery_charging).has_state(), pmic_error);
+                  need("sd_mounted", id(photopainter_sd_card_mounted).has_state(), false);
+                  need("sd_free", id(photopainter_sd_free_space).has_state(), sd_unmounted);
+                  need("sd_used", id(photopainter_sd_used_space).has_state(), sd_unmounted);
+                  need("sd_total", id(photopainter_sd_total_space).has_state(), sd_unmounted);
+                  need("rtc_running", id(photopainter_rtc_running).has_state(), rtc_error);
+                  need("adc", id(photopainter_es7210_status).has_state(), false);
+                  need("dac", id(photopainter_es8311_status).has_state(), false);
+                  need("amp", id(photopainter_amplifier_status).has_state(), false);
+                }
+
+                if (missing.empty()) {
+                  id(photopainter_dashboard_gate_exempt) = exempt;
+                  return true;
+                }
+
+                // Report on any change to what is missing or exempted, and at
+                // least every 5 s while the set is unchanged -- never per loop.
+                const uint32_t now = millis();
+                const std::string report_key = missing + "|" + exempt;
+                if (report_key != last_report_key || now - last_report_ms >= 5000) {
+                  last_report_key = report_key;
+                  last_report_ms = now;
+                  ESP_LOGI("photopainter_dashboard",
+                           "event=first_refresh_wait missing=%s exempt=%s elapsed_ms=%u",
+                           missing.c_str(), exempt.empty() ? "-" : exempt.c_str(),
+                           static_cast<unsigned>(
+                               now - id(photopainter_dashboard_gate_started_ms)));
+                }
+                return false;
+        - if:
+            condition:
+              lambda: return id(photopainter_power_ready);
+            then:
+              - if:
+                  condition:
+                    lambda: return id(photopainter_display_active);
+                  then:
+                    - lambda: |-
+                        id(photopainter_dashboard_released) = true;
+                        const std::string &exempt = id(photopainter_dashboard_gate_exempt);
+                        const unsigned wait_ms = static_cast<unsigned>(
+                            millis() - id(photopainter_dashboard_gate_started_ms));
+                        const char *clock =
+                            id(photopainter_rtc).now().is_valid() ? "valid" : "pending";
+                        if (exempt.empty()) {
+                          ESP_LOGI("photopainter_dashboard",
+                                   "event=first_refresh result=requested readings=ready "
+                                   "exempt=- clock=%s wait_ms=%u "
+                                   "update_interval=${photopainter_display_refresh_interval}",
+                                   clock, wait_ms);
+                        } else {
+                          ESP_LOGW("photopainter_dashboard",
+                                   "event=first_refresh result=requested readings=exempted "
+                                   "exempt=%s clock=%s wait_ms=%u "
+                                   "update_interval=${photopainter_display_refresh_interval}",
+                                   exempt.c_str(), clock, wait_ms);
+                        }
+                    # The boot poller registered nothing (update_interval: never in
+                    # hardware/display.yaml). This resume gives the panel its live
+                    # interval; the first refresh follows within the scheduler's
+                    # initial interval offset of at most 5 s.
+                    - component.resume:
+                        id: photopainter_display
+                        update_interval: ${photopainter_display_refresh_interval}
+                  else:
+                    # The display was switched off while the gate waited. Its
+                    # power-up script resumes the poller when the rail returns.
+                    - logger.log:
+                        tag: photopainter_dashboard
+                        level: WARN
+                        format: "event=first_refresh result=skipped reason=display_off"
+            else:
+              - logger.log:
+                  tag: photopainter_dashboard
+                  level: ERROR
+                  format: "event=first_refresh result=exempt reason=power_error"
+
+display:
+  - id: !extend photopainter_display
+    show_test_card: false
+    lambda: |-
+      id(photopainter_display_refresh_started_ms) = millis();
+      // Page for this refresh: the selected page, or with rotation on, the page
+      // not drawn last time.
+      const bool rotate = id(photopainter_rotate_pages).state;
+      const auto selected = id(photopainter_display_page).active_index();
+      int page = (selected.has_value() && *selected == 1) ? 1 : 0;
+      if (rotate && id(photopainter_dashboard_rendered_page) >= 0) {
+        page = 1 - id(photopainter_dashboard_rendered_page);
+      }
+      id(photopainter_dashboard_rendered_page) = page;
+      // Mark the start of each refresh. The display shutdown wait uses this stamp
+      // to report how far into a refresh a shutdown request arrived, and it is the
+      // line a display-refresh-window test triggers on.
+      ESP_LOGI("photopainter_dashboard",
+               "event=render_begin stamp_ms=%u page=%s rotate=%d",
+               static_cast<unsigned>(id(photopainter_display_refresh_started_ms)),
+               page == 1 ? "sample_image" : "dashboard", rotate ? 1 : 0);
+      id(photopainter_displayed_page).publish_state(page == 1 ? "Sample Image" : "Dashboard");
+      if (page == 1) {
+        it.image(0, 0, id(photopainter_demo_sample_image));
+        return;
+      }
+      // has_state() alone is not "has a usable value". Battery sensors publish NAN
+      // when unavailable, and has_state() is true after any publish -- NAN
+      // included -- so a has_state()-only guard would draw "nan" where the panel
+      // is supposed to draw "--". Use this everywhere a float reaches the panel.
+      auto readable = [](esphome::sensor::Sensor *sn) -> bool {
+        return sn->has_state() && !std::isnan(sn->state);
+      };
+      auto readable_n = [](esphome::number::Number *nb) -> bool {
+        return nb->has_state() && !std::isnan(nb->state);
+      };
+      Color COLOR_BLACK(0, 0, 0);
+      Color COLOR_WHITE(255, 255, 255);
+      Color COLOR_YELLOW(255, 255, 0);
+      Color COLOR_RED(255, 0, 0);
+      Color COLOR_BLUE(0, 0, 255);
+      Color COLOR_GREEN(0, 255, 0);
+
+      it.fill(COLOR_WHITE);
+
+      // Dithered (light blue) rectangle: alternating 50/50 checkerboard.
+      auto draw_dithered_rectangle = [&](int rx, int ry, int rw, int rh, Color c1, Color c2) {
+        for (int py = ry; py < ry + rh; py++) {
+          for (int px = rx; px < rx + rw; px++) {
+            if ((px + py) % 2 == 0) {
+              it.draw_pixel_at(px, py, c1);
+            } else {
+              it.draw_pixel_at(px, py, c2);
+            }
+          }
+        }
+      };
+
+      // ESPHome logo with a dithered light-blue body.
+      auto draw_esphome_logo = [&](int x, int y) {
+        // Roof (dithered blue + white)
+        for (int i = 0; i < 18; i++) {
+          for (int px = x + 18 - i; px <= x + 18 + i; px++) {
+            if ((px + (y + i)) % 2 == 0) {
+              it.draw_pixel_at(px, y + i, COLOR_BLUE);
+            } else {
+              it.draw_pixel_at(px, y + i, COLOR_WHITE);
+            }
+          }
+        }
+
+        // House base (50% dithered light blue)
+        draw_dithered_rectangle(x + 2, y + 18, 33, 17, COLOR_BLUE, COLOR_WHITE);
+
+        // PCB antenna meander trace (solid white)
+        it.filled_rectangle(x + 9, y + 14, 3, 18, COLOR_WHITE);
+        it.filled_rectangle(x + 9, y + 14, 18, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 25, y + 14, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 17, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 17, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 20, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 25, y + 20, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 23, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 23, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 26, 13, 2, COLOR_WHITE);
+      };
+
+      draw_esphome_logo(30, 20);
+
+      // Header bar (title starts at X = 75, right of the logo)
+      it.print(75, 25, id(photopainter_dashboard_title_font), COLOR_RED,
+               "Waveshare ESP32-S3-PhotoPainter");
+
+      // Live RSSI of the consumer's Wi-Fi connection (the same value ESPHome's
+      // wifi_signal sensor publishes); no Wi-Fi or no connection draws empty bars.
+      bool wifi_ok = false;
+      float rssi = -100.0f;
+      #ifdef USE_WIFI
+      if (wifi::global_wifi_component != nullptr &&
+          wifi::global_wifi_component->is_connected()) {
+        const int8_t live_rssi = wifi::global_wifi_component->wifi_rssi();
+        if (live_rssi != wifi::WIFI_RSSI_DISCONNECTED) {
+          wifi_ok = true;
+          rssi = live_rssi;
+        }
+      }
+      #endif
+
+      // Phone-style status icons (signal bars + battery), no identifying text
+      {
+        int bars_lit = 0;
+        if (rssi >= -55) bars_lit = 4;
+        else if (rssi >= -65) bars_lit = 3;
+        else if (rssi >= -75) bars_lit = 2;
+        else if (rssi >= -85) bars_lit = 1;
+
+        const int bar_w = 6, bar_gap = 3, bar_baseline = 28;
+        const int bar_heights[4] = {6, 11, 16, 21};
+        int bar_x = 693;
+        for (int i = 0; i < 4; i++) {
+          int h = bar_heights[i];
+          Color fill = (wifi_ok && i < bars_lit) ? COLOR_BLACK : COLOR_WHITE;
+          it.filled_rectangle(bar_x, bar_baseline - h, bar_w, h, fill);
+          it.rectangle(bar_x, bar_baseline - h, bar_w, h, COLOR_BLACK);
+          bar_x += bar_w + bar_gap;
+        }
+
+        if (id(photopainter_battery_connected).has_state() &&
+            id(photopainter_battery_connected).state) {
+          const int bx = 736, by = 10, bw = 26, bh = 14;
+          it.rectangle(bx, by, bw, bh, COLOR_BLACK);
+          it.filled_rectangle(bx + bw, by + 4, 3, bh - 8, COLOR_BLACK);
+
+          float level = readable(id(photopainter_battery_level))
+                            ? id(photopainter_battery_level).state
+                            : 0.0f;
+          bool charging = id(photopainter_battery_charging).has_state() &&
+                          id(photopainter_battery_charging).state;
+          int fill_w = static_cast<int>((bw - 4) * (level / 100.0f));
+          if (fill_w < 0) fill_w = 0;
+          if (fill_w > bw - 4) fill_w = bw - 4;
+          if (fill_w > 0) {
+            Color fill = charging ? COLOR_YELLOW : (level < 20 ? COLOR_RED : COLOR_GREEN);
+            it.filled_rectangle(bx + 2, by + 2, fill_w, bh - 4, fill);
+          }
+        }
+      }
+
+      // Timestamp
+      if (id(photopainter_rtc).now().is_valid()) {
+        it.strftime(770, 32, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "%Y-%m-%d  %H:%M", id(photopainter_rtc).now());
+      } else {
+        it.print(770, 32, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                 TextAlign::TOP_RIGHT, "Syncing time...");
+      }
+
+      // Uptime, grouped with the date/time rather than the boxes below
+      if (readable(id(photopainter_uptime))) {
+        uint32_t secs = static_cast<uint32_t>(id(photopainter_uptime).state);
+        uint32_t days = secs / 86400;
+        uint32_t hours = (secs % 86400) / 3600;
+        uint32_t mins = (secs % 3600) / 60;
+        if (days > 0) {
+          it.printf(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "Up: %lud %luh", days, hours);
+        } else {
+          it.printf(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "Up: %luh %lum", hours, mins);
+        }
+      } else {
+        it.print(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                 TextAlign::TOP_RIGHT, "Up: --");
+      }
+
+      it.line(30, 75, 770, 75, COLOR_BLACK);
+
+      // Section 1: Environment + Audio -- two boxes sharing one outline
+      it.rectangle(28, 83, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 85, 174, 145, COLOR_GREEN);
+      it.rectangle(31, 86, 172, 143, COLOR_GREEN);
+      it.print(45, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "ENVIRONMENT");
+
+      if (readable(id(photopainter_temperature))) {
+        it.printf(45, 130, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Temp: %.1f °C", id(photopainter_temperature).state);
+      } else {
+        it.print(45, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Temp: -- °C");
+      }
+
+      if (readable(id(photopainter_humidity))) {
+        it.printf(45, 165, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Humidity: %.1f %%", id(photopainter_humidity).state);
+      } else {
+        it.print(45, 165, id(photopainter_dashboard_body_font), COLOR_BLACK, "Humidity: -- %");
+      }
+
+      it.rectangle(210, 85, 175, 145, COLOR_GREEN);
+      it.rectangle(211, 86, 173, 143, COLOR_GREEN);
+      it.print(225, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "AUDIO");
+
+      if (readable_n(id(photopainter_speaker_volume))) {
+        it.printf(225, 130, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Volume: %.0f %%", id(photopainter_speaker_volume).state);
+      } else {
+        it.print(225, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Volume: -- %");
+      }
+
+      if (readable_n(id(photopainter_demo_mic_gain_control))) {
+        it.printf(225, 165, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Mic Gain: %.0f", id(photopainter_demo_mic_gain_control).state);
+      } else {
+        it.print(225, 165, id(photopainter_dashboard_body_font), COLOR_BLACK, "Mic Gain: --");
+      }
+
+      // The unread flag tracks playback, not whether a recording exists, so file
+      // presence on the card is checked as well. Three states fit the panel box:
+      // New (recorded, not played back), Heard (played back), None (no file).
+      // With the card unmounted no recording can be reached, so it draws "--".
+      bool voice_note_unread = id(photopainter_demo_voice_note_unread).has_state() &&
+                               id(photopainter_demo_voice_note_unread).state;
+      const char *voice_note_state = "unknown";
+      if (id(photopainter_sd_mounted)) {
+        FILE *voice_note_file = fopen("/sdcard/voice.wav", "rb");
+        const bool voice_note_present = voice_note_file != nullptr;
+        if (voice_note_file != nullptr) fclose(voice_note_file);
+        voice_note_state = !voice_note_present ? "none" : voice_note_unread ? "new" : "heard";
+      }
+      const bool voice_note_new = strcmp(voice_note_state, "new") == 0;
+      const char *voice_note_label = voice_note_new ? "New"
+          : strcmp(voice_note_state, "heard") == 0 ? "Heard"
+          : strcmp(voice_note_state, "none") == 0 ? "None" : "--";
+      it.printf(225, 200, id(photopainter_dashboard_body_font),
+                voice_note_new ? COLOR_GREEN : COLOR_BLACK,
+                "Voice Note: %s", voice_note_label);
+
+      // Section 2: Power & Battery
+      it.rectangle(413, 83, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 85, 355, 145, COLOR_BLUE);
+      it.rectangle(416, 86, 353, 143, COLOR_BLUE);
+      it.print(430, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "POWER & BATTERY");
+
+      bool usb_on = id(photopainter_usb_connected).has_state() &&
+                    id(photopainter_usb_connected).state;
+      bool bat_on = id(photopainter_battery_connected).has_state() &&
+                    id(photopainter_battery_connected).state;
+      bool is_charging = id(photopainter_battery_charging).has_state() &&
+                         id(photopainter_battery_charging).state;
+
+      // Left column (X = 430)
+      it.printf(430, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "USB: %s",
+                usb_on ? "Connected" : "Disconnected");
+
+      if (readable(id(photopainter_usb_voltage))) {
+        it.printf(430, 170, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Voltage: %.2f V", id(photopainter_usb_voltage).state);
+      } else {
+        it.print(430, 170, id(photopainter_dashboard_body_font), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      // Right column (centre of the box: X = 592)
+      it.printf(592, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Li-ion: %s",
+                bat_on ? "Present" : "Missing");
+
+      if (readable(id(photopainter_battery_level))) {
+        it.printf(592, 150, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Level: %.0f %%", id(photopainter_battery_level).state);
+      } else {
+        it.print(592, 150, id(photopainter_dashboard_body_font), COLOR_BLACK, "Level: -- %");
+      }
+
+      if (readable(id(photopainter_battery_voltage))) {
+        it.printf(592, 170, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Voltage: %.2f V", id(photopainter_battery_voltage).state);
+      } else {
+        it.print(592, 170, id(photopainter_dashboard_body_font), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      it.printf(592, 190, id(photopainter_dashboard_body_font),
+                is_charging ? COLOR_GREEN : COLOR_BLACK,
+                "Charging: %s", is_charging ? "YES" : "NO");
+
+      // Section 3: SD Card + Free Memory -- two boxes sharing one outline
+      it.rectangle(28, 243, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 245, 174, 145, COLOR_YELLOW);
+      it.rectangle(31, 246, 172, 143, COLOR_YELLOW);
+      it.print(45, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "SD CARD");
+
+      bool sd_mounted_st = id(photopainter_sd_card_mounted).has_state() &&
+                           id(photopainter_sd_card_mounted).state;
+      it.printf(45, 285, id(photopainter_dashboard_body_font),
+                sd_mounted_st ? COLOR_GREEN : COLOR_RED,
+                "Mounted: %s", sd_mounted_st ? "Yes" : "No");
+
+      if (sd_mounted_st && readable(id(photopainter_sd_free_space))) {
+        it.printf(45, 308, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Free: %.0f MB", id(photopainter_sd_free_space).state);
+      } else {
+        it.print(45, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "Free: -- MB");
+      }
+
+      if (sd_mounted_st && readable(id(photopainter_sd_used_space))) {
+        it.printf(45, 331, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Used: %.0f MB", id(photopainter_sd_used_space).state);
+      } else {
+        it.print(45, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Used: -- MB");
+      }
+
+      if (sd_mounted_st && readable(id(photopainter_sd_total_space))) {
+        it.printf(45, 354, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Total: %.0f MB", id(photopainter_sd_total_space).state);
+      } else {
+        it.print(45, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "Total: -- MB");
+      }
+
+      it.rectangle(210, 245, 175, 145, COLOR_YELLOW);
+      it.rectangle(211, 246, 173, 143, COLOR_YELLOW);
+      it.print(225, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "FREE MEMORY");
+
+      // "Free" is already the box header; item labels omit the word so they
+      // don't overrun the box width. Same allocator queries as ESPHome's debug
+      // free/psram sensors, read at render time.
+      const uint32_t free_heap_bytes = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+      const uint32_t free_psram_bytes = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+      it.printf(225, 285, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                "Heap: %.0f KB", free_heap_bytes / 1024.0f);
+      it.printf(225, 308, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                "PSRAM: %.0f KB", free_psram_bytes / 1024.0f);
+
+      // Flash space claimed by no partition. A failed size query leaves
+      // flash_total_bytes at 0, and the unchecked unsigned subtraction would wrap
+      // to ~4194304 KB, so both conditions are checked before drawing a value.
+      uint32_t flash_total_bytes = 0;
+      const bool flash_size_ok =
+          esp_flash_get_size(nullptr, &flash_total_bytes) == ESP_OK;
+      uint32_t partitions_total_bytes = 0;
+      esp_partition_iterator_t part_it = esp_partition_find(
+          ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+      while (part_it != nullptr) {
+        partitions_total_bytes += esp_partition_get(part_it)->size;
+        part_it = esp_partition_next(part_it);
+      }
+      // esp_partition_next() releases the iterator itself when it returns nullptr,
+      // so no release call is needed or possible here -- part_it is already null.
+      if (flash_size_ok && flash_total_bytes >= partitions_total_bytes) {
+        it.printf(225, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Flash: %.0f KB",
+                  (flash_total_bytes - partitions_total_bytes) / 1024.0f);
+      } else {
+        it.print(225, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Flash: --");
+      }
+
+      // Section 4: Hardware Status
+      it.rectangle(413, 243, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 245, 355, 145, COLOR_RED);
+      it.rectangle(416, 246, 353, 143, COLOR_RED);
+      it.print(430, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "HARDWARE STATUS");
+
+      // PCF85063 oscillator-stop flag: clear = the clock has run continuously since
+      // its time was last set; set = it stopped at some point (power lost beyond the
+      // backup cell, or first power-up), so its time is untrusted until the next
+      // write. No state = the chip could not be read. The backup cell itself
+      // cannot be measured; "Stopped" after a power cycle is the indirect sign.
+      bool rtc_ok = id(photopainter_rtc_running).has_state() &&
+                    id(photopainter_rtc_running).state;
+      const char *rtc_label = !id(photopainter_rtc_running).has_state() ? "ERR"
+                              : rtc_ok ? "Running" : "Stopped";
+      bool codec_ok = id(photopainter_es8311_status).has_state() &&
+                      id(photopainter_es8311_status).state;
+      bool adc_ok = id(photopainter_es7210_status).has_state() &&
+                    id(photopainter_es7210_status).state;
+      bool amp_on = id(photopainter_amplifier_status).has_state() &&
+                    id(photopainter_amplifier_status).state;
+
+      // The LED pins are driven as outputs with the input buffer disabled, so
+      // gpio_get_level() would always read 0; report the light state instead.
+      // The outputs are inverted, and is_on() already reports the logical (lit)
+      // state.
+      bool act_on = id(photopainter_act_led).current_values.is_on();
+      bool pwr_on = id(photopainter_power_led).current_values.is_on();
+
+      // GPIO0/GPIO4 are configured as inputs by their binary_sensor entries, so
+      // these reads are valid (active low: 0 = pressed).
+      bool boot_pressed = (gpio_get_level(GPIO_NUM_0) == 0);
+      bool key_pressed = (gpio_get_level(GPIO_NUM_4) == 0);
+
+      // Left column (X = 430)
+      it.printf(430, 285, id(photopainter_dashboard_body_font), COLOR_BLACK, "RTC: %s",
+                rtc_label);
+      it.printf(430, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "ADC: %s",
+                adc_ok ? "OK" : "ERR");
+      it.printf(430, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "DAC: %s",
+                codec_ok ? "OK" : "ERR");
+      it.printf(430, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "Amp: %s",
+                amp_on ? "ON" : "OFF");
+
+      // Right column (centre of the box: X = 592)
+      it.printf(592, 285, id(photopainter_dashboard_body_font), COLOR_BLACK, "LED-ACT: %s",
+                act_on ? "ON" : "OFF");
+      it.printf(592, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "LED-PWR: %s",
+                pwr_on ? "ON" : "OFF");
+      it.printf(592, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "BTN-KEY: %s",
+                key_pressed ? "PRESSED" : "IDLE");
+      it.printf(592, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "BTN-BOOT: %s",
+                boot_pressed ? "PRESSED" : "IDLE");
+
+      // Colour palette swatches
+      it.filled_rectangle(50, 405, 100, 45, COLOR_BLACK);
+      it.rectangle(50, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(170, 405, 100, 45, COLOR_WHITE);
+      it.rectangle(170, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(290, 405, 100, 45, COLOR_YELLOW);
+      it.rectangle(290, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(410, 405, 100, 45, COLOR_RED);
+      it.rectangle(410, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(530, 405, 100, 45, COLOR_BLUE);
+      it.rectangle(530, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(650, 405, 100, 45, COLOR_GREEN);
+      it.rectangle(650, 405, 100, 45, COLOR_BLACK);
+
+      // One line per refresh recording exactly what was drawn, emitted after every
+      // value has been read and before the buffer transfer. `nan` means the panel
+      // drew its "--" placeholder; nostate= names every entity that has never
+      // published, which separates a missing reading from a published NAN (for
+      // example, no cell fitted) and from a real 0.00.
+      auto value_s = [](esphome::sensor::Sensor *s) -> float {
+        return s->has_state() ? s->state : NAN;
+      };
+      auto value_n = [](esphome::number::Number *n) -> float {
+        return n->has_state() ? n->state : NAN;
+      };
+      std::string unset;
+      auto mark = [&](const char *nm, bool has) {
+        if (has) return;
+        if (!unset.empty()) unset += ",";
+        unset += nm;
+      };
+      mark("usb_v", id(photopainter_usb_voltage).has_state());
+      mark("bat_v", id(photopainter_battery_voltage).has_state());
+      mark("level", id(photopainter_battery_level).has_state());
+      mark("temp", id(photopainter_temperature).has_state());
+      mark("hum", id(photopainter_humidity).has_state());
+      mark("vol", id(photopainter_speaker_volume).has_state());
+      mark("mic_gain", id(photopainter_demo_mic_gain_control).has_state());
+      mark("sd_free", id(photopainter_sd_free_space).has_state());
+      mark("sd_used", id(photopainter_sd_used_space).has_state());
+      mark("sd_total", id(photopainter_sd_total_space).has_state());
+      mark("uptime", id(photopainter_uptime).has_state());
+      const char *unset_str = unset.empty() ? "-" : unset.c_str();
+      // Not connected (or no Wi-Fi) is logged as nan, matching the empty bars.
+      const float rssi_logged = wifi_ok ? rssi : NAN;
+
+      ESP_LOGI("photopainter_dashboard",
+               "event=render_values usb_present=%d usb_v=%.2f bat_present=%d bat_v=%.2f "
+               "level=%.0f charging=%d temp=%.1f hum=%.1f vol=%.0f mic_gain=%.0f unread=%d "
+               "voice_note=%s sd_mounted=%d sd_free=%.0f sd_used=%.0f sd_total=%.0f "
+               "rssi=%.0f uptime=%.0f heap=%u psram=%u clock=%d "
+               "rtc=%d dac=%d adc=%d amp=%d led_act=%d led_pwr=%d btn_key=%d btn_boot=%d "
+               "nostate=%s",
+               usb_on ? 1 : 0, value_s(id(photopainter_usb_voltage)),
+               bat_on ? 1 : 0, value_s(id(photopainter_battery_voltage)),
+               value_s(id(photopainter_battery_level)), is_charging ? 1 : 0,
+               value_s(id(photopainter_temperature)), value_s(id(photopainter_humidity)),
+               value_n(id(photopainter_speaker_volume)),
+               value_n(id(photopainter_demo_mic_gain_control)),
+               voice_note_unread ? 1 : 0, voice_note_state,
+               sd_mounted_st ? 1 : 0, value_s(id(photopainter_sd_free_space)),
+               value_s(id(photopainter_sd_used_space)), value_s(id(photopainter_sd_total_space)),
+               rssi_logged, value_s(id(photopainter_uptime)),
+               static_cast<unsigned>(free_heap_bytes), static_cast<unsigned>(free_psram_bytes),
+               id(photopainter_rtc).now().is_valid() ? 1 : 0,
+               rtc_ok ? 1 : 0, codec_ok ? 1 : 0, adc_ok ? 1 : 0, amp_on ? 1 : 0,
+               act_on ? 1 : 0, pwr_on ? 1 : 0, key_pressed ? 1 : 0, boot_pressed ? 1 : 0,
+               unset_str);
+
+image:
+  - platform: file
+    id: photopainter_demo_sample_image
+    # Waveshare ESP32-S3-PhotoPainter, commit 7600e4c (2025-11-17),
+    # 02_SDCARD/06_user_Foundation_img/2.bmp: 800x480, six panel colours.
+    # SHA-256 447cfb524a99ba7be53b62cf6c29bf353a00734c4a09d3f9d8a48016d0c08e52
+    file: https://raw.githubusercontent.com/waveshareteam/ESP32-S3-PhotoPainter/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp
+    type: RGB
+    dither: NONE
+
+select:
+  - platform: template
+    id: photopainter_display_page
+    name: "PhotoPainter Display Page"
+    icon: "mdi:image-multiple"
+    options:
+      - "Dashboard"
+      - "Sample Image"
+    initial_option: "Dashboard"
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: |-
+            ESP_LOGI("photopainter_dashboard",
+                     "event=page_select page=%s redraw=%s", x.c_str(),
+                     !id(photopainter_dashboard_released) ? "deferred_to_first_refresh"
+                     : !id(photopainter_display_active) ? "skipped_display_off"
+                     : "requested");
+        - if:
+            condition:
+              lambda: |-
+                return id(photopainter_dashboard_released) &&
+                       id(photopainter_display_active);
+            then:
+              - component.update: photopainter_display
+
+switch:
+  - platform: template
+    id: photopainter_rotate_pages
+    name: "PhotoPainter Rotate Pages"
+    icon: "mdi:rotate-right"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - logger.log:
+          tag: photopainter_dashboard
+          level: INFO
+          format: "event=rotate_pages old=off new=on"
+    on_turn_off:
+      - logger.log:
+          tag: photopainter_dashboard
+          level: INFO
+          format: "event=rotate_pages old=on new=off"
+
+text_sensor:
+  - platform: template
+    id: photopainter_displayed_page
+    name: "PhotoPainter Displayed Page"
+    icon: "mdi:monitor-shimmer"
+    entity_category: diagnostic
+    update_interval: never

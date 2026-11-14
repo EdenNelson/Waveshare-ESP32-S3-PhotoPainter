@@ -1,0 +1,425 @@
+globals:
+  - id: photopainter_shared_i2c_available
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_power_ready
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_power_init_complete
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_i2c_fail_streak
+    type: uint8_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_axp_state_valid
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_rtc_state_valid
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_axp_status1
+    type: uint8_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_axp_status2
+    type: uint8_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_axp_ldo_enable
+    type: uint8_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_rtc_seconds
+    type: uint8_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_power_cache_seen
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+esphome:
+  # ESPHome globals initialize at priority 800. Run immediately afterward but
+  # before the audio and display components initialize.
+  on_boot:
+    - priority: 790.0
+      then:
+        - lambda: |-
+            const char *const TAG = "photopainter_power";
+            const uint8_t PMIC_ADDR = 0x34;
+            const uint8_t RTC_ADDR = 0x51;
+
+            id(photopainter_shared_i2c_available) = false;
+            id(photopainter_power_ready) = false;
+            id(photopainter_power_init_complete) = false;
+            id(photopainter_axp_state_valid) = false;
+            id(photopainter_rtc_state_valid) = false;
+
+            auto read_reg = [&](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+              return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                     esphome::i2c::ERROR_OK;
+            };
+            auto write_reg = [&](uint8_t reg, uint8_t value) -> bool {
+              uint8_t data[2] = {reg, value};
+              return id(photopainter_i2c).write(PMIC_ADDR, data, sizeof(data)) ==
+                     esphome::i2c::ERROR_OK;
+            };
+
+            uint8_t chip_id = 0;
+            uint8_t attempts = 0;
+            for (attempts = 1; attempts <= 10; attempts++) {
+              if (read_reg(PMIC_ADDR, 0x03, chip_id)) break;
+              delay(20);
+            }
+            if (attempts > 10) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=pmic_probe attempts=10 "
+                       "sda=%d scl=%d",
+                       gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+            id(photopainter_shared_i2c_available) = true;
+
+            uint8_t power_on_source = 0;
+            uint8_t power_off_source = 0;
+            const bool power_reason_ok =
+                read_reg(PMIC_ADDR, 0x20, power_on_source) &&
+                read_reg(PMIC_ADDR, 0x21, power_off_source);
+            ESP_LOGI(TAG,
+                     "event=power_reason result=%s power_on=0x%02X "
+                     "power_off=0x%02X pwron_key=%d vbus=%d battery_insert=%d "
+                     "software_off=%d vsys_uvp=%d",
+                     power_reason_ok ? "ok" : "failed", power_on_source,
+                     power_off_source, (power_on_source & 0x01) ? 1 : 0,
+                     (power_on_source & 0x04) ? 1 : 0,
+                     (power_on_source & 0x10) ? 1 : 0,
+                     (power_off_source & 0x02) ? 1 : 0,
+                     (power_off_source & 0x08) ? 1 : 0);
+
+            uint8_t dcdc1_before = 0;
+            uint8_t aldo3_before = 0;
+            uint8_t aldo4_before = 0;
+            uint8_t ldo_enable_before = 0;
+            const bool baseline_ok =
+                read_reg(PMIC_ADDR, 0x82, dcdc1_before) &&
+                read_reg(PMIC_ADDR, 0x94, aldo3_before) &&
+                read_reg(PMIC_ADDR, 0x95, aldo4_before) &&
+                read_reg(PMIC_ADDR, 0x90, ldo_enable_before);
+            if (!baseline_ok) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=rail_baseline chip_id=0x%02X",
+                       chip_id);
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+
+            const bool was_configured =
+                dcdc1_before == 0x12 &&
+                (aldo3_before & 0x1F) == 0x1C &&
+                (aldo4_before & 0x1F) == 0x1C &&
+                (ldo_enable_before & 0x0C) == 0x0C;
+
+            bool writes_ok = true;
+            if (!was_configured) {
+              // DCDC1, ALDO3 (audio), and ALDO4 (display) are the verified 3.3 V
+              // startup configuration. Preserve all unrelated enable bits. In
+              // particular, this package never modifies ALDO2.
+              writes_ok &= write_reg(0x82, 0x12);
+              writes_ok &= write_reg(0x94, (aldo3_before & 0xE0) | 0x1C);
+              writes_ok &= write_reg(0x95, (aldo4_before & 0xE0) | 0x1C);
+              writes_ok &= write_reg(0x90, ldo_enable_before | 0x0C);
+              delay(100);
+            }
+
+            uint8_t dcdc1_after = 0;
+            uint8_t aldo3_after = 0;
+            uint8_t aldo4_after = 0;
+            uint8_t ldo_enable_after = 0;
+            const bool verify_reads_ok =
+                read_reg(PMIC_ADDR, 0x82, dcdc1_after) &&
+                read_reg(PMIC_ADDR, 0x94, aldo3_after) &&
+                read_reg(PMIC_ADDR, 0x95, aldo4_after) &&
+                read_reg(PMIC_ADDR, 0x90, ldo_enable_after);
+            const bool verified =
+                writes_ok && verify_reads_ok && dcdc1_after == 0x12 &&
+                (aldo3_after & 0x1F) == 0x1C &&
+                (aldo4_after & 0x1F) == 0x1C &&
+                (ldo_enable_after & 0x0C) == 0x0C;
+            id(photopainter_power_ready) = verified;
+
+            ESP_LOGI(TAG,
+                     "event=boot result=%s configured=%d chip_id=0x%02X "
+                     "dcdc1=0x%02X->0x%02X aldo3=0x%02X->0x%02X "
+                     "aldo4=0x%02X->0x%02X ldo_enable=0x%02X->0x%02X",
+                     verified ? "ok" : "failed", was_configured ? 1 : 0, chip_id,
+                     dcdc1_before, dcdc1_after, aldo3_before, aldo3_after,
+                     aldo4_before, aldo4_after, ldo_enable_before,
+                     ldo_enable_after);
+
+            if (!verified) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=rail_verify writes_ok=%d "
+                       "reads_ok=%d",
+                       writes_ok ? 1 : 0, verify_reads_ok ? 1 : 0);
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+
+            uint8_t status1 = 0;
+            uint8_t status2 = 0;
+            uint8_t rtc_seconds = 0;
+            const bool axp_ok = read_reg(PMIC_ADDR, 0x00, status1) &&
+                                read_reg(PMIC_ADDR, 0x01, status2);
+            const bool rtc_ok = read_reg(RTC_ADDR, 0x04, rtc_seconds);
+            if (axp_ok) {
+              id(photopainter_axp_status1) = status1;
+              id(photopainter_axp_status2) = status2;
+              id(photopainter_axp_ldo_enable) = ldo_enable_after;
+            }
+            if (rtc_ok) id(photopainter_rtc_seconds) = rtc_seconds;
+            id(photopainter_axp_state_valid) = axp_ok;
+            id(photopainter_rtc_state_valid) = rtc_ok;
+
+            ESP_LOGI(TAG,
+                     "event=cache_seed axp_valid=%d rtc_valid=%d status1=0x%02X "
+                     "status2=0x%02X ldo_enable=0x%02X rtc_seconds=0x%02X",
+                     axp_ok ? 1 : 0, rtc_ok ? 1 : 0, status1, status2,
+                     ldo_enable_after, rtc_seconds);
+            id(photopainter_power_init_complete) = true;
+
+script:
+  - id: photopainter_i2c_recovery
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_i2c";
+          const bool old_available = id(photopainter_shared_i2c_available);
+
+          i2c_master_bus_handle_t bus_handle = nullptr;
+          const esp_err_t handle_result = i2c_master_get_bus_handle(
+              static_cast<i2c_port_num_t>(id(photopainter_i2c).get_port()),
+              &bus_handle);
+          if (handle_result != ESP_OK || bus_handle == nullptr) {
+            id(photopainter_shared_i2c_available) = false;
+            ESP_LOGE(TAG,
+                     "event=recovery result=failed stage=get_handle error=%s",
+                     esp_err_to_name(handle_result));
+            return;
+          }
+
+          for (uint8_t attempt = 1; attempt <= 3; attempt++) {
+            const int sda_before = gpio_get_level(GPIO_NUM_47);
+            const int scl_before = gpio_get_level(GPIO_NUM_48);
+            const esp_err_t reset_result = i2c_master_bus_reset(bus_handle);
+            delay(25);
+            const int sda_after = gpio_get_level(GPIO_NUM_47);
+            const int scl_after = gpio_get_level(GPIO_NUM_48);
+
+            uint8_t pmic_id = 0;
+            uint8_t rtc_control = 0;
+            uint8_t reg = 0x03;
+            const bool pmic_ok =
+                sda_after == 1 && scl_after == 1 &&
+                id(photopainter_i2c).write_readv(0x34, &reg, 1, &pmic_id, 1) ==
+                    esphome::i2c::ERROR_OK;
+            reg = 0x00;
+            const bool rtc_ok =
+                sda_after == 1 && scl_after == 1 &&
+                id(photopainter_i2c).write_readv(0x51, &reg, 1, &rtc_control, 1) ==
+                    esphome::i2c::ERROR_OK;
+
+            ESP_LOGW(TAG,
+                     "event=recovery_attempt attempt=%u reset=%s "
+                     "sda=%d->%d scl=%d->%d pmic=%d rtc=%d",
+                     attempt, esp_err_to_name(reset_result), sda_before, sda_after,
+                     scl_before, scl_after, pmic_ok ? 1 : 0, rtc_ok ? 1 : 0);
+
+            // Either independently powered responder proves that the electrical
+            // bus is available. Preserve a missing device as its own failure
+            // instead of relabeling it as a whole-bus outage.
+            if (pmic_ok || rtc_ok) {
+              id(photopainter_shared_i2c_available) = true;
+              id(photopainter_i2c_fail_streak) = 0;
+              id(photopainter_axp_state_valid) = pmic_ok;
+              id(photopainter_rtc_state_valid) = rtc_ok;
+              ESP_LOGI(TAG,
+                       "event=bus_transition old=%s new=available result=recovered "
+                       "health=%s pmic=%d rtc=%d pmic_id=0x%02X "
+                       "rtc_control=0x%02X",
+                       old_available ? "available" : "unavailable",
+                       (pmic_ok && rtc_ok) ? "full" : "degraded",
+                       pmic_ok ? 1 : 0, rtc_ok ? 1 : 0, pmic_id, rtc_control);
+              return;
+            }
+            App.feed_wdt();
+            delay(100);
+          }
+
+          id(photopainter_shared_i2c_available) = false;
+          ESP_LOGE(TAG, "event=recovery result=exhausted bus=unavailable");
+
+interval:
+  - interval: ${photopainter_peripheral_poll_interval}
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_i2c";
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+
+          uint8_t status1 = 0;
+          uint8_t status2 = 0;
+          uint8_t ldo_enable = 0;
+          uint8_t rtc_seconds = 0;
+          const bool axp_ok = read_reg(0x34, 0x00, status1) &&
+                              read_reg(0x34, 0x01, status2) &&
+                              read_reg(0x34, 0x90, ldo_enable);
+          const bool rtc_ok = read_reg(0x51, 0x04, rtc_seconds);
+          const bool old_available = id(photopainter_shared_i2c_available);
+
+          if (axp_ok) {
+            const uint8_t old_status1 = id(photopainter_axp_status1);
+            const uint8_t old_status2 = id(photopainter_axp_status2);
+            const uint8_t old_ldo = id(photopainter_axp_ldo_enable);
+
+            id(photopainter_axp_status1) = status1;
+            id(photopainter_axp_status2) = status2;
+            id(photopainter_axp_ldo_enable) = ldo_enable;
+            id(photopainter_axp_state_valid) = true;
+            if (id(photopainter_power_cache_seen) &&
+                (old_status1 != status1 || old_status2 != status2 ||
+                 old_ldo != ldo_enable)) {
+              ESP_LOGI("photopainter_power",
+                       "event=register_transition status1=0x%02X->0x%02X "
+                       "status2=0x%02X->0x%02X ldo_enable=0x%02X->0x%02X",
+                       old_status1, status1, old_status2, status2, old_ldo,
+                       ldo_enable);
+            }
+            id(photopainter_power_cache_seen) = true;
+          } else {
+            id(photopainter_axp_state_valid) = false;
+            ESP_LOGW(TAG,
+                     "event=poll result=failed device=axp2101 rtc=%s sda=%d scl=%d",
+                     rtc_ok ? "ok" : "failed", gpio_get_level(GPIO_NUM_47),
+                     gpio_get_level(GPIO_NUM_48));
+          }
+
+          const bool rtc_was_valid = id(photopainter_rtc_state_valid);
+          id(photopainter_rtc_state_valid) = rtc_ok;
+          if (rtc_ok) {
+            // PCF85063 oscillator-stop flag (seconds bit 7). Log the edge with the
+            // register context needed to tell a supply event from a stalled
+            // crystal: RTC Control_1/Control_2 (STOP bit, test modes) and the
+            // AXP2101 IRQ status latches (read-only here; nothing is cleared).
+            const bool old_stopped =
+                rtc_was_valid && (id(photopainter_rtc_seconds) & 0x80) != 0;
+            const bool new_stopped = (rtc_seconds & 0x80) != 0;
+            if (rtc_was_valid && old_stopped != new_stopped) {
+              uint8_t ctrl1 = 0, ctrl2 = 0, irq0 = 0, irq1 = 0, irq2 = 0;
+              const bool ctrl_ok = read_reg(0x51, 0x00, ctrl1) && read_reg(0x51, 0x01, ctrl2);
+              const bool irq_ok = read_reg(0x34, 0x48, irq0) && read_reg(0x34, 0x49, irq1) &&
+                                  read_reg(0x34, 0x4A, irq2);
+              ESP_LOGW("photopainter_power",
+                       "event=rtc_osc_flag old=%s new=%s seconds=0x%02X ctrl_ok=%d "
+                       "rtc_ctrl1=0x%02X rtc_ctrl2=0x%02X irq_ok=%d axp_irq0=0x%02X "
+                       "axp_irq1=0x%02X axp_irq2=0x%02X status1=0x%02X status2=0x%02X "
+                       "uptime_ms=%u",
+                       old_stopped ? "stopped" : "running",
+                       new_stopped ? "stopped" : "running", rtc_seconds,
+                       ctrl_ok ? 1 : 0, ctrl1, ctrl2, irq_ok ? 1 : 0, irq0, irq1, irq2,
+                       status1, status2, static_cast<unsigned>(millis()));
+            }
+            id(photopainter_rtc_seconds) = rtc_seconds;
+          } else {
+            ESP_LOGW(TAG,
+                     "event=poll result=failed device=pcf85063 axp=%s sda=%d scl=%d",
+                     axp_ok ? "ok" : "failed", gpio_get_level(GPIO_NUM_47),
+                     gpio_get_level(GPIO_NUM_48));
+          }
+
+          if (axp_ok || rtc_ok) {
+            id(photopainter_shared_i2c_available) = true;
+            if (id(photopainter_i2c_fail_streak) != 0) {
+              ESP_LOGI(TAG,
+                       "event=poll result=recovered previous_fail_streak=%u "
+                       "axp=%d rtc=%d",
+                       id(photopainter_i2c_fail_streak), axp_ok ? 1 : 0,
+                       rtc_ok ? 1 : 0);
+            }
+            id(photopainter_i2c_fail_streak) = 0;
+            if (!old_available) {
+              ESP_LOGI(TAG,
+                       "event=bus_transition old=unavailable new=available "
+                       "result=poll_recovered health=%s axp=%d rtc=%d",
+                       (axp_ok && rtc_ok) ? "full" : "degraded",
+                       axp_ok ? 1 : 0, rtc_ok ? 1 : 0);
+            }
+          } else {
+            if (id(photopainter_i2c_fail_streak) < 255)
+              id(photopainter_i2c_fail_streak)++;
+            ESP_LOGW(TAG,
+                     "event=poll result=bus_failure fail_streak=%u sda=%d scl=%d",
+                     id(photopainter_i2c_fail_streak),
+                     gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+            if (id(photopainter_i2c_fail_streak) >= 3) {
+              id(photopainter_shared_i2c_available) = false;
+              if (old_available) {
+                ESP_LOGE(TAG,
+                         "event=bus_transition old=available new=unavailable "
+                         "reason=three_polls_both_devices_failed");
+              }
+            }
+          }
+
+          if (id(photopainter_audio_active) && axp_ok) {
+            uint8_t scratch = 0;
+            id(photopainter_es8311_present) = read_reg(0x18, 0x00, scratch);
+            id(photopainter_es7210_present) =
+                id(photopainter_i2c).write_readv(0x40, nullptr, 0, &scratch, 1) ==
+                esphome::i2c::ERROR_OK;
+          }
+      - if:
+          condition:
+            lambda: return !id(photopainter_shared_i2c_available);
+          then:
+            - script.execute: photopainter_i2c_recovery
+
+  # Independent periodic level report. This remains present even when no edge
+  # occurs and distinguishes invalid caches from legitimate zero-valued fields.
+  - interval: 60s
+    then:
+      - lambda: |-
+          ESP_LOGI("photopainter_state",
+                   "event=level power_ready=%d bus=%s axp_valid=%d rtc_valid=%d "
+                   "status1=0x%02X status2=0x%02X ldo_enable=0x%02X "
+                   "rtc_seconds=0x%02X display=%s audio=%s amplifier=%s "
+                   "sd=%s sda=%d scl=%d",
+                   id(photopainter_power_ready) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   id(photopainter_axp_state_valid) ? 1 : 0,
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_axp_status1), id(photopainter_axp_status2),
+                   id(photopainter_axp_ldo_enable), id(photopainter_rtc_seconds),
+                   id(photopainter_display_active) ? "active" : "off",
+                   id(photopainter_audio_active) ? "active" : "low_power",
+                   id(photopainter_amplifier_enable).state ? "on" : "off",
+                   id(photopainter_sd_mounted) ? "mounted" : "unmounted",
+                   gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));

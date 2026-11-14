@@ -1,0 +1,480 @@
+# Optional audio/storage demonstration. None of these file handles, test tones,
+# button actions, or recording state belongs to the reusable board definition.
+globals:
+  - id: photopainter_demo_record_file
+    type: FILE*
+    initial_value: "nullptr"
+
+  - id: photopainter_demo_record_file_pending
+    type: FILE*
+    initial_value: "nullptr"
+
+  - id: photopainter_demo_play_file
+    type: FILE*
+    initial_value: "nullptr"
+
+  - id: photopainter_demo_record_bytes
+    type: uint32_t
+    initial_value: "0"
+
+  - id: photopainter_demo_record_peak
+    type: uint16_t
+    initial_value: "0"
+
+  - id: photopainter_demo_record_peak_raw
+    type: uint16_t
+    initial_value: "0"
+
+  - id: photopainter_demo_play_bytes
+    type: uint32_t
+    initial_value: "0"
+
+  - id: photopainter_demo_play_peak
+    type: uint16_t
+    initial_value: "0"
+
+  - id: photopainter_demo_play_retries
+    type: uint32_t
+    initial_value: "0"
+
+  - id: photopainter_demo_zero_writes
+    type: uint16_t
+    initial_value: "0"
+
+  - id: photopainter_demo_mic_gain
+    type: int32_t
+    initial_value: "4"
+
+  - id: photopainter_demo_unread_voice_note
+    type: bool
+    restore_value: true
+    initial_value: "false"
+
+rtttl:
+  id: photopainter_demo_rtttl
+  speaker: photopainter_speaker
+
+microphone:
+  - id: !extend photopainter_microphone
+    # This callback runs on the microphone task. Keep it to one non-yielding
+    # lambda; scheduler-backed actions are not safe from that task.
+    on_data:
+      - lambda: |-
+          if (id(photopainter_demo_record_file) == nullptr || x.empty()) return;
+          const std::vector<uint8_t> &data = x;
+          static std::vector<uint8_t> mono;
+          mono.clear();
+          mono.reserve(data.size() / 2);
+
+          for (size_t i = 0; i + 3 < data.size(); i += 4) {
+            const int32_t word =
+                static_cast<int32_t>(static_cast<uint32_t>(data[i]) |
+                (static_cast<uint32_t>(data[i + 1]) << 8) |
+                (static_cast<uint32_t>(data[i + 2]) << 16) |
+                (static_cast<uint32_t>(data[i + 3]) << 24));
+            const int32_t raw = word >> 16;
+            const uint16_t raw_magnitude =
+                static_cast<uint16_t>(raw < 0 ? -raw : raw);
+            if (raw_magnitude > id(photopainter_demo_record_peak_raw))
+              id(photopainter_demo_record_peak_raw) = raw_magnitude;
+
+            int32_t sample = raw * id(photopainter_demo_mic_gain);
+            if (sample > 32767) sample = 32767;
+            if (sample < -32768) sample = -32768;
+            const int16_t pcm = static_cast<int16_t>(sample);
+            const uint16_t magnitude = static_cast<uint16_t>(
+                pcm < 0 ? -static_cast<int32_t>(pcm) : pcm);
+            if (magnitude > id(photopainter_demo_record_peak))
+              id(photopainter_demo_record_peak) = magnitude;
+            mono.push_back(static_cast<uint8_t>(pcm & 0xFF));
+            mono.push_back(static_cast<uint8_t>((pcm >> 8) & 0xFF));
+          }
+
+          if (!mono.empty()) {
+            id(photopainter_demo_record_bytes) += fwrite(
+                mono.data(), 1, mono.size(), id(photopainter_demo_record_file));
+          }
+
+media_player:
+  - id: !extend photopainter_media_player
+    on_play:
+      - if:
+          condition:
+            or:
+              - script.is_running: photopainter_demo_play_voice_note
+              - rtttl.is_playing:
+                  id: photopainter_demo_rtttl
+              - microphone.is_capturing: photopainter_microphone
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: "event=media_request result=refused reason=audio_path_busy"
+            - media_player.stop: photopainter_media_player
+    on_announcement:
+      - if:
+          condition:
+            or:
+              - script.is_running: photopainter_demo_play_voice_note
+              - rtttl.is_playing:
+                  id: photopainter_demo_rtttl
+              - microphone.is_capturing: photopainter_microphone
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: "event=announcement result=refused reason=audio_path_busy"
+            - media_player.stop: photopainter_media_player
+
+number:
+  - platform: template
+    id: photopainter_demo_mic_gain_control
+    name: "PhotoPainter Demo Microphone Gain"
+    icon: "mdi:microphone-plus"
+    min_value: 1
+    max_value: 32
+    step: 1
+    initial_value: 4
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: id(photopainter_demo_mic_gain) = static_cast<int32_t>(x);
+
+binary_sensor:
+  - id: !extend photopainter_key_button
+    on_press:
+      - button.press: photopainter_demo_play_tune
+
+  - platform: template
+    id: photopainter_demo_voice_note_unread
+    name: "PhotoPainter Demo New Voice Note"
+    icon: "mdi:email-mark-as-unread"
+    lambda: return id(photopainter_demo_unread_voice_note);
+
+button:
+  - platform: template
+    id: photopainter_demo_play_tune
+    name: "PhotoPainter Demo Play Test Tune"
+    icon: "mdi:music-note"
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - switch.turn_on: photopainter_amplifier_enable
+            - rtttl.play:
+                id: photopainter_demo_rtttl
+                rtttl: "FinalCount:d=4,o=5,b=125:8a#,8g#,2a#,2d#,2p,8a#,8g#,2a#,2f,2d#,8a#,8g#,2a#,2d#,2c#,8c,8c#,8c,2a#"
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: "event=tune result=refused reason=audio_unavailable_or_busy"
+
+  - platform: template
+    id: photopainter_demo_record_button
+    name: "PhotoPainter Demo Record Voice Note"
+    icon: "mdi:microphone"
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - script.execute: photopainter_demo_record_voice_note
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: "event=record result=refused reason=audio_unavailable_or_busy"
+
+  - platform: template
+    id: photopainter_demo_play_button
+    name: "PhotoPainter Demo Play Voice Note"
+    icon: "mdi:volume-high"
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - script.execute: photopainter_demo_play_voice_note
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: "event=playback result=refused reason=audio_unavailable_or_busy"
+
+  - platform: template
+    id: photopainter_demo_audio_stop
+    name: "PhotoPainter Demo Stop Audio"
+    icon: "mdi:stop"
+    on_press:
+      - script.execute: photopainter_audio_clients_stop
+
+script:
+  - id: !extend photopainter_audio_clients_stop
+    then:
+      - script.stop: photopainter_demo_record_voice_note
+      - script.stop: photopainter_demo_play_voice_note
+      - rtttl.stop:
+          id: photopainter_demo_rtttl
+      - lambda: |-
+          if (id(photopainter_demo_record_file) != nullptr) {
+            id(photopainter_demo_record_file_pending) =
+                id(photopainter_demo_record_file);
+            id(photopainter_demo_record_file) = nullptr;
+          }
+      - wait_until:
+          timeout: 2s
+          condition:
+            lambda: return id(photopainter_microphone).is_stopped();
+      - lambda: |-
+          if (id(photopainter_demo_play_file) != nullptr) {
+            fclose(id(photopainter_demo_play_file));
+            id(photopainter_demo_play_file) = nullptr;
+          }
+          if (id(photopainter_demo_record_file_pending) != nullptr) {
+            fclose(id(photopainter_demo_record_file_pending));
+            id(photopainter_demo_record_file_pending) = nullptr;
+          }
+          ESP_LOGI("photopainter_voice_demo",
+                   "event=stop result=complete mic_stopped=%d",
+                   id(photopainter_microphone).is_stopped() ? 1 : 0);
+
+  - id: photopainter_demo_record_voice_note
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(photopainter_sd_mounted)) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=record result=failed reason=sd_unmounted");
+            return;
+          }
+          id(photopainter_demo_record_file) = fopen("/sdcard/voice.wav", "wb");
+          if (id(photopainter_demo_record_file) == nullptr) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=record result=failed reason=file_open errno=%d",
+                     errno);
+            return;
+          }
+          uint8_t placeholder[44] = {0};
+          fwrite(placeholder, 1, sizeof(placeholder),
+                 id(photopainter_demo_record_file));
+          id(photopainter_demo_record_bytes) = 0;
+          id(photopainter_demo_record_peak) = 0;
+          id(photopainter_demo_record_peak_raw) = 0;
+          id(photopainter_microphone).start();
+          ESP_LOGI("photopainter_voice_demo",
+                   "event=record phase=start requested_ms=5000 path=/sdcard/voice.wav");
+      - wait_until:
+          timeout: 2s
+          condition:
+            lambda: return id(photopainter_microphone).is_running();
+      - if:
+          condition:
+            lambda: return !id(photopainter_microphone).is_running();
+          then:
+            - lambda: |-
+                if (id(photopainter_demo_record_file) != nullptr) {
+                  fclose(id(photopainter_demo_record_file));
+                  id(photopainter_demo_record_file) = nullptr;
+                }
+                id(photopainter_demo_record_bytes) = 0;
+                ESP_LOGE("photopainter_voice_demo",
+                         "event=record result=failed reason=mic_start_timeout "
+                         "timeout_ms=2000");
+          else:
+            - delay: 5s
+            - lambda: |-
+                id(photopainter_microphone).stop();
+                id(photopainter_demo_record_file_pending) =
+                    id(photopainter_demo_record_file);
+                id(photopainter_demo_record_file) = nullptr;
+            - wait_until:
+                timeout: 2s
+                condition:
+                  lambda: return id(photopainter_microphone).is_stopped();
+            - lambda: |-
+                FILE *file = id(photopainter_demo_record_file_pending);
+                id(photopainter_demo_record_file_pending) = nullptr;
+                if (file == nullptr) {
+                  ESP_LOGE("photopainter_voice_demo",
+                           "event=record result=failed reason=no_finalize_handle");
+                  return;
+                }
+
+                const uint32_t bytes = id(photopainter_demo_record_bytes);
+                const uint32_t sample_rate = 16000;
+                const uint16_t channels = 1;
+                const uint16_t bits = 16;
+                const uint32_t byte_rate = sample_rate * channels * bits / 8;
+                const uint16_t block_align = channels * bits / 8;
+                const uint32_t chunk_size = 36 + bytes;
+                uint8_t header[44] = {
+                  'R','I','F','F',
+                  static_cast<uint8_t>(chunk_size),
+                  static_cast<uint8_t>(chunk_size >> 8),
+                  static_cast<uint8_t>(chunk_size >> 16),
+                  static_cast<uint8_t>(chunk_size >> 24),
+                  'W','A','V','E','f','m','t',' ',16,0,0,0,1,0,
+                  static_cast<uint8_t>(channels),0,
+                  static_cast<uint8_t>(sample_rate),
+                  static_cast<uint8_t>(sample_rate >> 8),
+                  static_cast<uint8_t>(sample_rate >> 16),
+                  static_cast<uint8_t>(sample_rate >> 24),
+                  static_cast<uint8_t>(byte_rate),
+                  static_cast<uint8_t>(byte_rate >> 8),
+                  static_cast<uint8_t>(byte_rate >> 16),
+                  static_cast<uint8_t>(byte_rate >> 24),
+                  static_cast<uint8_t>(block_align),0,
+                  static_cast<uint8_t>(bits),0,'d','a','t','a',
+                  static_cast<uint8_t>(bytes),
+                  static_cast<uint8_t>(bytes >> 8),
+                  static_cast<uint8_t>(bytes >> 16),
+                  static_cast<uint8_t>(bytes >> 24)
+                };
+                fseek(file, 0, SEEK_SET);
+                fwrite(header, 1, sizeof(header), file);
+                fclose(file);
+
+                const uint16_t peak = id(photopainter_demo_record_peak);
+                const uint16_t raw_peak = id(photopainter_demo_record_peak_raw);
+                id(photopainter_demo_unread_voice_note) = bytes != 0;
+                ESP_LOGI("photopainter_voice_demo",
+                         "event=record result=%s bytes=%u peak=%u raw_peak=%u "
+                         "gain=%d mic_stopped=%d unread=%d",
+                         bytes == 0 ? "silent" : "ok",
+                         static_cast<unsigned>(bytes),
+                         static_cast<unsigned>(peak),
+                         static_cast<unsigned>(raw_peak),
+                         static_cast<int>(id(photopainter_demo_mic_gain)),
+                         id(photopainter_microphone).is_stopped() ? 1 : 0,
+                         id(photopainter_demo_unread_voice_note) ? 1 : 0);
+
+  - id: photopainter_demo_play_voice_note
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(photopainter_sd_mounted)) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=playback result=failed reason=sd_unmounted");
+            return;
+          }
+          id(photopainter_speaker).start();
+      - wait_until:
+          timeout: 3s
+          condition:
+            lambda: return id(photopainter_speaker).is_running();
+      - if:
+          condition:
+            lambda: return !id(photopainter_speaker).is_running();
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: ERROR
+                format: "event=playback result=failed reason=speaker_start_timeout timeout_ms=3000"
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+            - delay: 50ms
+            - lambda: |-
+                id(photopainter_demo_play_bytes) = 0;
+                id(photopainter_demo_play_peak) = 0;
+                id(photopainter_demo_play_retries) = 0;
+                id(photopainter_demo_zero_writes) = 0;
+                id(photopainter_demo_play_file) =
+                    fopen("/sdcard/voice.wav", "rb");
+                if (id(photopainter_demo_play_file) == nullptr) {
+                  ESP_LOGE("photopainter_voice_demo",
+                           "event=playback result=failed reason=file_open errno=%d",
+                           errno);
+                } else {
+                  fseek(id(photopainter_demo_play_file), 44, SEEK_SET);
+                  ESP_LOGI("photopainter_voice_demo",
+                           "event=playback phase=streaming path=/sdcard/voice.wav");
+                }
+            - while:
+                condition:
+                  lambda: return id(photopainter_demo_play_file) != nullptr;
+                then:
+                  - lambda: |-
+                      uint8_t buffer[1024];
+                      FILE *file = id(photopainter_demo_play_file);
+                      const long position = ftell(file);
+                      const size_t count = fread(buffer, 1, sizeof(buffer), file);
+                      if (count == 0) {
+                        fclose(file);
+                        id(photopainter_demo_play_file) = nullptr;
+                        return;
+                      }
+                      for (size_t i = 0; i + 1 < count; i += 2) {
+                        const int16_t sample = static_cast<int16_t>(
+                            static_cast<uint16_t>(buffer[i]) |
+                            (static_cast<uint16_t>(buffer[i + 1]) << 8));
+                        const uint16_t magnitude = static_cast<uint16_t>(
+                            sample < 0 ? -static_cast<int32_t>(sample) : sample);
+                        if (magnitude > id(photopainter_demo_play_peak))
+                          id(photopainter_demo_play_peak) = magnitude;
+                      }
+                      const size_t written =
+                          id(photopainter_speaker).play(buffer, count);
+                      id(photopainter_demo_play_bytes) += written;
+                      if (written < count) {
+                        id(photopainter_demo_play_retries)++;
+                        fseek(file, position + static_cast<long>(written), SEEK_SET);
+                      }
+                      if (written == 0) {
+                        id(photopainter_demo_zero_writes)++;
+                        if (id(photopainter_demo_zero_writes) >= 300) {
+                          fclose(file);
+                          id(photopainter_demo_play_file) = nullptr;
+                          ESP_LOGE("photopainter_voice_demo",
+                                   "event=playback result=failed reason=stalled "
+                                   "zero_writes=%u bytes=%u",
+                                   id(photopainter_demo_zero_writes),
+                                   static_cast<unsigned>(id(photopainter_demo_play_bytes)));
+                        }
+                      } else {
+                        id(photopainter_demo_zero_writes) = 0;
+                      }
+                  - delay: 10ms
+            - speaker.finish:
+                id: photopainter_speaker
+            - wait_until:
+                timeout: 10s
+                condition:
+                  speaker.is_stopped:
+                    id: photopainter_speaker
+            - if:
+                condition:
+                  lambda: return !id(photopainter_speaker).is_stopped();
+                then:
+                  - speaker.stop:
+                      id: photopainter_speaker
+            - lambda: |-
+                const bool complete =
+                    id(photopainter_demo_play_bytes) != 0 &&
+                    id(photopainter_demo_zero_writes) < 300;
+                if (complete) id(photopainter_demo_unread_voice_note) = false;
+                ESP_LOGI("photopainter_voice_demo",
+                         "event=playback result=%s bytes=%u peak=%u retries=%u "
+                         "unread=%d",
+                         complete ? "ok" : "failed",
+                         static_cast<unsigned>(id(photopainter_demo_play_bytes)),
+                         static_cast<unsigned>(id(photopainter_demo_play_peak)),
+                         static_cast<unsigned>(id(photopainter_demo_play_retries)),
+                         id(photopainter_demo_unread_voice_note) ? 1 : 0);

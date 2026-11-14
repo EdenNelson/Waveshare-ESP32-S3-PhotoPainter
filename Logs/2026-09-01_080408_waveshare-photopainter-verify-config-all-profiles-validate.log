@@ -1,0 +1,25 @@
+=== Waveshare-PhotoPainter.yaml ===
+secrets:  wrote a temporary placeholder secrets.yaml
+config:   valid
+compile:  skipped (--no-compile)
+cleanup:  removed secrets.yaml
+cleanup:  no flashable images to delete
+note:     this run used fake Wi-Fi credentials, so it proves the config builds -- not that it is ready to flash
+
+=== WaveshareESP32S3PhotoPainter73e6-example.yaml ===
+secrets:  wrote a temporary placeholder secrets.yaml
+config:   valid
+compile:  skipped (--no-compile)
+cleanup:  removed secrets.yaml
+cleanup:  no flashable images to delete
+note:     this run used fake Wi-Fi credentials, so it proves the config builds -- not that it is ready to flash
+
+=== WaveshareESP32S3PhotoPainter73e6-diag.yaml ===
+secrets:  wrote a temporary placeholder secrets.yaml
+config:   valid
+compile:  skipped (--no-compile)
+cleanup:  removed secrets.yaml
+cleanup:  no flashable images to delete
+note:     this run used fake Wi-Fi credentials, so it proves the config builds -- not that it is ready to flash
+
+worst exit status: 0

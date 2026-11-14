@@ -1,0 +1,5 @@
+# Optional web UI grouping for the diagnostic layer. Include together with
+# waveshare-esp32-s3-photopainter-web-ui.yaml and the diagnostic entry point.
+
+packages:
+  - !include waveshare-esp32-s3-photopainter/web_ui/diagnostic.yaml

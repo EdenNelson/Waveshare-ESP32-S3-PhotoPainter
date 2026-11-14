@@ -1,0 +1,151 @@
+[11:37:38][I][logger:122]: Log initialized
+[11:37:38][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[11:37:38][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[11:37:38][I][app:060]: Running through setup()
+[11:37:38][I][i2c.idf:205]: Performing bus recovery
+[11:37:38][I][rail_test:022]: === DISPLAY TEST: ALDO4-only (bit 0x08) ===
+[11:37:38][I][rail_test:023]: ESP reset reason=1, wakeup cause=0
+[11:37:38][I][rail_test:046]: --- AXP2101 before-write snapshot ---
+[11:37:38][ESP-ROM:esp32s3-20210327
+[11:37:38]Build:Mar 27 2021
+[11:37:38]rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+[11:37:38]Saved PC:0x40379952
+[11:37:38]SPIWP:0xee
+[11:37:38]mode:DIO, clock div:1
+[11:37:38]load:0x3fce2820,len:0x1688
+[11:37:38]load:0x403c8700,len:0xe70
+[11:37:38]load:0x403cb700,len:0x31d0
+[11:37:38]entry 0x403c8944
+[11:37:38]I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[11:37:38]I (24) boot: Multicore bootloader
+[11:37:38]I (25) boot: chip revision: v0.2
+[11:37:38]I (25) boot: efuse block revision: v1.4
+[11:37:38]I (25) qio_mode: Enabling default flash chip QIO
+[11:37:38]I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[11:37:38]I (25) boot.esp32s3: SPI Mode       : QIO
+[11:37:38]I (26) boot.esp32s3: SPI Flash Size : 16MB
+[11:37:38]I (26) boot: Enabling RNG early entropy source...
+[11:37:38]I (26) boot: Partition Table:
+[11:37:38]I (26) boot: ## Label            Usage          Type ST Offset   Length
+[11:37:38]I (26) boot:  0 otadata          OTA data         01 00 00009000 00002000
+[11:37:38]I (27) boot:  1 phy_init         RF data          01 01 0000b000 00001000
+[11:37:38]I (27) boot:  2 app0             OTA app          00 10 00010000 007c0000
+[11:37:38]I (28) boot:  3 app1             OTA app          00 11 007d0000 007c0000
+[11:37:38]I (28) boot:  4 nvs              WiFi data        01 02 00f90000 00070000
+[11:37:38]I (28) boot: End of partition table
+[11:37:38]I (29) esp_image: segment 0: paddr=00010020 vaddr=3c0b0020 size=2b56ch (177516) map
+[11:37:38]I (57) esp_image: segment 1: paddr=0003b594 vaddr=3fc97100 size=04a84h ( 19076) load
+[11:37:38]I (61) esp_image: segment 2: paddr=00040020 vaddr=42000020 size=a6e80h (683648) map
+[11:37:38]I (167) esp_image: segment 3: paddr=000e6ea8 vaddr=3fc9bb84 size=00304h (   772) load
+[11:37:38]I (167) esp_image: segment 4: paddr=000e71b4 vaddr=40374000 size=1308ch ( 77964) load
+[11:37:38]I (183) esp_image: segment 5: paddr=000fa248 vaddr=50000000 size=00020h (    32) load
+[11:37:38]I (191) boot: Loaded app from partition at offset 0x10000
+[11:37:38]I (191) boot: Disabling RNG early entropy source...
+[11:37:39][I][logger:122]: Log initialized
+[11:37:39][C][safe_mode:201]: Unsuccessful boot attempts: 1
+[11:37:39][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[11:37:39][I][app:060]: Running through setup()
+[11:37:39][I][i2c.idf:205]: Performing bus recovery
+[11:37:39][E][i2c.idf:242]: Recovery failed: SCL is held LOW on the bus
+[11:37:39][I][rail_test:022]: === DISPLAY TEST: ALDO4-only (bit 0x08) ===
+[11:37:39][I][rail_test:023]: ESP reset reason=11, wakeup cause=0
+[11:37:39][D][esp-idf:000]: E (195) i2c.master: I2C software timeout
+[11:37:39][D][esp-idf:000]: E (316) i2c.master: I2C software timeout
+[11:37:39][D][esp-idf:000]: E (437) i2c.master: I2C software timeout
+[11:37:39][D][esp-idf:000]: E (558) i2c.master: I2C software timeout
+[11:37:39][D][esp-idf:000]: E (679) i2c.master: I2C software timeout
+[11:37:39][D][esp-idf:000]: E (800) i2c.master: I2C software timeout
+[11:37:40][D][esp-idf:000]: E (921) i2c.master: I2C software timeout
+[11:37:40][D][esp-idf:000]: E (1042) i2c.master: I2C software timeout
+[11:37:40][D][esp-idf:000]: E (1163) i2c.master: I2C software timeout
+[11:37:40][D][esp-idf:000]: E (1284) i2c.master: I2C software timeout
+[11:37:40][E][rail_test:071]: AXP2101 did not respond; aborting isolation write
+[11:37:40][C][component:164]: Setup esphome.coroutine took 1213ms
+[11:37:40][D][split_buffer:066]: Allocated 1 * 192000 bytes - 192000 bytes
+[11:37:40][D][spi_device:395]: mode 0, data_rate 20000kHz
+[11:37:40][C][wifi:649]: Starting
+[11:37:40][D][wifi:1334]: Starting scan
+[11:37:40][C][component:164]: Setup wifi took 54ms
+[11:37:40][W][component:290]: api set Warning flag: waiting for client connection
+[11:37:40][I][app:117]: setup() finished successfully!
+[11:37:40][W][component:290]: wifi set Warning flag: scanning for networks
+[11:37:40][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-24 11:06:21 -0700
+[11:37:40][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[11:37:40][C][logger:223]: Logger:
+[11:37:40][C][logger:223]:   Max Level: DEBUG
+[11:37:40][C][logger:223]:   Initial Level: DEBUG
+[11:37:40][C][logger:230]:   Log Baud Rate: 115200
+[11:37:40][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[11:37:40][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[11:37:40][C][i2c.idf:092]: I2C Bus:
+[11:37:40][C][i2c.idf:093]:   SDA Pin: GPIO47
+[11:37:40][C][i2c.idf:093]:   SCL Pin: GPIO48
+[11:37:40][C][i2c.idf:093]:   Frequency: 100000 Hz
+[11:37:40][C][i2c.idf:106]:   Recovery: failed, SCL is held low on the bus
+[11:37:40][C][spi:066]: SPI bus:
+[11:37:40][C][spi:131]:   CLK Pin: GPIO10
+[11:37:40][C][spi:131]:   SDI Pin: 
+[11:37:40][C][spi:131]:   SDO Pin: GPIO11
+[11:37:40][C][spi:074]:   Using HW SPI: SPI2_HOST
+[11:37:40][C][psram:015]: PSRAM:
+[11:37:40][C][psram:018]:   Available: YES
+[11:37:40][C][psram:020]:   Size: 8192 KB
+[11:37:40][C][epaper_spi:340]: E-Paper SPI
+[11:37:40][C][epaper_spi:340]:   Rotations: 180 °
+[11:37:40][C][epaper_spi:340]:   Dimensions: 800px x 480px
+[11:37:40][C][epaper_spi:341]:   Model: 7.3IN-SPECTRA-E6
+[11:37:40][C][epaper_spi:341]:   SPI Data Rate: 20MHz
+[11:37:40][C][epaper_spi:341]:   Full update every: 1
+[11:37:40][C][epaper_spi:341]:   Swap X/Y: NO
+[11:37:40][C][epaper_spi:341]:   Mirror X: NO
+[11:37:40][C][epaper_spi:341]:   Mirror Y: NO
+[11:37:40][C][epaper_spi:131]:   Reset Pin: GPIO12
+[11:37:40][C][epaper_spi:131]:   DC Pin: GPIO8
+[11:37:40][C][epaper_spi:131]:   Busy Pin: GPIO13
+[11:37:40][C][epaper_spi:131]:   CS Pin: GPIO9
+[11:37:40][C][epaper_spi:342]:   Update Interval: 900.0s
+[11:37:40][C][captive_portal:142]: Captive Portal:
+[11:37:40][C][wifi:1565]: WiFi:
+[11:37:40][C][wifi:1565]:   Local MAC: <mac-4>
+[11:37:40][C][wifi:1565]:   Connected: NO
+[11:37:40][C][web_server:424]: Web Server:
+[11:37:40][C][web_server:424]:   Address: <address-4>
+[11:37:40][C][esphome.ota:098]: Over-The-Air updates:
+[11:37:40][C][esphome.ota:098]:   Address: <address-5>
+[11:37:40][C][esphome.ota:098]:   Version: 2
+[11:37:40][C][safe_mode:058]: Safe Mode:
+[11:37:40][C][safe_mode:058]:   Successful after: 60s
+[11:37:40][C][safe_mode:058]:   Invoke after: 10 attempts
+[11:37:40][C][safe_mode:058]:   Duration: 300s
+[11:37:40][C][safe_mode:079]:   Bootloader rollback: support unknown
+[11:37:40][C][web_server.ota:256]: Web Server OTA
+[11:37:40][C][api:271]: Server:
+[11:37:40][C][api:271]:   Address: <address-6>
+[11:37:40][C][api:271]:   Listen backlog: 4
+[11:37:40][C][api:271]:   Max connections: 5
+[11:37:40][C][api:278]:   Noise encryption: YES
+[11:37:40][C][mdns:259]: mDNS:
+[11:37:40][C][mdns:259]:   Hostname: photopainter-display-rail
+[11:37:42][W][component:421]: display took a long time for an operation (105 ms), max is 50 ms
+[11:37:43][D][wifi:1494]: Found networks:
+[11:37:43][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -48dB P:0
+[11:37:43][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -66dB P:0
+[11:37:43][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -69dB P:0
+[11:37:43][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[11:37:43][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[11:37:46][I][wifi:1609]: Connected
+[11:37:46][D][wifi:1626]: Disabling AP
+[11:37:46][C][wifi:1268]:   IP Address: <ipv4-2>
+[11:37:46][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[11:37:46][C][wifi:1279]:   BSSID: <bssid-1>
+[11:37:46][C][wifi:1279]:   Hostname: 'photopainter-display-rail'
+[11:37:46][C][wifi:1279]:   Signal strength: -48 dB ▂▄▆█
+[11:37:46][C][wifi:1279]:   Channel: 11
+[11:37:46][C][wifi:1279]:   Subnet: <ipv4-3>
+[11:37:46][C][wifi:1279]:   Gateway: <ipv4-4>
+[11:37:46][C][wifi:1279]:   DNS1: <ipv4-5>
+[11:37:46][C][wifi:1279]:   DNS2: <ipv4-1>
+[11:37:46][W][component:313]: wifi cleared Warning flag
+[11:38:11][D][epaper_spi:237]: Display update took 29065 ms
+[11:38:39][I][safe_mode:154]: Boot seems successful; resetting boot loop counter
+[11:38:41][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed

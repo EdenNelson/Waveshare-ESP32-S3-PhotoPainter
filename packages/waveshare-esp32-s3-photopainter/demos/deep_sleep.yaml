@@ -1,0 +1,463 @@
+# Optional, manually requested sleep demonstration. The external PCF85063 RTC
+# stays running; ALDO3 stays on so the shared I2C bus cannot clamp. A two-minute
+# timer is the default recovery wake while button wake is being characterized.
+#
+# Button wake mirrors the vendor firmware's shipped Basic mode: ext1, ANY_LOW, on
+# BOOT (GPIO0) and KEY (GPIO4). ext1 rather than ext0 (wakeup_pin) because
+# ESPHome's ext0 path places a digital hold on the pin that is never released
+# after wake, and ext0 forces the RTC peripheral domain on. GPIO0 relies on the
+# board's external R36 10 kOhm pull-up; GPIO4 gets its RTC pull-up immediately
+# before sleep, as the vendor does. GPIO0 is a boot strap, but straps latch only
+# on power-on class resets, not on a deep-sleep wake.
+deep_sleep:
+  id: photopainter_deep_sleep
+  sleep_duration: 2min
+  esp32_ext1_wakeup:
+    mode: ANY_LOW
+    pins:
+      - number: GPIO0
+        ignore_strapping_warning: true
+        allow_other_uses: true
+      - number: GPIO4
+        allow_other_uses: true
+
+globals:
+  # millis() at the last BOOT press, for reporting holds outside the sleep window.
+  - id: photopainter_sleep_boot_pressed_ms
+    type: uint32_t
+    initial_value: "0"
+  - id: photopainter_sleep_boot_armed
+    type: bool
+    initial_value: "false"
+  - id: photopainter_sleep_transition_ok
+    type: bool
+    initial_value: "false"
+  - id: photopainter_sleep_was_audio_active
+    type: bool
+    initial_value: "false"
+  - id: photopainter_sleep_was_display_active
+    type: bool
+    initial_value: "false"
+  # Wake evidence, retained for the whole boot so the 60 s level line restates it
+  # after the API connects; the one-shot boot lines usually precede any client.
+  - id: photopainter_sleep_wake_name
+    type: std::string
+    initial_value: '"not_deep_sleep"'
+  - id: photopainter_sleep_ext1_status
+    type: uint32_t
+    initial_value: "0"
+  - id: photopainter_sleep_restore_result
+    type: std::string
+    initial_value: '"not_applicable"'
+  - id: photopainter_sleep_slept_s
+    type: int
+    initial_value: "-1"
+  # External-RTC time of day (seconds) captured at sleep entry. Persisted so the
+  # next boot can state how long the board slept by an independent clock; -1
+  # means no entry stamp is pending.
+  - id: photopainter_sleep_entry_rtc_s
+    type: int
+    restore_value: true
+    initial_value: "-1"
+
+esphome:
+  on_boot:
+    # The core restores ALDO4 at 790, then the audio/display components set up.
+    # Codec setup does not undo every logical-shutdown register, so restore
+    # those registers explicitly before the dashboard's -100 readiness gate.
+    - priority: -250.0
+      then:
+        - lambda: |-
+            const esp_sleep_wakeup_cause_t wake = esp_sleep_get_wakeup_cause();
+            const uint64_t ext1 =
+                wake == ESP_SLEEP_WAKEUP_EXT1 ? esp_sleep_get_ext1_wakeup_status() : 0;
+            const char *wake_name = "other";
+            switch (wake) {
+              case ESP_SLEEP_WAKEUP_UNDEFINED: wake_name = "not_deep_sleep"; break;
+              case ESP_SLEEP_WAKEUP_TIMER: wake_name = "timer"; break;
+              case ESP_SLEEP_WAKEUP_EXT1:
+                wake_name = (ext1 & (1ULL << 0)) && (ext1 & (1ULL << 4)) ? "boot_and_key"
+                          : (ext1 & (1ULL << 0)) ? "boot_gpio0"
+                          : (ext1 & (1ULL << 4)) ? "key_gpio4"
+                          : "ext1_unattributed";
+                break;
+              default: break;
+            }
+            id(photopainter_sleep_wake_name) = wake_name;
+            id(photopainter_sleep_ext1_status) = static_cast<uint32_t>(ext1);
+            const bool slept =
+                wake == ESP_SLEEP_WAKEUP_EXT1 || wake == ESP_SLEEP_WAKEUP_TIMER;
+
+            // Sleep length by the external RTC, which keeps running on its own
+            // backup through ESP32 deep sleep. Read hours:minutes:seconds (BCD).
+            int now_s = -1;
+            uint8_t reg = 0x04;
+            uint8_t hms[3] = {0, 0, 0};
+            if (id(photopainter_i2c).write_readv(0x51, &reg, 1, hms, 3) ==
+                esphome::i2c::ERROR_OK) {
+              auto bcd = [](uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); };
+              now_s = bcd(hms[2] & 0x3F) * 3600 + bcd(hms[1] & 0x7F) * 60 +
+                      bcd(hms[0] & 0x7F);
+            }
+            const int entry_s = id(photopainter_sleep_entry_rtc_s);
+            id(photopainter_sleep_slept_s) =
+                (slept && entry_s >= 0 && now_s >= 0)
+                    ? (now_s - entry_s + 86400) % 86400 : -1;
+            id(photopainter_sleep_entry_rtc_s) = -1;
+
+            id(photopainter_sleep_boot_armed) =
+                !(ext1 & (1ULL << 0)) && gpio_get_level(GPIO_NUM_0) != 0;
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=wake cause=%s cause_raw=%d ext1=0x%02X reset_raw=%d "
+                     "gpio0=%d gpio4=%d button_armed=%d entry_rtc_s=%d now_rtc_s=%d "
+                     "slept_s=%d restore=boot_rails_then_codecs_then_dashboard",
+                     wake_name, static_cast<int>(wake),
+                     static_cast<unsigned>(ext1 & 0xFF),
+                     static_cast<int>(esp_reset_reason()), gpio_get_level(GPIO_NUM_0),
+                     gpio_get_level(GPIO_NUM_4),
+                     id(photopainter_sleep_boot_armed) ? 1 : 0, entry_s, now_s,
+                     id(photopainter_sleep_slept_s));
+            if (slept) {
+              // A powered codec retains its shutdown-only registers in sleep.
+              id(photopainter_audio_active) = false;
+            }
+        - if:
+            condition:
+              lambda: |-
+                const auto wake = esp_sleep_get_wakeup_cause();
+                return wake == ESP_SLEEP_WAKEUP_EXT1 ||
+                       wake == ESP_SLEEP_WAKEUP_TIMER;
+            then:
+              - script.execute: photopainter_audio_restore
+              - script.wait: photopainter_audio_restore
+              - lambda: |-
+                  uint8_t reg = 0x90;
+                  uint8_t enables = 0;
+                  const bool rail_ok =
+                      id(photopainter_i2c).write_readv(0x34, &reg, 1, &enables, 1) ==
+                      esphome::i2c::ERROR_OK;
+                  id(photopainter_sleep_restore_result) =
+                      (id(photopainter_audio_active) &&
+                       id(photopainter_display_active) && rail_ok &&
+                       (enables & 0x0C) == 0x0C) ? "ok" : "degraded";
+                  ESP_LOGI("photopainter_deep_sleep",
+                           "event=restore result=%s audio=%d display=%d "
+                           "pmic_ok=%d reg90=0x%02X aldo3=%d aldo4=%d "
+                           "rtc_valid=%d",
+                           id(photopainter_sleep_restore_result).c_str(),
+                           id(photopainter_audio_active) ? 1 : 0,
+                           id(photopainter_display_active) ? 1 : 0,
+                           rail_ok ? 1 : 0, enables,
+                           (enables & 0x04) ? 1 : 0, (enables & 0x08) ? 1 : 0,
+                           id(photopainter_rtc_state_valid) ? 1 : 0);
+
+number:
+  - platform: template
+    id: photopainter_sleep_fallback_minutes
+    name: "PhotoPainter Deep Sleep Fallback Minutes"
+    icon: "mdi:timer-outline"
+    entity_category: config
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 2
+    restore_value: true
+    optimistic: true
+
+text_sensor:
+  - platform: template
+    id: photopainter_sleep_wake_cause
+    name: "PhotoPainter Last Wake Cause"
+    icon: "mdi:power-sleep"
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: return id(photopainter_sleep_wake_name);
+
+button:
+  - platform: template
+    id: photopainter_sleep_button
+    name: "PhotoPainter Deep Sleep"
+    icon: "mdi:power-sleep"
+    on_press:
+      - script.execute: photopainter_sleep_request
+
+binary_sensor:
+  - id: !extend photopainter_key_button
+    pin:
+      allow_other_uses: true
+
+  - id: !extend photopainter_boot_button
+    pin:
+      allow_other_uses: true
+    on_press:
+      - lambda: id(photopainter_sleep_boot_pressed_ms) = millis();
+    on_release:
+      # A hold outside the 1.5-5 s sleep window is otherwise ignored silently;
+      # state the measured hold and why it did not request sleep.
+      - lambda: |-
+          const uint32_t hold_ms = millis() - id(photopainter_sleep_boot_pressed_ms);
+          if (id(photopainter_sleep_boot_pressed_ms) != 0 &&
+              (hold_ms < 1500 || hold_ms > 5000)) {
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=boot_button result=ignored reason=%s hold_ms=%u window_ms=1500-5000",
+                     hold_ms < 1500 ? "hold_too_short" : "hold_too_long",
+                     static_cast<unsigned>(hold_ms));
+          }
+      - if:
+          condition:
+            lambda: return !id(photopainter_sleep_boot_armed);
+          then:
+            - delay: 2s
+            - lambda: |-
+                if (gpio_get_level(GPIO_NUM_0) != 0) {
+                  id(photopainter_sleep_boot_armed) = true;
+                  ESP_LOGI("photopainter_deep_sleep",
+                           "event=boot_button state=rearmed gpio0=1");
+                }
+    # A long click requests sleep on release. The wake press cannot retrigger
+    # sleep before the release has been observed and the guard has rearmed.
+    on_click:
+      - min_length: 1500ms
+        max_length: 5000ms
+        then:
+          - if:
+              condition:
+                lambda: return id(photopainter_sleep_boot_armed);
+              then:
+                - script.execute: photopainter_sleep_request
+              else:
+                - logger.log:
+                    tag: photopainter_deep_sleep
+                    level: INFO
+                    format: "event=boot_button result=ignored reason=wake_guard"
+
+script:
+  - id: photopainter_sleep_request
+    mode: single
+    then:
+      - lambda: |-
+          id(photopainter_sleep_was_audio_active) = id(photopainter_audio_active);
+          id(photopainter_sleep_was_display_active) = id(photopainter_display_active);
+          id(photopainter_sleep_transition_ok) = id(photopainter_shared_i2c_available);
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=request result=%s audio=%d display=%d bus=%d "
+                   "gpio0=%d rtc_valid=%d timer_minutes=%.0f",
+                   id(photopainter_sleep_transition_ok) ? "accepted" : "aborted",
+                   id(photopainter_sleep_was_audio_active) ? 1 : 0,
+                   id(photopainter_sleep_was_display_active) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? 1 : 0,
+                   gpio_get_level(GPIO_NUM_0),
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_sleep_fallback_minutes).state);
+          if (!id(photopainter_sleep_transition_ok)) {
+            ESP_LOGE("photopainter_deep_sleep",
+                     "event=abort stage=preflight reason=i2c_unavailable");
+          }
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     id(photopainter_sleep_was_audio_active);
+          then:
+            - script.execute: photopainter_audio_shutdown
+            - script.wait: photopainter_audio_shutdown
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     !id(photopainter_sleep_was_audio_active);
+          then:
+            - switch.turn_off: photopainter_amplifier_enable
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          id(photopainter_sleep_transition_ok) =
+              !id(photopainter_audio_active) &&
+              !id(photopainter_amplifier_enable).state;
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=stage stage=audio result=%s audio=%d amplifier=%d aldo3=on",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0);
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     id(photopainter_sleep_was_display_active);
+          then:
+            - script.execute: photopainter_display_power_down
+            - script.wait: photopainter_display_power_down
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          id(photopainter_sleep_transition_ok) =
+              !id(photopainter_display_active) &&
+              (!id(photopainter_sleep_was_display_active) ||
+               id(photopainter_display_power_down_ok));
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=stage stage=display result=%s display=%d safe=%d "
+                   "rail_write=%d",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_display_shutdown_safe) ? 1 : 0,
+                   id(photopainter_display_power_down_ok) ? 1 : 0);
+      - if:
+          condition:
+            lambda: return id(photopainter_sleep_transition_ok);
+          then:
+            # ANY_LOW would wake immediately on a held button.
+            - wait_until:
+                timeout: 10s
+                condition:
+                  lambda: |-
+                    return gpio_get_level(GPIO_NUM_0) != 0 &&
+                           gpio_get_level(GPIO_NUM_4) != 0;
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          uint8_t reg90_addr = 0x90;
+          uint8_t seconds_addr = 0x04;
+          uint8_t reg90 = 0;
+          uint8_t hms[3] = {0, 0, 0};
+          const bool pmic_ok =
+              id(photopainter_i2c).write_readv(0x34, &reg90_addr, 1, &reg90, 1) ==
+              esphome::i2c::ERROR_OK;
+          const bool rtc_ok =
+              id(photopainter_i2c).write_readv(0x51, &seconds_addr, 1, hms, 3) ==
+              esphome::i2c::ERROR_OK;
+          const uint8_t rtc_seconds = hms[0];
+          auto bcd = [](uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); };
+          // Bit 7 of the seconds register is the oscillator-stop flag; a stopped
+          // clock cannot time the sleep, so no entry stamp is recorded.
+          id(photopainter_sleep_entry_rtc_s) =
+              (rtc_ok && (rtc_seconds & 0x80) == 0)
+                  ? bcd(hms[2] & 0x3F) * 3600 + bcd(hms[1] & 0x7F) * 60 +
+                        bcd(hms[0] & 0x7F)
+                  : -1;
+          const bool button_released =
+              gpio_get_level(GPIO_NUM_0) != 0 && gpio_get_level(GPIO_NUM_4) != 0;
+          id(photopainter_sleep_transition_ok) =
+              pmic_ok && rtc_ok && button_released &&
+              (reg90 & 0x04) != 0 && (reg90 & 0x08) == 0 &&
+              !id(photopainter_audio_active) &&
+              !id(photopainter_display_active) &&
+              !id(photopainter_amplifier_enable).state;
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=pre_sleep result=%s pmic_ok=%d reg90=0x%02X "
+                   "aldo3=%d aldo4=%d rtc_ok=%d rtc_seconds=0x%02X entry_rtc_s=%d "
+                   "gpio0=%d gpio4=%d audio=%d display=%d amplifier=%d",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   pmic_ok ? 1 : 0, reg90,
+                   (reg90 & 0x04) ? 1 : 0, (reg90 & 0x08) ? 1 : 0,
+                   rtc_ok ? 1 : 0, rtc_seconds, id(photopainter_sleep_entry_rtc_s),
+                   gpio_get_level(GPIO_NUM_0), gpio_get_level(GPIO_NUM_4),
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0);
+      - if:
+          condition:
+            lambda: return id(photopainter_sleep_transition_ok);
+          then:
+            - lambda: |-
+                // KEY has no confirmed external pull-up; hold it high through
+                // sleep with the RTC pull-up, as the vendor firmware does, so a
+                // floating pin cannot satisfy ANY_LOW. GPIO0 uses external R36.
+                const esp_err_t pu = rtc_gpio_pullup_en(GPIO_NUM_4);
+                const esp_err_t pd = rtc_gpio_pulldown_dis(GPIO_NUM_4);
+                ESP_LOGW("photopainter_deep_sleep",
+                         "event=enter source=manual wake=ext1_any_low pins=gpio0,gpio4 "
+                         "timer=on gpio4_rtc_pullup=%s gpio4_rtc_pulldown_off=%s "
+                         "rtc=running aldo3=on aldo4=off",
+                         pu == ESP_OK ? "ok" : esp_err_to_name(pu),
+                         pd == ESP_OK ? "ok" : esp_err_to_name(pd));
+            - deep_sleep.enter:
+                id: photopainter_deep_sleep
+                sleep_duration: !lambda |-
+                  const float minutes = id(photopainter_sleep_fallback_minutes).state;
+                  return static_cast<uint32_t>(
+                      (std::isfinite(minutes) && minutes >= 1.0f && minutes <= 60.0f
+                           ? minutes : 2.0f) * 60000.0f);
+          else:
+            - logger.log:
+                tag: photopainter_deep_sleep
+                level: ERROR
+                format: "event=abort result=recovering reason=stage_or_readback_failed"
+            - lambda: |-
+                // A rail write can take effect despite a failed acknowledgement.
+                // Correct a stale active flag before using the normal power-up
+                // sequence to recover the prior state.
+                uint8_t reg = 0x90;
+                uint8_t enables = 0;
+                const bool pmic_ok = id(photopainter_shared_i2c_available) &&
+                    id(photopainter_i2c).write_readv(0x34, &reg, 1, &enables, 1) ==
+                        esphome::i2c::ERROR_OK;
+                if (pmic_ok && (enables & 0x08) == 0) {
+                  id(photopainter_display_active) = false;
+                }
+                ESP_LOGW("photopainter_deep_sleep",
+                         "event=recovery stage=rail_reconcile pmic_ok=%d "
+                         "reg90=0x%02X display=%d",
+                         pmic_ok ? 1 : 0, enables,
+                         id(photopainter_display_active) ? 1 : 0);
+            - if:
+                condition:
+                  lambda: |-
+                    return id(photopainter_sleep_was_display_active) &&
+                           !id(photopainter_display_active);
+                then:
+                  - script.execute: photopainter_display_power_up
+                  - script.wait: photopainter_display_power_up
+            - if:
+                condition:
+                  lambda: |-
+                    return id(photopainter_sleep_was_audio_active) &&
+                           id(photopainter_shared_i2c_available);
+                then:
+                  - script.execute: photopainter_audio_restore
+                  - script.wait: photopainter_audio_restore
+            - lambda: |-
+                ESP_LOGE("photopainter_deep_sleep",
+                         "event=recovery result=%s audio=%d display=%d "
+                         "amplifier=%d bus=%d",
+                         (id(photopainter_audio_active) ==
+                              id(photopainter_sleep_was_audio_active) &&
+                          id(photopainter_display_active) ==
+                              id(photopainter_sleep_was_display_active))
+                             ? "restored" : "degraded",
+                         id(photopainter_audio_active) ? 1 : 0,
+                         id(photopainter_display_active) ? 1 : 0,
+                         id(photopainter_amplifier_enable).state ? 1 : 0,
+                         id(photopainter_shared_i2c_available) ? 1 : 0);
+
+interval:
+  # The wake press may be released before the BOOT binary sensor subscribes;
+  # this level-based rearm covers a missed release edge without blocking boot.
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (!id(photopainter_sleep_boot_armed) &&
+              gpio_get_level(GPIO_NUM_0) != 0) {
+            id(photopainter_sleep_boot_armed) = true;
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=boot_button state=rearmed gpio0=1 source=level");
+          }
+  - interval: 60s
+    then:
+      - lambda: |-
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=level wake=%s wake_raw=%d ext1=0x%02X reset_raw=%d "
+                   "restore=%s slept_s=%d gpio0=%d gpio4=%d button_armed=%d "
+                   "audio=%d display=%d amplifier=%d aldo3=%d aldo4=%d "
+                   "rtc_valid=%d bus=%d",
+                   id(photopainter_sleep_wake_name).c_str(),
+                   static_cast<int>(esp_sleep_get_wakeup_cause()),
+                   static_cast<unsigned>(id(photopainter_sleep_ext1_status) & 0xFF),
+                   static_cast<int>(esp_reset_reason()),
+                   id(photopainter_sleep_restore_result).c_str(),
+                   id(photopainter_sleep_slept_s),
+                   gpio_get_level(GPIO_NUM_0), gpio_get_level(GPIO_NUM_4),
+                   id(photopainter_sleep_boot_armed) ? 1 : 0,
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0,
+                   (id(photopainter_axp_ldo_enable) & 0x04) ? 1 : 0,
+                   (id(photopainter_axp_ldo_enable) & 0x08) ? 1 : 0,
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? 1 : 0);

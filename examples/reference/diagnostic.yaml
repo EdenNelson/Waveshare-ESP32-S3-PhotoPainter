@@ -1,0 +1,13 @@
+# Rendering input: diagnostics and demo extend one shared core, exactly once.
+packages:
+  - !include site.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-diagnostic.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter/demos/dashboard.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter/demos/audio.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter/demos/deep_sleep.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui-demo.yaml
+  - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui-diagnostic.yaml
+
+esphome:
+  comment: PhotoPainter package reference - diagnostic demo profile

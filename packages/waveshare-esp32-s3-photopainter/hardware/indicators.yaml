@@ -1,0 +1,23 @@
+output:
+  - platform: gpio
+    id: photopainter_act_led_output
+    pin: GPIO42
+    inverted: true
+
+  - platform: gpio
+    id: photopainter_power_led_output
+    pin:
+      number: GPIO45
+      ignore_strapping_warning: true
+    inverted: true
+
+light:
+  - platform: binary
+    id: photopainter_act_led
+    name: "PhotoPainter ACT LED"
+    output: photopainter_act_led_output
+
+  - platform: binary
+    id: photopainter_power_led
+    name: "PhotoPainter PWR LED"
+    output: photopainter_power_led_output

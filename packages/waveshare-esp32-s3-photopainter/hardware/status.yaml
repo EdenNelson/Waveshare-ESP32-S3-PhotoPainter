@@ -1,0 +1,38 @@
+binary_sensor:
+  - platform: template
+    id: photopainter_display_status
+    name: "PhotoPainter Display Status"
+    lambda: return id(photopainter_display_active);
+
+  - platform: template
+    id: photopainter_aldo4_rail_status
+    name: "PhotoPainter Display Power Rail"
+    device_class: power
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_ldo_enable) & 0x08) != 0;
+
+  - platform: template
+    id: photopainter_amplifier_status
+    name: "PhotoPainter Audio Amplifier Status"
+    lambda: return id(photopainter_amplifier_enable).state;
+
+  - platform: template
+    id: photopainter_es8311_status
+    name: "PhotoPainter Audio DAC Status"
+    lambda: |-
+      if (!id(photopainter_audio_active)) return false;
+      return id(photopainter_es8311_present);
+
+  - platform: template
+    id: photopainter_es7210_status
+    name: "PhotoPainter Audio ADC Status"
+    lambda: |-
+      if (!id(photopainter_audio_active)) return false;
+      return id(photopainter_es7210_present);
+
+sensor:
+  - platform: uptime
+    id: photopainter_uptime
+    name: "PhotoPainter Uptime"
+    type: seconds

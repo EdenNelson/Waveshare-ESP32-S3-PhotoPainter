@@ -1,0 +1,3262 @@
+# Generated from packages/ by scripts/generate_esphome_profiles.py.
+# Composition: examples/reference/diagnostic.yaml.
+# Edit the package or rendering input and regenerate; this is a standalone download.
+# Supply wifi_ssid, wifi_password, fallback_password, api_encryption_key, and
+# web_server_password in the ESPHome installation's secrets.yaml.
+
+esphome:
+  name: waveshare-photopainter
+  friendly_name: Waveshare PhotoPainter
+  area: Waveshare
+  min_version: 2026.9.0
+  project:
+    name: edennelson.waveshare-esp32s3-photopainter
+    version: 1.0.0-rc.11
+  on_boot:
+    - priority: 790.0
+      then:
+        - lambda: |-
+            const char *const TAG = "photopainter_power";
+            const uint8_t PMIC_ADDR = 0x34;
+            const uint8_t RTC_ADDR = 0x51;
+
+            id(photopainter_shared_i2c_available) = false;
+            id(photopainter_power_ready) = false;
+            id(photopainter_power_init_complete) = false;
+            id(photopainter_axp_state_valid) = false;
+            id(photopainter_rtc_state_valid) = false;
+
+            auto read_reg = [&](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+              return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                     esphome::i2c::ERROR_OK;
+            };
+            auto write_reg = [&](uint8_t reg, uint8_t value) -> bool {
+              uint8_t data[2] = {reg, value};
+              return id(photopainter_i2c).write(PMIC_ADDR, data, sizeof(data)) ==
+                     esphome::i2c::ERROR_OK;
+            };
+
+            uint8_t chip_id = 0;
+            uint8_t attempts = 0;
+            for (attempts = 1; attempts <= 10; attempts++) {
+              if (read_reg(PMIC_ADDR, 0x03, chip_id)) break;
+              delay(20);
+            }
+            if (attempts > 10) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=pmic_probe attempts=10 "
+                       "sda=%d scl=%d",
+                       gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+            id(photopainter_shared_i2c_available) = true;
+
+            uint8_t power_on_source = 0;
+            uint8_t power_off_source = 0;
+            const bool power_reason_ok =
+                read_reg(PMIC_ADDR, 0x20, power_on_source) &&
+                read_reg(PMIC_ADDR, 0x21, power_off_source);
+            ESP_LOGI(TAG,
+                     "event=power_reason result=%s power_on=0x%02X "
+                     "power_off=0x%02X pwron_key=%d vbus=%d battery_insert=%d "
+                     "software_off=%d vsys_uvp=%d",
+                     power_reason_ok ? "ok" : "failed", power_on_source,
+                     power_off_source, (power_on_source & 0x01) ? 1 : 0,
+                     (power_on_source & 0x04) ? 1 : 0,
+                     (power_on_source & 0x10) ? 1 : 0,
+                     (power_off_source & 0x02) ? 1 : 0,
+                     (power_off_source & 0x08) ? 1 : 0);
+
+            uint8_t dcdc1_before = 0;
+            uint8_t aldo3_before = 0;
+            uint8_t aldo4_before = 0;
+            uint8_t ldo_enable_before = 0;
+            const bool baseline_ok =
+                read_reg(PMIC_ADDR, 0x82, dcdc1_before) &&
+                read_reg(PMIC_ADDR, 0x94, aldo3_before) &&
+                read_reg(PMIC_ADDR, 0x95, aldo4_before) &&
+                read_reg(PMIC_ADDR, 0x90, ldo_enable_before);
+            if (!baseline_ok) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=rail_baseline chip_id=0x%02X",
+                       chip_id);
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+
+            const bool was_configured =
+                dcdc1_before == 0x12 &&
+                (aldo3_before & 0x1F) == 0x1C &&
+                (aldo4_before & 0x1F) == 0x1C &&
+                (ldo_enable_before & 0x0C) == 0x0C;
+
+            bool writes_ok = true;
+            if (!was_configured) {
+              // DCDC1, ALDO3 (audio), and ALDO4 (display) are the verified 3.3 V
+              // startup configuration. Preserve all unrelated enable bits. In
+              // particular, this package never modifies ALDO2.
+              writes_ok &= write_reg(0x82, 0x12);
+              writes_ok &= write_reg(0x94, (aldo3_before & 0xE0) | 0x1C);
+              writes_ok &= write_reg(0x95, (aldo4_before & 0xE0) | 0x1C);
+              writes_ok &= write_reg(0x90, ldo_enable_before | 0x0C);
+              delay(100);
+            }
+
+            uint8_t dcdc1_after = 0;
+            uint8_t aldo3_after = 0;
+            uint8_t aldo4_after = 0;
+            uint8_t ldo_enable_after = 0;
+            const bool verify_reads_ok =
+                read_reg(PMIC_ADDR, 0x82, dcdc1_after) &&
+                read_reg(PMIC_ADDR, 0x94, aldo3_after) &&
+                read_reg(PMIC_ADDR, 0x95, aldo4_after) &&
+                read_reg(PMIC_ADDR, 0x90, ldo_enable_after);
+            const bool verified =
+                writes_ok && verify_reads_ok && dcdc1_after == 0x12 &&
+                (aldo3_after & 0x1F) == 0x1C &&
+                (aldo4_after & 0x1F) == 0x1C &&
+                (ldo_enable_after & 0x0C) == 0x0C;
+            id(photopainter_power_ready) = verified;
+
+            ESP_LOGI(TAG,
+                     "event=boot result=%s configured=%d chip_id=0x%02X "
+                     "dcdc1=0x%02X->0x%02X aldo3=0x%02X->0x%02X "
+                     "aldo4=0x%02X->0x%02X ldo_enable=0x%02X->0x%02X",
+                     verified ? "ok" : "failed", was_configured ? 1 : 0, chip_id,
+                     dcdc1_before, dcdc1_after, aldo3_before, aldo3_after,
+                     aldo4_before, aldo4_after, ldo_enable_before,
+                     ldo_enable_after);
+
+            if (!verified) {
+              ESP_LOGE(TAG,
+                       "event=boot result=failed stage=rail_verify writes_ok=%d "
+                       "reads_ok=%d",
+                       writes_ok ? 1 : 0, verify_reads_ok ? 1 : 0);
+              id(photopainter_power_init_complete) = true;
+              return;
+            }
+
+            uint8_t status1 = 0;
+            uint8_t status2 = 0;
+            uint8_t rtc_seconds = 0;
+            const bool axp_ok = read_reg(PMIC_ADDR, 0x00, status1) &&
+                                read_reg(PMIC_ADDR, 0x01, status2);
+            const bool rtc_ok = read_reg(RTC_ADDR, 0x04, rtc_seconds);
+            if (axp_ok) {
+              id(photopainter_axp_status1) = status1;
+              id(photopainter_axp_status2) = status2;
+              id(photopainter_axp_ldo_enable) = ldo_enable_after;
+            }
+            if (rtc_ok) id(photopainter_rtc_seconds) = rtc_seconds;
+            id(photopainter_axp_state_valid) = axp_ok;
+            id(photopainter_rtc_state_valid) = rtc_ok;
+
+            ESP_LOGI(TAG,
+                     "event=cache_seed axp_valid=%d rtc_valid=%d status1=0x%02X "
+                     "status2=0x%02X ldo_enable=0x%02X rtc_seconds=0x%02X",
+                     axp_ok ? 1 : 0, rtc_ok ? 1 : 0, status1, status2,
+                     ldo_enable_after, rtc_seconds);
+            id(photopainter_power_init_complete) = true;
+    - priority: 780.0
+      then:
+        - lambda: |-
+            sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+            host.slot = SPI3_HOST;
+
+            sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+            slot_config.gpio_cs = GPIO_NUM_38;
+            slot_config.host_id = SPI3_HOST;
+
+            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+                .format_if_mount_failed = false,
+                .max_files = 5,
+                .allocation_unit_size = 16 * 1024,
+            };
+
+            sdmmc_card_t *card = nullptr;
+            const esp_err_t result = esp_vfs_fat_sdspi_mount(
+                "/sdcard", &host, &slot_config, &mount_config, &card);
+            const bool old_mounted = id(photopainter_sd_mounted);
+            id(photopainter_sd_mounted) = result == ESP_OK;
+            ESP_LOGI("photopainter_storage",
+                     "event=mount old=%s new=%s result=%s path=/sdcard error=%s",
+                     old_mounted ? "mounted" : "unmounted",
+                     id(photopainter_sd_mounted) ? "mounted" : "unmounted",
+                     result == ESP_OK ? "ok" : "failed", esp_err_to_name(result));
+    - priority: -100.0
+      then:
+        - script.execute: photopainter_diagnostic_snapshot
+    - priority: -200.0
+      then:
+        - wait_until:
+            timeout: 10s
+            condition:
+              lambda: return id(photopainter_power_init_complete);
+        - script.execute: photopainter_diagnostic_register_snapshot
+    - priority: -100.0
+      then:
+        - component.update: photopainter_environment
+        - component.update: photopainter_usb_voltage
+        - component.update: photopainter_battery_voltage
+        - component.update: photopainter_battery_level
+        - lambda: |-
+            id(photopainter_dashboard_gate_started_ms) = millis();
+            id(photopainter_dashboard_gate_exempt).clear();
+        - wait_until:
+            condition:
+              lambda: |-
+                static std::string last_report_key;
+                static uint32_t last_report_ms = 0;
+
+                // Power initialization has not finished: nothing is readable yet.
+                // Power initialization failed: release here; the branch below
+                // reports the power error and requests no refresh.
+                const bool init_complete = id(photopainter_power_init_complete);
+                if (init_complete && !id(photopainter_power_ready)) return true;
+
+                std::string missing;
+                std::string exempt;
+                auto append = [](std::string &list, const char *key) {
+                  if (!list.empty()) list += ",";
+                  list += key;
+                };
+                // ready: the entity has published (a published NAN, such as an
+                // absent cell, counts; the panel draws "--" for it).
+                // error_state: the reading cannot arrive because its source failed.
+                auto need = [&](const char *key, bool ready, bool error_state) {
+                  if (ready) return;
+                  append(error_state ? exempt : missing, key);
+                };
+
+                if (!init_complete) {
+                  append(missing, "power_init");
+                } else {
+                  const bool pmic_error = !id(photopainter_axp_state_valid);
+                  const bool rtc_error = !id(photopainter_rtc_state_valid);
+                  const bool environment_error = id(photopainter_environment).is_failed();
+                  const bool sd_unmounted = !id(photopainter_sd_mounted);
+                  // No Wi-Fi configured, Wi-Fi disabled, or the station connection
+                  // abandoned (fallback AP up): neither the signal reading nor SNTP
+                  // time can arrive.
+                #ifdef USE_WIFI
+                  auto *const wifi_component = wifi::global_wifi_component;
+                  const bool wifi_connected =
+                      wifi_component != nullptr && wifi_component->is_connected();
+                  const bool network_error =
+                      wifi_component == nullptr || wifi_component->is_disabled() ||
+                      wifi_component->is_ap_active();
+                #else
+                  const bool wifi_connected = false;
+                  const bool network_error = true;
+                #endif
+
+                  need("wifi_signal", wifi_connected, network_error);
+                  need("uptime", id(photopainter_uptime).has_state(), false);
+                  need("temperature", id(photopainter_temperature).has_state(), environment_error);
+                  need("humidity", id(photopainter_humidity).has_state(), environment_error);
+                  need("volume", id(photopainter_speaker_volume).has_state(), false);
+                  need("mic_gain", id(photopainter_demo_mic_gain_control).has_state(), false);
+                  need("voice_note_unread", id(photopainter_demo_voice_note_unread).has_state(), false);
+                  need("usb_connected", id(photopainter_usb_connected).has_state(), pmic_error);
+                  need("usb_voltage", id(photopainter_usb_voltage).has_state(), pmic_error);
+                  need("battery_connected", id(photopainter_battery_connected).has_state(), pmic_error);
+                  need("battery_level", id(photopainter_battery_level).has_state(), pmic_error);
+                  need("battery_voltage", id(photopainter_battery_voltage).has_state(), pmic_error);
+                  need("battery_charging", id(photopainter_battery_charging).has_state(), pmic_error);
+                  need("sd_mounted", id(photopainter_sd_card_mounted).has_state(), false);
+                  need("sd_free", id(photopainter_sd_free_space).has_state(), sd_unmounted);
+                  need("sd_used", id(photopainter_sd_used_space).has_state(), sd_unmounted);
+                  need("sd_total", id(photopainter_sd_total_space).has_state(), sd_unmounted);
+                  need("rtc_running", id(photopainter_rtc_running).has_state(), rtc_error);
+                  need("adc", id(photopainter_es7210_status).has_state(), false);
+                  need("dac", id(photopainter_es8311_status).has_state(), false);
+                  need("amp", id(photopainter_amplifier_status).has_state(), false);
+                }
+
+                if (missing.empty()) {
+                  id(photopainter_dashboard_gate_exempt) = exempt;
+                  return true;
+                }
+
+                // Report on any change to what is missing or exempted, and at
+                // least every 5 s while the set is unchanged -- never per loop.
+                const uint32_t now = millis();
+                const std::string report_key = missing + "|" + exempt;
+                if (report_key != last_report_key || now - last_report_ms >= 5000) {
+                  last_report_key = report_key;
+                  last_report_ms = now;
+                  ESP_LOGI("photopainter_dashboard",
+                           "event=first_refresh_wait missing=%s exempt=%s elapsed_ms=%u",
+                           missing.c_str(), exempt.empty() ? "-" : exempt.c_str(),
+                           static_cast<unsigned>(
+                               now - id(photopainter_dashboard_gate_started_ms)));
+                }
+                return false;
+        - if:
+            condition:
+              lambda: return id(photopainter_power_ready);
+            then:
+              - if:
+                  condition:
+                    lambda: return id(photopainter_display_active);
+                  then:
+                    - lambda: |-
+                        id(photopainter_dashboard_released) = true;
+                        const std::string &exempt = id(photopainter_dashboard_gate_exempt);
+                        const unsigned wait_ms = static_cast<unsigned>(
+                            millis() - id(photopainter_dashboard_gate_started_ms));
+                        const char *clock =
+                            id(photopainter_rtc).now().is_valid() ? "valid" : "pending";
+                        if (exempt.empty()) {
+                          ESP_LOGI("photopainter_dashboard",
+                                   "event=first_refresh result=requested readings=ready "
+                                   "exempt=- clock=%s wait_ms=%u "
+                                   "update_interval=900s",
+                                   clock, wait_ms);
+                        } else {
+                          ESP_LOGW("photopainter_dashboard",
+                                   "event=first_refresh result=requested readings=exempted "
+                                   "exempt=%s clock=%s wait_ms=%u "
+                                   "update_interval=900s",
+                                   exempt.c_str(), clock, wait_ms);
+                        }
+                    - component.resume:
+                        id: photopainter_display
+                        update_interval: 900s
+                  else:
+                    - logger.log:
+                        tag: photopainter_dashboard
+                        level: WARN
+                        format: event=first_refresh result=skipped reason=display_off
+            else:
+              - logger.log:
+                  tag: photopainter_dashboard
+                  level: ERROR
+                  format: event=first_refresh result=exempt reason=power_error
+    - priority: -250.0
+      then:
+        - lambda: |-
+            const esp_sleep_wakeup_cause_t wake = esp_sleep_get_wakeup_cause();
+            const uint64_t ext1 =
+                wake == ESP_SLEEP_WAKEUP_EXT1 ? esp_sleep_get_ext1_wakeup_status() : 0;
+            const char *wake_name = "other";
+            switch (wake) {
+              case ESP_SLEEP_WAKEUP_UNDEFINED: wake_name = "not_deep_sleep"; break;
+              case ESP_SLEEP_WAKEUP_TIMER: wake_name = "timer"; break;
+              case ESP_SLEEP_WAKEUP_EXT1:
+                wake_name = (ext1 & (1ULL << 0)) && (ext1 & (1ULL << 4)) ? "boot_and_key"
+                          : (ext1 & (1ULL << 0)) ? "boot_gpio0"
+                          : (ext1 & (1ULL << 4)) ? "key_gpio4"
+                          : "ext1_unattributed";
+                break;
+              default: break;
+            }
+            id(photopainter_sleep_wake_name) = wake_name;
+            id(photopainter_sleep_ext1_status) = static_cast<uint32_t>(ext1);
+            const bool slept =
+                wake == ESP_SLEEP_WAKEUP_EXT1 || wake == ESP_SLEEP_WAKEUP_TIMER;
+
+            // Sleep length by the external RTC, which keeps running on its own
+            // backup through ESP32 deep sleep. Read hours:minutes:seconds (BCD).
+            int now_s = -1;
+            uint8_t reg = 0x04;
+            uint8_t hms[3] = {0, 0, 0};
+            if (id(photopainter_i2c).write_readv(0x51, &reg, 1, hms, 3) ==
+                esphome::i2c::ERROR_OK) {
+              auto bcd = [](uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); };
+              now_s = bcd(hms[2] & 0x3F) * 3600 + bcd(hms[1] & 0x7F) * 60 +
+                      bcd(hms[0] & 0x7F);
+            }
+            const int entry_s = id(photopainter_sleep_entry_rtc_s);
+            id(photopainter_sleep_slept_s) =
+                (slept && entry_s >= 0 && now_s >= 0)
+                    ? (now_s - entry_s + 86400) % 86400 : -1;
+            id(photopainter_sleep_entry_rtc_s) = -1;
+
+            id(photopainter_sleep_boot_armed) =
+                !(ext1 & (1ULL << 0)) && gpio_get_level(GPIO_NUM_0) != 0;
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=wake cause=%s cause_raw=%d ext1=0x%02X reset_raw=%d "
+                     "gpio0=%d gpio4=%d button_armed=%d entry_rtc_s=%d now_rtc_s=%d "
+                     "slept_s=%d restore=boot_rails_then_codecs_then_dashboard",
+                     wake_name, static_cast<int>(wake),
+                     static_cast<unsigned>(ext1 & 0xFF),
+                     static_cast<int>(esp_reset_reason()), gpio_get_level(GPIO_NUM_0),
+                     gpio_get_level(GPIO_NUM_4),
+                     id(photopainter_sleep_boot_armed) ? 1 : 0, entry_s, now_s,
+                     id(photopainter_sleep_slept_s));
+            if (slept) {
+              // A powered codec retains its shutdown-only registers in sleep.
+              id(photopainter_audio_active) = false;
+            }
+        - if:
+            condition:
+              lambda: |-
+                const auto wake = esp_sleep_get_wakeup_cause();
+                return wake == ESP_SLEEP_WAKEUP_EXT1 ||
+                       wake == ESP_SLEEP_WAKEUP_TIMER;
+            then:
+              - script.execute: photopainter_audio_restore
+              - script.wait: photopainter_audio_restore
+              - lambda: |-
+                  uint8_t reg = 0x90;
+                  uint8_t enables = 0;
+                  const bool rail_ok =
+                      id(photopainter_i2c).write_readv(0x34, &reg, 1, &enables, 1) ==
+                      esphome::i2c::ERROR_OK;
+                  id(photopainter_sleep_restore_result) =
+                      (id(photopainter_audio_active) &&
+                       id(photopainter_display_active) && rail_ok &&
+                       (enables & 0x0C) == 0x0C) ? "ok" : "degraded";
+                  ESP_LOGI("photopainter_deep_sleep",
+                           "event=restore result=%s audio=%d display=%d "
+                           "pmic_ok=%d reg90=0x%02X aldo3=%d aldo4=%d "
+                           "rtc_valid=%d",
+                           id(photopainter_sleep_restore_result).c_str(),
+                           id(photopainter_audio_active) ? 1 : 0,
+                           id(photopainter_display_active) ? 1 : 0,
+                           rail_ok ? 1 : 0, enables,
+                           (enables & 0x04) ? 1 : 0, (enables & 0x08) ? 1 : 0,
+                           id(photopainter_rtc_state_valid) ? 1 : 0);
+  includes:
+    - <esp_vfs_fat.h>
+    - <sdmmc_cmd.h>
+    - <driver/i2c_master.h>
+    - <esp_flash.h>
+    - <esp_partition.h>
+    - <esp_sleep.h>
+    - <driver/rtc_io.h>
+  comment: PhotoPainter package reference - diagnostic demo profile
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret 'api_encryption_key'
+ota:
+  - platform: esphome
+    encryption:
+wifi:
+  ssid: !secret 'wifi_ssid'
+  password: !secret 'wifi_password'
+  ap:
+    ssid: Waveshare PhotoPainter Fallback
+    password: !secret 'fallback_password'
+captive_portal: null
+web_server:
+  version: 3
+  auth:
+    username: photopainter-admin
+    password: !secret 'web_server_password'
+  local: true
+  sorting_groups:
+    - id: photopainter_group_display
+      name: Display
+      sorting_weight: 10
+    - id: photopainter_group_power
+      name: Power
+      sorting_weight: 20
+    - id: photopainter_group_audio
+      name: Audio
+      sorting_weight: 30
+    - id: photopainter_group_storage
+      name: Storage
+      sorting_weight: 40
+    - id: photopainter_group_environment
+      name: Environment
+      sorting_weight: 50
+    - id: photopainter_group_inputs
+      name: Buttons & LEDs
+      sorting_weight: 60
+    - id: photopainter_group_diagnostics
+      name: Diagnostics
+      sorting_weight: 90
+    - id: photopainter_group_deep_sleep
+      name: Deep Sleep
+      sorting_weight: 25
+    - id: photopainter_group_voice_notes
+      name: Voice Notes
+      sorting_weight: 35
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_ESPTOOLPY_FLASHMODE_QIO: y
+    advanced:
+      include_builtin_idf_components:
+        - fatfs
+        - sdmmc
+        - esp_driver_sdspi
+psram:
+  mode: octal
+  speed: 80MHz
+logger:
+  level: DEBUG
+  logs:
+    wifi: INFO
+  task_log_buffer_size: 4096
+  tx_buffer_size: 1024
+i2c:
+  - id: photopainter_i2c
+    sda: GPIO47
+    scl: GPIO48
+    frequency: 100kHz
+    scan: false
+spi:
+  - id: photopainter_display_spi
+    interface: spi2
+    clk_pin: GPIO10
+    mosi_pin: GPIO11
+  - id: photopainter_sd_spi
+    interface: spi3
+    clk_pin: GPIO39
+    mosi_pin: GPIO41
+    miso_pin: GPIO40
+globals:
+  - id: photopainter_shared_i2c_available
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_power_ready
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_power_init_complete
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_i2c_fail_streak
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_axp_state_valid
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_rtc_state_valid
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_axp_status1
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_axp_status2
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_axp_ldo_enable
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_rtc_seconds
+    type: uint8_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_power_cache_seen
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_sd_mounted
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_pwr_pressed_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_audio_active
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: photopainter_es8311_present
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_es7210_present
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_display_active
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: photopainter_display_refresh_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_display_wait_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_display_shutdown_safe
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: photopainter_display_power_down_ok
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: photopainter_display_power_up_ok
+    type: bool
+    restore_value: false
+    initial_value: 'true'
+  - id: photopainter_snapshot_seq
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_dashboard_released
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  - id: photopainter_dashboard_rendered_page
+    type: int
+    restore_value: false
+    initial_value: '-1'
+  - id: photopainter_dashboard_gate_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: '0'
+  - id: photopainter_dashboard_gate_exempt
+    type: std::string
+    restore_value: false
+  - id: photopainter_demo_record_file
+    type: FILE*
+    initial_value: nullptr
+  - id: photopainter_demo_record_file_pending
+    type: FILE*
+    initial_value: nullptr
+  - id: photopainter_demo_play_file
+    type: FILE*
+    initial_value: nullptr
+  - id: photopainter_demo_record_bytes
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_demo_record_peak
+    type: uint16_t
+    initial_value: '0'
+  - id: photopainter_demo_record_peak_raw
+    type: uint16_t
+    initial_value: '0'
+  - id: photopainter_demo_play_bytes
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_demo_play_peak
+    type: uint16_t
+    initial_value: '0'
+  - id: photopainter_demo_play_retries
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_demo_zero_writes
+    type: uint16_t
+    initial_value: '0'
+  - id: photopainter_demo_mic_gain
+    type: int32_t
+    initial_value: '4'
+  - id: photopainter_demo_unread_voice_note
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+  - id: photopainter_sleep_boot_pressed_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_sleep_boot_armed
+    type: bool
+    initial_value: 'false'
+  - id: photopainter_sleep_transition_ok
+    type: bool
+    initial_value: 'false'
+  - id: photopainter_sleep_was_audio_active
+    type: bool
+    initial_value: 'false'
+  - id: photopainter_sleep_was_display_active
+    type: bool
+    initial_value: 'false'
+  - id: photopainter_sleep_wake_name
+    type: std::string
+    initial_value: '"not_deep_sleep"'
+  - id: photopainter_sleep_ext1_status
+    type: uint32_t
+    initial_value: '0'
+  - id: photopainter_sleep_restore_result
+    type: std::string
+    initial_value: '"not_applicable"'
+  - id: photopainter_sleep_slept_s
+    type: int
+    initial_value: '-1'
+  - id: photopainter_sleep_entry_rtc_s
+    type: int
+    restore_value: true
+    initial_value: '-1'
+script:
+  - id: photopainter_i2c_recovery
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_i2c";
+          const bool old_available = id(photopainter_shared_i2c_available);
+
+          i2c_master_bus_handle_t bus_handle = nullptr;
+          const esp_err_t handle_result = i2c_master_get_bus_handle(
+              static_cast<i2c_port_num_t>(id(photopainter_i2c).get_port()),
+              &bus_handle);
+          if (handle_result != ESP_OK || bus_handle == nullptr) {
+            id(photopainter_shared_i2c_available) = false;
+            ESP_LOGE(TAG,
+                     "event=recovery result=failed stage=get_handle error=%s",
+                     esp_err_to_name(handle_result));
+            return;
+          }
+
+          for (uint8_t attempt = 1; attempt <= 3; attempt++) {
+            const int sda_before = gpio_get_level(GPIO_NUM_47);
+            const int scl_before = gpio_get_level(GPIO_NUM_48);
+            const esp_err_t reset_result = i2c_master_bus_reset(bus_handle);
+            delay(25);
+            const int sda_after = gpio_get_level(GPIO_NUM_47);
+            const int scl_after = gpio_get_level(GPIO_NUM_48);
+
+            uint8_t pmic_id = 0;
+            uint8_t rtc_control = 0;
+            uint8_t reg = 0x03;
+            const bool pmic_ok =
+                sda_after == 1 && scl_after == 1 &&
+                id(photopainter_i2c).write_readv(0x34, &reg, 1, &pmic_id, 1) ==
+                    esphome::i2c::ERROR_OK;
+            reg = 0x00;
+            const bool rtc_ok =
+                sda_after == 1 && scl_after == 1 &&
+                id(photopainter_i2c).write_readv(0x51, &reg, 1, &rtc_control, 1) ==
+                    esphome::i2c::ERROR_OK;
+
+            ESP_LOGW(TAG,
+                     "event=recovery_attempt attempt=%u reset=%s "
+                     "sda=%d->%d scl=%d->%d pmic=%d rtc=%d",
+                     attempt, esp_err_to_name(reset_result), sda_before, sda_after,
+                     scl_before, scl_after, pmic_ok ? 1 : 0, rtc_ok ? 1 : 0);
+
+            // Either independently powered responder proves that the electrical
+            // bus is available. Preserve a missing device as its own failure
+            // instead of relabeling it as a whole-bus outage.
+            if (pmic_ok || rtc_ok) {
+              id(photopainter_shared_i2c_available) = true;
+              id(photopainter_i2c_fail_streak) = 0;
+              id(photopainter_axp_state_valid) = pmic_ok;
+              id(photopainter_rtc_state_valid) = rtc_ok;
+              ESP_LOGI(TAG,
+                       "event=bus_transition old=%s new=available result=recovered "
+                       "health=%s pmic=%d rtc=%d pmic_id=0x%02X "
+                       "rtc_control=0x%02X",
+                       old_available ? "available" : "unavailable",
+                       (pmic_ok && rtc_ok) ? "full" : "degraded",
+                       pmic_ok ? 1 : 0, rtc_ok ? 1 : 0, pmic_id, rtc_control);
+              return;
+            }
+            App.feed_wdt();
+            delay(100);
+          }
+
+          id(photopainter_shared_i2c_available) = false;
+          ESP_LOGE(TAG, "event=recovery result=exhausted bus=unavailable");
+  - id: photopainter_audio_clients_stop
+    mode: single
+    then:
+      - media_player.stop: photopainter_media_player
+      - microphone.stop_capture: photopainter_microphone
+      - speaker.stop: photopainter_speaker
+      - switch.turn_off: photopainter_amplifier_enable
+      - script.stop: photopainter_demo_record_voice_note
+      - script.stop: photopainter_demo_play_voice_note
+      - rtttl.stop:
+          id: photopainter_demo_rtttl
+      - lambda: |-
+          if (id(photopainter_demo_record_file) != nullptr) {
+            id(photopainter_demo_record_file_pending) =
+                id(photopainter_demo_record_file);
+            id(photopainter_demo_record_file) = nullptr;
+          }
+      - wait_until:
+          timeout: 2s
+          condition:
+            lambda: return id(photopainter_microphone).is_stopped();
+      - lambda: |-
+          if (id(photopainter_demo_play_file) != nullptr) {
+            fclose(id(photopainter_demo_play_file));
+            id(photopainter_demo_play_file) = nullptr;
+          }
+          if (id(photopainter_demo_record_file_pending) != nullptr) {
+            fclose(id(photopainter_demo_record_file_pending));
+            id(photopainter_demo_record_file_pending) = nullptr;
+          }
+          ESP_LOGI("photopainter_voice_demo",
+                   "event=stop result=complete mic_stopped=%d",
+                   id(photopainter_microphone).is_stopped() ? 1 : 0);
+  - id: photopainter_audio_shutdown
+    mode: single
+    then:
+      - script.execute: photopainter_audio_clients_stop
+      - script.wait: photopainter_audio_clients_stop
+      - delay: 500ms
+      - lambda: |-
+          const char *const TAG = "photopainter_audio";
+          const char *const old_state =
+              id(photopainter_audio_active) ? "active" : "low_power";
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "reason=i2c_unavailable amplifier=off aldo3=on",
+                     old_state, old_state);
+            return;
+          }
+
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto write_reg = [](uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            uint8_t data[2] = {reg, value};
+            return id(photopainter_i2c).write(address, data, sizeof(data)) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto update_bits = [&](uint8_t address, uint8_t reg,
+                                 uint8_t clear_mask, uint8_t set_mask) -> bool {
+            uint8_t before = 0;
+            if (!read_reg(address, reg, before)) return false;
+            const uint8_t desired =
+                (before & static_cast<uint8_t>(~clear_mask)) | set_mask;
+            return write_reg(address, reg, desired);
+          };
+
+          bool dac_ok = true;
+          dac_ok &= update_bits(0x18, 0x31, 0x00, 0x60);
+          dac_ok &= update_bits(0x18, 0x00, 0x80, 0x00);
+          delay(50);
+          uint8_t dac_csm = 0;
+          dac_ok &= read_reg(0x18, 0xFC, dac_csm);
+          dac_ok &= update_bits(0x18, 0x01, 0x3F, 0x00);
+
+          bool adc_ok = true;
+          adc_ok &= update_bits(0x40, 0x00, 0x01, 0x00);
+          delay(50);
+          uint8_t adc_csm = 0;
+          adc_ok &= read_reg(0x40, 0x0B, adc_csm);
+          adc_ok &= write_reg(0x40, 0x4B, 0xFF);
+          adc_ok &= write_reg(0x40, 0x4C, 0xFF);
+          adc_ok &= update_bits(0x40, 0x40, 0x00, 0x80);
+          adc_ok &= update_bits(0x40, 0x01, 0x00, 0x7F);
+          adc_ok &= update_bits(0x40, 0x06, 0x00, 0x07);
+
+          if (!dac_ok || !adc_ok) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "amplifier=off aldo3=on dac=%d adc=%d "
+                     "dac_csm=0x%02X adc_csm=0x%02X",
+                     old_state, old_state, dac_ok ? 1 : 0, adc_ok ? 1 : 0,
+                     dac_csm, adc_csm);
+            return;
+          }
+
+          id(photopainter_audio_active) = false;
+          id(photopainter_es8311_present) = false;
+          id(photopainter_es7210_present) = false;
+          ESP_LOGI(TAG,
+                   "event=transition old=%s new=low_power result=ok "
+                   "amplifier=off aldo3=on dac_csm=0x%02X adc_csm=0x%02X",
+                   old_state, dac_csm, adc_csm);
+  - id: photopainter_audio_restore
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_audio";
+          const char *const old_state =
+              id(photopainter_audio_active) ? "active" : "low_power";
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "reason=i2c_unavailable amplifier=off aldo3=on",
+                     old_state, old_state);
+            return;
+          }
+
+          // These setup routines restore the components' normal register sets.
+          // The shutdown-only mute and microphone-power registers are restored
+          // explicitly below because the component setup routines do not write them.
+          id(photopainter_audio_dac).setup();
+          id(photopainter_audio_adc).setup();
+          delay(100);
+
+          auto write_reg = [](uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            uint8_t data[2] = {reg, value};
+            return id(photopainter_i2c).write(address, data, sizeof(data)) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+
+          bool restore_ok = write_reg(0x18, 0x31, 0x00);
+          restore_ok &= write_reg(0x40, 0x4B, 0x0F);
+          restore_ok &= write_reg(0x40, 0x4C, 0x0F);
+          restore_ok &= write_reg(0x40, 0x06, 0x04);
+
+          uint8_t dac_id = 0;
+          uint8_t adc_id = 0;
+          uint8_t dac_mute = 0xFF;
+          restore_ok &= read_reg(0x18, 0xFD, dac_id);
+          restore_ok &= read_reg(0x40, 0x3D, adc_id);
+          restore_ok &= read_reg(0x18, 0x31, dac_mute);
+          if (!restore_ok || dac_mute != 0x00) {
+            id(photopainter_audio_active) = false;
+            id(photopainter_es8311_present) = false;
+            id(photopainter_es7210_present) = false;
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=low_power result=failed "
+                     "reason=codec_restore dac_id=0x%02X adc_id=0x%02X "
+                     "dac_mute=0x%02X amplifier=off aldo3=on",
+                     old_state, dac_id, adc_id, dac_mute);
+            return;
+          }
+
+          id(photopainter_audio_active) = true;
+          id(photopainter_es8311_present) = true;
+          id(photopainter_es7210_present) = true;
+          ESP_LOGI(TAG,
+                   "event=transition old=%s new=active result=ok "
+                   "dac_id=0x%02X adc_id=0x%02X dac_mute=0x%02X aldo3=on",
+                   old_state, dac_id, adc_id, dac_mute);
+      - if:
+          condition:
+            lambda: return id(photopainter_audio_active);
+          then:
+            - switch.turn_on: photopainter_amplifier_enable
+  - id: photopainter_display_prepare_shutdown
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: return !id(photopainter_display_active);
+          then:
+            - lambda: |-
+                id(photopainter_display_shutdown_safe) = true;
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=complete result=not_required "
+                         "reason=aldo4_already_off safe=1");
+          else:
+            - component.suspend: photopainter_display
+            - lambda: |-
+                const bool idle = id(photopainter_display).is_idle();
+                const uint32_t stamp = id(photopainter_display_refresh_started_ms);
+                id(photopainter_display_shutdown_safe) = false;
+                id(photopainter_display_wait_started_ms) = millis();
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=start idle=%d refresh_age_ms=%ld "
+                         "timeout_ms=45000 expected=%s",
+                         idle ? 1 : 0,
+                         stamp == 0 ? -1L : static_cast<long>(millis() - stamp),
+                         idle ? "immediate" : "hold");
+            - wait_until:
+                timeout: 45s
+                condition:
+                  component.is_idle: photopainter_display
+            - lambda: |-
+                const uint32_t elapsed =
+                    millis() - id(photopainter_display_wait_started_ms);
+                const bool idle = id(photopainter_display).is_idle();
+                const bool failed = id(photopainter_display).is_failed();
+                id(photopainter_display_shutdown_safe) = idle || failed;
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=complete result=%s elapsed_ms=%u "
+                         "idle=%d failed=%d safe=%d busy=%d",
+                         idle ? (elapsed < 100 ? "immediate" : "waited") : "timeout",
+                         static_cast<unsigned>(elapsed), idle ? 1 : 0, failed ? 1 : 0,
+                         id(photopainter_display_shutdown_safe) ? 1 : 0,
+                         gpio_get_level(GPIO_NUM_13));
+                id(photopainter_display_refresh_started_ms) = 0;
+            - if:
+                condition:
+                  lambda: return id(photopainter_display_shutdown_safe);
+                then:
+                  - lambda: |-
+                      id(photopainter_display).on_safe_shutdown();
+                      ESP_LOGI("photopainter_display",
+                               "event=safe_shutdown result=issued busy=%d",
+                               gpio_get_level(GPIO_NUM_13));
+                else:
+                  - logger.log:
+                      tag: photopainter_display
+                      level: ERROR
+                      format: event=safe_shutdown result=skipped reason=refresh_not_idle
+  - id: photopainter_display_power_down
+    mode: single
+    then:
+      - script.execute: photopainter_display_prepare_shutdown
+      - script.wait: photopainter_display_prepare_shutdown
+      - delay: 100ms
+      - lambda: |-
+          id(photopainter_display_power_down_ok) = false;
+          if (!id(photopainter_display_active)) {
+            id(photopainter_display_power_down_ok) = true;
+            ESP_LOGI("photopainter_display",
+                     "event=rail_transition old=off new=off result=noop "
+                     "reason=already_off rail=aldo4");
+            return;
+          }
+          if (!id(photopainter_display_shutdown_safe)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=unsafe_panel aldo4=on");
+            return;
+          }
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=i2c_unavailable aldo4=on");
+            return;
+          }
+
+          uint8_t reg = 0x90;
+          uint8_t before = 0;
+          if (id(photopainter_i2c).write_readv(0x34, &reg, 1, &before, 1) !=
+              esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=unknown new=unknown result=failed "
+                     "reason=reg90_read");
+            return;
+          }
+          const uint8_t desired = before & static_cast<uint8_t>(~0x08);
+          uint8_t data[2] = {0x90, desired};
+          if (id(photopainter_i2c).write(0x34, data, sizeof(data)) !=
+              esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=reg90_write reg90=0x%02X->0x%02X",
+                     before, desired);
+            return;
+          }
+
+          uint8_t after = 0;
+          const bool verified =
+              id(photopainter_i2c).write_readv(0x34, &reg, 1, &after, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              (after & 0x08) == 0;
+          if (!verified) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=unknown result=failed "
+                     "reason=verify reg90=0x%02X->0x%02X",
+                     before, after);
+            return;
+          }
+
+          id(photopainter_axp_ldo_enable) = after;
+          id(photopainter_display_active) = false;
+          id(photopainter_display_power_down_ok) = true;
+          ESP_LOGI("photopainter_display",
+                   "event=rail_transition old=on new=off result=ok "
+                   "rail=aldo4 reg90=0x%02X->0x%02X aldo3=on",
+                   before, after);
+      - if:
+          condition:
+            lambda: return !id(photopainter_display_power_down_ok);
+          then:
+            - component.resume:
+                id: photopainter_display
+                update_interval: 900s
+  - id: photopainter_display_power_up
+    mode: single
+    then:
+      - lambda: |-
+          id(photopainter_display_power_up_ok) = false;
+          if (id(photopainter_display_active)) {
+            id(photopainter_display_power_up_ok) = true;
+            ESP_LOGI("photopainter_display",
+                     "event=rail_transition old=on new=on result=noop "
+                     "reason=already_on rail=aldo4");
+            return;
+          }
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=off result=failed "
+                     "reason=i2c_unavailable rail=aldo4");
+            return;
+          }
+
+          uint8_t reg90 = 0x90;
+          uint8_t reg95 = 0x95;
+          uint8_t enables = 0;
+          uint8_t voltage = 0;
+          if (id(photopainter_i2c).write_readv(0x34, &reg90, 1, &enables, 1) !=
+                  esphome::i2c::ERROR_OK ||
+              id(photopainter_i2c).write_readv(0x34, &reg95, 1, &voltage, 1) !=
+                  esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=off result=failed "
+                     "reason=baseline_read rail=aldo4");
+            return;
+          }
+
+          const uint8_t desired_voltage =
+              static_cast<uint8_t>((voltage & 0xE0) | 0x1C);
+          const uint8_t desired_enables =
+              static_cast<uint8_t>(enables | 0x08);
+          uint8_t voltage_data[2] = {0x95, desired_voltage};
+          uint8_t enable_data[2] = {0x90, desired_enables};
+          const bool writes_ok =
+              id(photopainter_i2c).write(0x34, voltage_data,
+                                         sizeof(voltage_data)) ==
+                  esphome::i2c::ERROR_OK &&
+              id(photopainter_i2c).write(0x34, enable_data,
+                                         sizeof(enable_data)) ==
+                  esphome::i2c::ERROR_OK;
+          delay(100);
+
+          uint8_t after90 = 0;
+          uint8_t after95 = 0;
+          const bool verified =
+              writes_ok &&
+              id(photopainter_i2c).write_readv(0x34, &reg90, 1, &after90, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              id(photopainter_i2c).write_readv(0x34, &reg95, 1, &after95, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              (after90 & 0x08) != 0 && (after95 & 0x1F) == 0x1C;
+          if (!verified) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=unknown result=failed "
+                     "reason=verify reg90=0x%02X->0x%02X "
+                     "reg95=0x%02X->0x%02X",
+                     enables, after90, voltage, after95);
+            return;
+          }
+
+          id(photopainter_axp_ldo_enable) = after90;
+          id(photopainter_display_active) = true;
+          id(photopainter_display_power_up_ok) = true;
+          ESP_LOGI("photopainter_display",
+                   "event=rail_transition old=off new=on result=ok "
+                   "rail=aldo4 reg90=0x%02X->0x%02X "
+                   "reg95=0x%02X->0x%02X aldo3=on",
+                   enables, after90, voltage, after95);
+      - if:
+          condition:
+            lambda: return id(photopainter_display_power_up_ok);
+          then:
+            - component.resume:
+                id: photopainter_display
+                update_interval: 900s
+  - id: photopainter_diagnostic_snapshot
+    mode: queued
+    then:
+      - lambda: |-
+          std::string nostate;
+          auto missing = [&](const char *key) {
+            if (!nostate.empty()) nostate += ",";
+            nostate += key;
+          };
+          auto value = [&](const char *key, sensor::Sensor *entity) -> float {
+            if (!entity->has_state()) {
+              missing(key);
+              return NAN;
+            }
+            return entity->state;
+          };
+          auto level = [&](const char *key, binary_sensor::BinarySensor *entity) -> int {
+            if (!entity->has_state()) {
+              missing(key);
+              return -1;
+            }
+            return entity->state ? 1 : 0;
+          };
+
+          // Evaluate into locals in a fixed order; argument evaluation order in
+          // the log call is unspecified and would scramble nostate=.
+          // Live uptime, not the uptime sensor's last publish, which can trail by
+          // up to its update interval.
+          const float uptime = static_cast<float>(millis() / 1000U);
+          const int usb = level("usb", id(photopainter_usb_connected));
+          const float usb_v = value("usb_v", id(photopainter_usb_voltage));
+          const int bat = level("bat", id(photopainter_battery_connected));
+          const float bat_v = value("bat_v", id(photopainter_battery_voltage));
+          const float bat_pct = value("bat_pct", id(photopainter_battery_level));
+          const int charging = level("charging", id(photopainter_battery_charging));
+          const float temp = value("temp_c", id(photopainter_temperature));
+          const float rh = value("rh_pct", id(photopainter_humidity));
+          const int rtc = level("rtc_running", id(photopainter_rtc_running));
+          const int sd = level("sd", id(photopainter_sd_card_mounted));
+          const float sd_total = value("sd_total_mb", id(photopainter_sd_total_space));
+          const float sd_free = value("sd_free_mb", id(photopainter_sd_free_space));
+          const float sd_used = value("sd_used_mb", id(photopainter_sd_used_space));
+          const int key = level("key", id(photopainter_key_button));
+          const int boot = level("boot", id(photopainter_boot_button));
+          const int display = level("display", id(photopainter_display_status));
+          const int aldo4 = level("aldo4", id(photopainter_aldo4_rail_status));
+          const int amp = level("amp", id(photopainter_amplifier_status));
+          const int dac = level("dac", id(photopainter_es8311_status));
+          const int adc = level("adc", id(photopainter_es7210_status));
+          const float heap = value("heap", id(photopainter_free_heap));
+          const float psram = value("psram", id(photopainter_free_psram));
+
+          id(photopainter_snapshot_seq) += 1;
+          ESP_LOGI("photopainter_snapshot",
+                   "event=snapshot seq=%u uptime_s=%.0f usb=%d usb_v=%.2f bat=%d "
+                   "bat_v=%.2f bat_pct=%.0f charging=%d temp_c=%.1f rh_pct=%.1f "
+                   "rtc_running=%d sd=%d sd_total_mb=%.0f sd_free_mb=%.0f "
+                   "sd_used_mb=%.0f key=%d boot=%d display=%d aldo4=%d amp=%d "
+                   "dac=%d adc=%d heap=%.0f psram=%.0f bus=%s nostate=%s",
+                   (unsigned) id(photopainter_snapshot_seq), uptime, usb, usb_v,
+                   bat, bat_v, bat_pct, charging, temp, rh, rtc, sd, sd_total,
+                   sd_free, sd_used, key, boot, display, aldo4, amp, dac, adc,
+                   heap, psram,
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   nostate.empty() ? "-" : nostate.c_str());
+  - id: photopainter_diagnostic_register_snapshot
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_registers";
+          struct RegisterRef {
+            uint8_t address;
+            uint8_t reg;
+            const char *device;
+            const char *name;
+          };
+
+          // These are the registers read, verified, or modified by the board
+          // package. Keeping the snapshot coupled to that set makes a log useful
+          // when a state transition or recovery attempt fails.
+          static const RegisterRef core_registers[] = {
+            {0x34, 0x00, "AXP2101", "status1"},
+            {0x34, 0x01, "AXP2101", "status2"},
+            {0x34, 0x03, "AXP2101", "chip_id"},
+            {0x34, 0x10, "AXP2101", "common_config"},
+            {0x34, 0x20, "AXP2101", "power_on_reason"},
+            {0x34, 0x21, "AXP2101", "power_off_reason"},
+            {0x34, 0x12, "AXP2101", "batfet_control"},
+            {0x34, 0x22, "AXP2101", "pwroff_enable"},
+            {0x34, 0x25, "AXP2101", "pwroff_sequence"},
+            {0x34, 0x27, "AXP2101", "pwrkey_levels"},
+            {0x34, 0x82, "AXP2101", "dcdc1_voltage"},
+            {0x34, 0x90, "AXP2101", "ldo_enable"},
+            {0x34, 0x94, "AXP2101", "aldo3_voltage"},
+            {0x34, 0x95, "AXP2101", "aldo4_voltage"},
+            {0x51, 0x00, "PCF85063", "control1"},
+            {0x51, 0x01, "PCF85063", "control2"},
+            {0x51, 0x04, "PCF85063", "seconds"},
+            {0x51, 0x05, "PCF85063", "minutes"},
+            {0x51, 0x06, "PCF85063", "hours"},
+            {0x51, 0x07, "PCF85063", "days"},
+            {0x51, 0x08, "PCF85063", "weekdays"},
+            {0x51, 0x09, "PCF85063", "months"},
+            {0x51, 0x0A, "PCF85063", "years"},
+          };
+          static const RegisterRef audio_registers[] = {
+            {0x18, 0x00, "ES8311", "reset"},
+            {0x18, 0x01, "ES8311", "clock_manager1"},
+            {0x18, 0x31, "ES8311", "dac_control"},
+            {0x18, 0xFC, "ES8311", "csm_state"},
+            {0x40, 0x00, "ES7210", "reset"},
+            {0x40, 0x01, "ES7210", "clock_off"},
+            {0x40, 0x06, "ES7210", "power_down"},
+            {0x40, 0x0B, "ES7210", "csm_state"},
+            {0x40, 0x40, "ES7210", "analog_system"},
+            {0x40, 0x4B, "ES7210", "mic12_power"},
+            {0x40, 0x4C, "ES7210", "mic34_power"},
+          };
+
+          auto read_one = [&](const RegisterRef &item) -> bool {
+            uint8_t value = 0;
+            const auto result = id(photopainter_i2c).write_readv(
+                item.address, &item.reg, 1, &value, 1);
+            if (result == esphome::i2c::ERROR_OK) {
+              ESP_LOGD(TAG,
+                       "event=register device=%s address=0x%02X reg=0x%02X "
+                       "name=%s result=ok value=0x%02X",
+                       item.device, item.address, item.reg, item.name, value);
+              return true;
+            }
+            ESP_LOGE(TAG,
+                     "event=register device=%s address=0x%02X reg=0x%02X "
+                     "name=%s result=failed error=%u",
+                     item.device, item.address, item.reg, item.name,
+                     static_cast<unsigned>(result));
+            return false;
+          };
+
+          const int sda = gpio_get_level(GPIO_NUM_47);
+          const int scl = gpio_get_level(GPIO_NUM_48);
+          ESP_LOGI(TAG,
+                   "event=snapshot phase=start bus=%s sda=%d scl=%d "
+                   "audio_active=%d",
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   sda, scl, id(photopainter_audio_active) ? 1 : 0);
+
+          uint16_t passed = 0;
+          uint16_t failed = 0;
+          for (const auto &item : core_registers) {
+            read_one(item) ? passed++ : failed++;
+          }
+          if (id(photopainter_audio_active)) {
+            for (const auto &item : audio_registers) {
+              read_one(item) ? passed++ : failed++;
+            }
+          } else {
+            ESP_LOGI(TAG,
+                     "event=device_snapshot device=audio_codecs result=skipped "
+                     "reason=logical_low_power");
+          }
+
+          ESP_LOGI(TAG,
+                   "event=snapshot phase=complete result=%s passed=%u failed=%u "
+                   "sda=%d scl=%d",
+                   failed == 0 ? "ok" : "degraded",
+                   static_cast<unsigned>(passed),
+                   static_cast<unsigned>(failed),
+                   gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+  - id: photopainter_demo_record_voice_note
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(photopainter_sd_mounted)) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=record result=failed reason=sd_unmounted");
+            return;
+          }
+          id(photopainter_demo_record_file) = fopen("/sdcard/voice.wav", "wb");
+          if (id(photopainter_demo_record_file) == nullptr) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=record result=failed reason=file_open errno=%d",
+                     errno);
+            return;
+          }
+          uint8_t placeholder[44] = {0};
+          fwrite(placeholder, 1, sizeof(placeholder),
+                 id(photopainter_demo_record_file));
+          id(photopainter_demo_record_bytes) = 0;
+          id(photopainter_demo_record_peak) = 0;
+          id(photopainter_demo_record_peak_raw) = 0;
+          id(photopainter_microphone).start();
+          ESP_LOGI("photopainter_voice_demo",
+                   "event=record phase=start requested_ms=5000 path=/sdcard/voice.wav");
+      - wait_until:
+          timeout: 2s
+          condition:
+            lambda: return id(photopainter_microphone).is_running();
+      - if:
+          condition:
+            lambda: return !id(photopainter_microphone).is_running();
+          then:
+            - lambda: |-
+                if (id(photopainter_demo_record_file) != nullptr) {
+                  fclose(id(photopainter_demo_record_file));
+                  id(photopainter_demo_record_file) = nullptr;
+                }
+                id(photopainter_demo_record_bytes) = 0;
+                ESP_LOGE("photopainter_voice_demo",
+                         "event=record result=failed reason=mic_start_timeout "
+                         "timeout_ms=2000");
+          else:
+            - delay: 5s
+            - lambda: |-
+                id(photopainter_microphone).stop();
+                id(photopainter_demo_record_file_pending) =
+                    id(photopainter_demo_record_file);
+                id(photopainter_demo_record_file) = nullptr;
+            - wait_until:
+                timeout: 2s
+                condition:
+                  lambda: return id(photopainter_microphone).is_stopped();
+            - lambda: |-
+                FILE *file = id(photopainter_demo_record_file_pending);
+                id(photopainter_demo_record_file_pending) = nullptr;
+                if (file == nullptr) {
+                  ESP_LOGE("photopainter_voice_demo",
+                           "event=record result=failed reason=no_finalize_handle");
+                  return;
+                }
+
+                const uint32_t bytes = id(photopainter_demo_record_bytes);
+                const uint32_t sample_rate = 16000;
+                const uint16_t channels = 1;
+                const uint16_t bits = 16;
+                const uint32_t byte_rate = sample_rate * channels * bits / 8;
+                const uint16_t block_align = channels * bits / 8;
+                const uint32_t chunk_size = 36 + bytes;
+                uint8_t header[44] = {
+                  'R','I','F','F',
+                  static_cast<uint8_t>(chunk_size),
+                  static_cast<uint8_t>(chunk_size >> 8),
+                  static_cast<uint8_t>(chunk_size >> 16),
+                  static_cast<uint8_t>(chunk_size >> 24),
+                  'W','A','V','E','f','m','t',' ',16,0,0,0,1,0,
+                  static_cast<uint8_t>(channels),0,
+                  static_cast<uint8_t>(sample_rate),
+                  static_cast<uint8_t>(sample_rate >> 8),
+                  static_cast<uint8_t>(sample_rate >> 16),
+                  static_cast<uint8_t>(sample_rate >> 24),
+                  static_cast<uint8_t>(byte_rate),
+                  static_cast<uint8_t>(byte_rate >> 8),
+                  static_cast<uint8_t>(byte_rate >> 16),
+                  static_cast<uint8_t>(byte_rate >> 24),
+                  static_cast<uint8_t>(block_align),0,
+                  static_cast<uint8_t>(bits),0,'d','a','t','a',
+                  static_cast<uint8_t>(bytes),
+                  static_cast<uint8_t>(bytes >> 8),
+                  static_cast<uint8_t>(bytes >> 16),
+                  static_cast<uint8_t>(bytes >> 24)
+                };
+                fseek(file, 0, SEEK_SET);
+                fwrite(header, 1, sizeof(header), file);
+                fclose(file);
+
+                const uint16_t peak = id(photopainter_demo_record_peak);
+                const uint16_t raw_peak = id(photopainter_demo_record_peak_raw);
+                id(photopainter_demo_unread_voice_note) = bytes != 0;
+                ESP_LOGI("photopainter_voice_demo",
+                         "event=record result=%s bytes=%u peak=%u raw_peak=%u "
+                         "gain=%d mic_stopped=%d unread=%d",
+                         bytes == 0 ? "silent" : "ok",
+                         static_cast<unsigned>(bytes),
+                         static_cast<unsigned>(peak),
+                         static_cast<unsigned>(raw_peak),
+                         static_cast<int>(id(photopainter_demo_mic_gain)),
+                         id(photopainter_microphone).is_stopped() ? 1 : 0,
+                         id(photopainter_demo_unread_voice_note) ? 1 : 0);
+  - id: photopainter_demo_play_voice_note
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(photopainter_sd_mounted)) {
+            ESP_LOGE("photopainter_voice_demo",
+                     "event=playback result=failed reason=sd_unmounted");
+            return;
+          }
+          id(photopainter_speaker).start();
+      - wait_until:
+          timeout: 3s
+          condition:
+            lambda: return id(photopainter_speaker).is_running();
+      - if:
+          condition:
+            lambda: return !id(photopainter_speaker).is_running();
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: ERROR
+                format: event=playback result=failed reason=speaker_start_timeout timeout_ms=3000
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+            - delay: 50ms
+            - lambda: |-
+                id(photopainter_demo_play_bytes) = 0;
+                id(photopainter_demo_play_peak) = 0;
+                id(photopainter_demo_play_retries) = 0;
+                id(photopainter_demo_zero_writes) = 0;
+                id(photopainter_demo_play_file) =
+                    fopen("/sdcard/voice.wav", "rb");
+                if (id(photopainter_demo_play_file) == nullptr) {
+                  ESP_LOGE("photopainter_voice_demo",
+                           "event=playback result=failed reason=file_open errno=%d",
+                           errno);
+                } else {
+                  fseek(id(photopainter_demo_play_file), 44, SEEK_SET);
+                  ESP_LOGI("photopainter_voice_demo",
+                           "event=playback phase=streaming path=/sdcard/voice.wav");
+                }
+            - while:
+                condition:
+                  lambda: return id(photopainter_demo_play_file) != nullptr;
+                then:
+                  - lambda: |-
+                      uint8_t buffer[1024];
+                      FILE *file = id(photopainter_demo_play_file);
+                      const long position = ftell(file);
+                      const size_t count = fread(buffer, 1, sizeof(buffer), file);
+                      if (count == 0) {
+                        fclose(file);
+                        id(photopainter_demo_play_file) = nullptr;
+                        return;
+                      }
+                      for (size_t i = 0; i + 1 < count; i += 2) {
+                        const int16_t sample = static_cast<int16_t>(
+                            static_cast<uint16_t>(buffer[i]) |
+                            (static_cast<uint16_t>(buffer[i + 1]) << 8));
+                        const uint16_t magnitude = static_cast<uint16_t>(
+                            sample < 0 ? -static_cast<int32_t>(sample) : sample);
+                        if (magnitude > id(photopainter_demo_play_peak))
+                          id(photopainter_demo_play_peak) = magnitude;
+                      }
+                      const size_t written =
+                          id(photopainter_speaker).play(buffer, count);
+                      id(photopainter_demo_play_bytes) += written;
+                      if (written < count) {
+                        id(photopainter_demo_play_retries)++;
+                        fseek(file, position + static_cast<long>(written), SEEK_SET);
+                      }
+                      if (written == 0) {
+                        id(photopainter_demo_zero_writes)++;
+                        if (id(photopainter_demo_zero_writes) >= 300) {
+                          fclose(file);
+                          id(photopainter_demo_play_file) = nullptr;
+                          ESP_LOGE("photopainter_voice_demo",
+                                   "event=playback result=failed reason=stalled "
+                                   "zero_writes=%u bytes=%u",
+                                   id(photopainter_demo_zero_writes),
+                                   static_cast<unsigned>(id(photopainter_demo_play_bytes)));
+                        }
+                      } else {
+                        id(photopainter_demo_zero_writes) = 0;
+                      }
+                  - delay: 10ms
+            - speaker.finish:
+                id: photopainter_speaker
+            - wait_until:
+                timeout: 10s
+                condition:
+                  speaker.is_stopped:
+                    id: photopainter_speaker
+            - if:
+                condition:
+                  lambda: return !id(photopainter_speaker).is_stopped();
+                then:
+                  - speaker.stop:
+                      id: photopainter_speaker
+            - lambda: |-
+                const bool complete =
+                    id(photopainter_demo_play_bytes) != 0 &&
+                    id(photopainter_demo_zero_writes) < 300;
+                if (complete) id(photopainter_demo_unread_voice_note) = false;
+                ESP_LOGI("photopainter_voice_demo",
+                         "event=playback result=%s bytes=%u peak=%u retries=%u "
+                         "unread=%d",
+                         complete ? "ok" : "failed",
+                         static_cast<unsigned>(id(photopainter_demo_play_bytes)),
+                         static_cast<unsigned>(id(photopainter_demo_play_peak)),
+                         static_cast<unsigned>(id(photopainter_demo_play_retries)),
+                         id(photopainter_demo_unread_voice_note) ? 1 : 0);
+  - id: photopainter_sleep_request
+    mode: single
+    then:
+      - lambda: |-
+          id(photopainter_sleep_was_audio_active) = id(photopainter_audio_active);
+          id(photopainter_sleep_was_display_active) = id(photopainter_display_active);
+          id(photopainter_sleep_transition_ok) = id(photopainter_shared_i2c_available);
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=request result=%s audio=%d display=%d bus=%d "
+                   "gpio0=%d rtc_valid=%d timer_minutes=%.0f",
+                   id(photopainter_sleep_transition_ok) ? "accepted" : "aborted",
+                   id(photopainter_sleep_was_audio_active) ? 1 : 0,
+                   id(photopainter_sleep_was_display_active) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? 1 : 0,
+                   gpio_get_level(GPIO_NUM_0),
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_sleep_fallback_minutes).state);
+          if (!id(photopainter_sleep_transition_ok)) {
+            ESP_LOGE("photopainter_deep_sleep",
+                     "event=abort stage=preflight reason=i2c_unavailable");
+          }
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     id(photopainter_sleep_was_audio_active);
+          then:
+            - script.execute: photopainter_audio_shutdown
+            - script.wait: photopainter_audio_shutdown
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     !id(photopainter_sleep_was_audio_active);
+          then:
+            - switch.turn_off: photopainter_amplifier_enable
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          id(photopainter_sleep_transition_ok) =
+              !id(photopainter_audio_active) &&
+              !id(photopainter_amplifier_enable).state;
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=stage stage=audio result=%s audio=%d amplifier=%d aldo3=on",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0);
+      - if:
+          condition:
+            lambda: |-
+              return id(photopainter_sleep_transition_ok) &&
+                     id(photopainter_sleep_was_display_active);
+          then:
+            - script.execute: photopainter_display_power_down
+            - script.wait: photopainter_display_power_down
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          id(photopainter_sleep_transition_ok) =
+              !id(photopainter_display_active) &&
+              (!id(photopainter_sleep_was_display_active) ||
+               id(photopainter_display_power_down_ok));
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=stage stage=display result=%s display=%d safe=%d "
+                   "rail_write=%d",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_display_shutdown_safe) ? 1 : 0,
+                   id(photopainter_display_power_down_ok) ? 1 : 0);
+      - if:
+          condition:
+            lambda: return id(photopainter_sleep_transition_ok);
+          then:
+            - wait_until:
+                timeout: 10s
+                condition:
+                  lambda: |-
+                    return gpio_get_level(GPIO_NUM_0) != 0 &&
+                           gpio_get_level(GPIO_NUM_4) != 0;
+      - lambda: |-
+          if (!id(photopainter_sleep_transition_ok)) return;
+          uint8_t reg90_addr = 0x90;
+          uint8_t seconds_addr = 0x04;
+          uint8_t reg90 = 0;
+          uint8_t hms[3] = {0, 0, 0};
+          const bool pmic_ok =
+              id(photopainter_i2c).write_readv(0x34, &reg90_addr, 1, &reg90, 1) ==
+              esphome::i2c::ERROR_OK;
+          const bool rtc_ok =
+              id(photopainter_i2c).write_readv(0x51, &seconds_addr, 1, hms, 3) ==
+              esphome::i2c::ERROR_OK;
+          const uint8_t rtc_seconds = hms[0];
+          auto bcd = [](uint8_t v) { return (v >> 4) * 10 + (v & 0x0F); };
+          // Bit 7 of the seconds register is the oscillator-stop flag; a stopped
+          // clock cannot time the sleep, so no entry stamp is recorded.
+          id(photopainter_sleep_entry_rtc_s) =
+              (rtc_ok && (rtc_seconds & 0x80) == 0)
+                  ? bcd(hms[2] & 0x3F) * 3600 + bcd(hms[1] & 0x7F) * 60 +
+                        bcd(hms[0] & 0x7F)
+                  : -1;
+          const bool button_released =
+              gpio_get_level(GPIO_NUM_0) != 0 && gpio_get_level(GPIO_NUM_4) != 0;
+          id(photopainter_sleep_transition_ok) =
+              pmic_ok && rtc_ok && button_released &&
+              (reg90 & 0x04) != 0 && (reg90 & 0x08) == 0 &&
+              !id(photopainter_audio_active) &&
+              !id(photopainter_display_active) &&
+              !id(photopainter_amplifier_enable).state;
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=pre_sleep result=%s pmic_ok=%d reg90=0x%02X "
+                   "aldo3=%d aldo4=%d rtc_ok=%d rtc_seconds=0x%02X entry_rtc_s=%d "
+                   "gpio0=%d gpio4=%d audio=%d display=%d amplifier=%d",
+                   id(photopainter_sleep_transition_ok) ? "ok" : "failed",
+                   pmic_ok ? 1 : 0, reg90,
+                   (reg90 & 0x04) ? 1 : 0, (reg90 & 0x08) ? 1 : 0,
+                   rtc_ok ? 1 : 0, rtc_seconds, id(photopainter_sleep_entry_rtc_s),
+                   gpio_get_level(GPIO_NUM_0), gpio_get_level(GPIO_NUM_4),
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0);
+      - if:
+          condition:
+            lambda: return id(photopainter_sleep_transition_ok);
+          then:
+            - lambda: |-
+                // KEY has no confirmed external pull-up; hold it high through
+                // sleep with the RTC pull-up, as the vendor firmware does, so a
+                // floating pin cannot satisfy ANY_LOW. GPIO0 uses external R36.
+                const esp_err_t pu = rtc_gpio_pullup_en(GPIO_NUM_4);
+                const esp_err_t pd = rtc_gpio_pulldown_dis(GPIO_NUM_4);
+                ESP_LOGW("photopainter_deep_sleep",
+                         "event=enter source=manual wake=ext1_any_low pins=gpio0,gpio4 "
+                         "timer=on gpio4_rtc_pullup=%s gpio4_rtc_pulldown_off=%s "
+                         "rtc=running aldo3=on aldo4=off",
+                         pu == ESP_OK ? "ok" : esp_err_to_name(pu),
+                         pd == ESP_OK ? "ok" : esp_err_to_name(pd));
+            - deep_sleep.enter:
+                id: photopainter_deep_sleep
+                sleep_duration: !lambda |-
+                  const float minutes = id(photopainter_sleep_fallback_minutes).state;
+                  return static_cast<uint32_t>(
+                      (std::isfinite(minutes) && minutes >= 1.0f && minutes <= 60.0f
+                           ? minutes : 2.0f) * 60000.0f);
+          else:
+            - logger.log:
+                tag: photopainter_deep_sleep
+                level: ERROR
+                format: event=abort result=recovering reason=stage_or_readback_failed
+            - lambda: |-
+                // A rail write can take effect despite a failed acknowledgement.
+                // Correct a stale active flag before using the normal power-up
+                // sequence to recover the prior state.
+                uint8_t reg = 0x90;
+                uint8_t enables = 0;
+                const bool pmic_ok = id(photopainter_shared_i2c_available) &&
+                    id(photopainter_i2c).write_readv(0x34, &reg, 1, &enables, 1) ==
+                        esphome::i2c::ERROR_OK;
+                if (pmic_ok && (enables & 0x08) == 0) {
+                  id(photopainter_display_active) = false;
+                }
+                ESP_LOGW("photopainter_deep_sleep",
+                         "event=recovery stage=rail_reconcile pmic_ok=%d "
+                         "reg90=0x%02X display=%d",
+                         pmic_ok ? 1 : 0, enables,
+                         id(photopainter_display_active) ? 1 : 0);
+            - if:
+                condition:
+                  lambda: |-
+                    return id(photopainter_sleep_was_display_active) &&
+                           !id(photopainter_display_active);
+                then:
+                  - script.execute: photopainter_display_power_up
+                  - script.wait: photopainter_display_power_up
+            - if:
+                condition:
+                  lambda: |-
+                    return id(photopainter_sleep_was_audio_active) &&
+                           id(photopainter_shared_i2c_available);
+                then:
+                  - script.execute: photopainter_audio_restore
+                  - script.wait: photopainter_audio_restore
+            - lambda: |-
+                ESP_LOGE("photopainter_deep_sleep",
+                         "event=recovery result=%s audio=%d display=%d "
+                         "amplifier=%d bus=%d",
+                         (id(photopainter_audio_active) ==
+                              id(photopainter_sleep_was_audio_active) &&
+                          id(photopainter_display_active) ==
+                              id(photopainter_sleep_was_display_active))
+                             ? "restored" : "degraded",
+                         id(photopainter_audio_active) ? 1 : 0,
+                         id(photopainter_display_active) ? 1 : 0,
+                         id(photopainter_amplifier_enable).state ? 1 : 0,
+                         id(photopainter_shared_i2c_available) ? 1 : 0);
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_i2c";
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+
+          uint8_t status1 = 0;
+          uint8_t status2 = 0;
+          uint8_t ldo_enable = 0;
+          uint8_t rtc_seconds = 0;
+          const bool axp_ok = read_reg(0x34, 0x00, status1) &&
+                              read_reg(0x34, 0x01, status2) &&
+                              read_reg(0x34, 0x90, ldo_enable);
+          const bool rtc_ok = read_reg(0x51, 0x04, rtc_seconds);
+          const bool old_available = id(photopainter_shared_i2c_available);
+
+          if (axp_ok) {
+            const uint8_t old_status1 = id(photopainter_axp_status1);
+            const uint8_t old_status2 = id(photopainter_axp_status2);
+            const uint8_t old_ldo = id(photopainter_axp_ldo_enable);
+
+            id(photopainter_axp_status1) = status1;
+            id(photopainter_axp_status2) = status2;
+            id(photopainter_axp_ldo_enable) = ldo_enable;
+            id(photopainter_axp_state_valid) = true;
+            if (id(photopainter_power_cache_seen) &&
+                (old_status1 != status1 || old_status2 != status2 ||
+                 old_ldo != ldo_enable)) {
+              ESP_LOGI("photopainter_power",
+                       "event=register_transition status1=0x%02X->0x%02X "
+                       "status2=0x%02X->0x%02X ldo_enable=0x%02X->0x%02X",
+                       old_status1, status1, old_status2, status2, old_ldo,
+                       ldo_enable);
+            }
+            id(photopainter_power_cache_seen) = true;
+          } else {
+            id(photopainter_axp_state_valid) = false;
+            ESP_LOGW(TAG,
+                     "event=poll result=failed device=axp2101 rtc=%s sda=%d scl=%d",
+                     rtc_ok ? "ok" : "failed", gpio_get_level(GPIO_NUM_47),
+                     gpio_get_level(GPIO_NUM_48));
+          }
+
+          const bool rtc_was_valid = id(photopainter_rtc_state_valid);
+          id(photopainter_rtc_state_valid) = rtc_ok;
+          if (rtc_ok) {
+            // PCF85063 oscillator-stop flag (seconds bit 7). Log the edge with the
+            // register context needed to tell a supply event from a stalled
+            // crystal: RTC Control_1/Control_2 (STOP bit, test modes) and the
+            // AXP2101 IRQ status latches (read-only here; nothing is cleared).
+            const bool old_stopped =
+                rtc_was_valid && (id(photopainter_rtc_seconds) & 0x80) != 0;
+            const bool new_stopped = (rtc_seconds & 0x80) != 0;
+            if (rtc_was_valid && old_stopped != new_stopped) {
+              uint8_t ctrl1 = 0, ctrl2 = 0, irq0 = 0, irq1 = 0, irq2 = 0;
+              const bool ctrl_ok = read_reg(0x51, 0x00, ctrl1) && read_reg(0x51, 0x01, ctrl2);
+              const bool irq_ok = read_reg(0x34, 0x48, irq0) && read_reg(0x34, 0x49, irq1) &&
+                                  read_reg(0x34, 0x4A, irq2);
+              ESP_LOGW("photopainter_power",
+                       "event=rtc_osc_flag old=%s new=%s seconds=0x%02X ctrl_ok=%d "
+                       "rtc_ctrl1=0x%02X rtc_ctrl2=0x%02X irq_ok=%d axp_irq0=0x%02X "
+                       "axp_irq1=0x%02X axp_irq2=0x%02X status1=0x%02X status2=0x%02X "
+                       "uptime_ms=%u",
+                       old_stopped ? "stopped" : "running",
+                       new_stopped ? "stopped" : "running", rtc_seconds,
+                       ctrl_ok ? 1 : 0, ctrl1, ctrl2, irq_ok ? 1 : 0, irq0, irq1, irq2,
+                       status1, status2, static_cast<unsigned>(millis()));
+            }
+            id(photopainter_rtc_seconds) = rtc_seconds;
+          } else {
+            ESP_LOGW(TAG,
+                     "event=poll result=failed device=pcf85063 axp=%s sda=%d scl=%d",
+                     axp_ok ? "ok" : "failed", gpio_get_level(GPIO_NUM_47),
+                     gpio_get_level(GPIO_NUM_48));
+          }
+
+          if (axp_ok || rtc_ok) {
+            id(photopainter_shared_i2c_available) = true;
+            if (id(photopainter_i2c_fail_streak) != 0) {
+              ESP_LOGI(TAG,
+                       "event=poll result=recovered previous_fail_streak=%u "
+                       "axp=%d rtc=%d",
+                       id(photopainter_i2c_fail_streak), axp_ok ? 1 : 0,
+                       rtc_ok ? 1 : 0);
+            }
+            id(photopainter_i2c_fail_streak) = 0;
+            if (!old_available) {
+              ESP_LOGI(TAG,
+                       "event=bus_transition old=unavailable new=available "
+                       "result=poll_recovered health=%s axp=%d rtc=%d",
+                       (axp_ok && rtc_ok) ? "full" : "degraded",
+                       axp_ok ? 1 : 0, rtc_ok ? 1 : 0);
+            }
+          } else {
+            if (id(photopainter_i2c_fail_streak) < 255)
+              id(photopainter_i2c_fail_streak)++;
+            ESP_LOGW(TAG,
+                     "event=poll result=bus_failure fail_streak=%u sda=%d scl=%d",
+                     id(photopainter_i2c_fail_streak),
+                     gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+            if (id(photopainter_i2c_fail_streak) >= 3) {
+              id(photopainter_shared_i2c_available) = false;
+              if (old_available) {
+                ESP_LOGE(TAG,
+                         "event=bus_transition old=available new=unavailable "
+                         "reason=three_polls_both_devices_failed");
+              }
+            }
+          }
+
+          if (id(photopainter_audio_active) && axp_ok) {
+            uint8_t scratch = 0;
+            id(photopainter_es8311_present) = read_reg(0x18, 0x00, scratch);
+            id(photopainter_es7210_present) =
+                id(photopainter_i2c).write_readv(0x40, nullptr, 0, &scratch, 1) ==
+                esphome::i2c::ERROR_OK;
+          }
+      - if:
+          condition:
+            lambda: return !id(photopainter_shared_i2c_available);
+          then:
+            - script.execute: photopainter_i2c_recovery
+  - interval: 60s
+    then:
+      - lambda: |-
+          ESP_LOGI("photopainter_state",
+                   "event=level power_ready=%d bus=%s axp_valid=%d rtc_valid=%d "
+                   "status1=0x%02X status2=0x%02X ldo_enable=0x%02X "
+                   "rtc_seconds=0x%02X display=%s audio=%s amplifier=%s "
+                   "sd=%s sda=%d scl=%d",
+                   id(photopainter_power_ready) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   id(photopainter_axp_state_valid) ? 1 : 0,
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_axp_status1), id(photopainter_axp_status2),
+                   id(photopainter_axp_ldo_enable), id(photopainter_rtc_seconds),
+                   id(photopainter_display_active) ? "active" : "off",
+                   id(photopainter_audio_active) ? "active" : "low_power",
+                   id(photopainter_amplifier_enable).state ? "on" : "off",
+                   id(photopainter_sd_mounted) ? "mounted" : "unmounted",
+                   gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+  - interval: 1s
+    then:
+      - lambda: |-
+          const uint32_t pressed = id(photopainter_pwr_pressed_ms);
+          if (pressed != 0) {
+            ESP_LOGW("photopainter_input", "event=pwr_button state=held hold_ms=%u",
+                     static_cast<unsigned>(millis() - pressed));
+          }
+  - interval: 60s
+    then:
+      - script.execute: photopainter_diagnostic_snapshot
+  - interval: 10s
+    then:
+      - lambda: |-
+          if (!id(photopainter_sleep_boot_armed) &&
+              gpio_get_level(GPIO_NUM_0) != 0) {
+            id(photopainter_sleep_boot_armed) = true;
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=boot_button state=rearmed gpio0=1 source=level");
+          }
+  - interval: 60s
+    then:
+      - lambda: |-
+          ESP_LOGI("photopainter_deep_sleep",
+                   "event=level wake=%s wake_raw=%d ext1=0x%02X reset_raw=%d "
+                   "restore=%s slept_s=%d gpio0=%d gpio4=%d button_armed=%d "
+                   "audio=%d display=%d amplifier=%d aldo3=%d aldo4=%d "
+                   "rtc_valid=%d bus=%d",
+                   id(photopainter_sleep_wake_name).c_str(),
+                   static_cast<int>(esp_sleep_get_wakeup_cause()),
+                   static_cast<unsigned>(id(photopainter_sleep_ext1_status) & 0xFF),
+                   static_cast<int>(esp_reset_reason()),
+                   id(photopainter_sleep_restore_result).c_str(),
+                   id(photopainter_sleep_slept_s),
+                   gpio_get_level(GPIO_NUM_0), gpio_get_level(GPIO_NUM_4),
+                   id(photopainter_sleep_boot_armed) ? 1 : 0,
+                   id(photopainter_audio_active) ? 1 : 0,
+                   id(photopainter_display_active) ? 1 : 0,
+                   id(photopainter_amplifier_enable).state ? 1 : 0,
+                   (id(photopainter_axp_ldo_enable) & 0x04) ? 1 : 0,
+                   (id(photopainter_axp_ldo_enable) & 0x08) ? 1 : 0,
+                   id(photopainter_rtc_state_valid) ? 1 : 0,
+                   id(photopainter_shared_i2c_available) ? 1 : 0);
+time:
+  - platform: pcf85063
+    id: photopainter_rtc
+    i2c_id: photopainter_i2c
+    address: 81
+    update_interval: never
+  - platform: sntp
+    id: photopainter_sntp_time
+    on_time_sync:
+      then:
+        - pcf85063.write_time: null
+sensor:
+  - platform: shtcx
+    id: photopainter_environment
+    i2c_id: photopainter_i2c
+    address: 112
+    update_interval: 60s
+    temperature:
+      id: photopainter_temperature
+      name: PhotoPainter Temperature
+      web_server:
+        sorting_group_id: photopainter_group_environment
+        sorting_weight: 10
+    humidity:
+      id: photopainter_humidity
+      name: PhotoPainter Humidity
+      web_server:
+        sorting_group_id: photopainter_group_environment
+        sorting_weight: 20
+  - platform: template
+    id: photopainter_usb_voltage
+    name: PhotoPainter USB-C Voltage
+    unit_of_measurement: V
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x20) == 0) return 0.0f;
+
+      uint8_t adc_enable = 0;
+      uint8_t adc_reg = 0x30;
+      if (id(photopainter_i2c).write_readv(0x34, &adc_reg, 1, &adc_enable, 1) !=
+          esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=usb_voltage stage=adc_enable");
+        return {};
+      }
+      if ((adc_enable & 0x04) == 0) {
+        uint8_t data[2] = {0x30, static_cast<uint8_t>(adc_enable | 0x04)};
+        if (id(photopainter_i2c).write(0x34, data, sizeof(data)) !=
+            esphome::i2c::ERROR_OK) {
+          ESP_LOGW("photopainter_telemetry",
+                   "event=read result=failed metric=usb_voltage stage=adc_enable_write");
+          return {};
+        }
+      }
+
+      uint8_t msb = 0;
+      uint8_t lsb = 0;
+      uint8_t msb_reg = 0x38;
+      uint8_t lsb_reg = 0x39;
+      if (id(photopainter_i2c).write_readv(0x34, &msb_reg, 1, &msb, 1) !=
+              esphome::i2c::ERROR_OK ||
+          id(photopainter_i2c).write_readv(0x34, &lsb_reg, 1, &lsb, 1) !=
+              esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=usb_voltage stage=sample");
+        return {};
+      }
+      return (((msb & 0x3F) << 8) | lsb) / 1000.0f;
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 20
+  - platform: template
+    id: photopainter_battery_voltage
+    name: PhotoPainter Battery Voltage
+    unit_of_measurement: V
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x08) == 0) return NAN;
+
+      uint8_t msb = 0;
+      uint8_t lsb = 0;
+      uint8_t msb_reg = 0x34;
+      uint8_t lsb_reg = 0x35;
+      if (id(photopainter_i2c).write_readv(0x34, &msb_reg, 1, &msb, 1) !=
+              esphome::i2c::ERROR_OK ||
+          id(photopainter_i2c).write_readv(0x34, &lsb_reg, 1, &lsb, 1) !=
+              esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=battery_voltage stage=sample");
+        return {};
+      }
+      return (((msb & 0x3F) << 8) | lsb) / 1000.0f;
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_battery_level
+    name: PhotoPainter Battery Level
+    unit_of_measurement: '%'
+    device_class: battery
+    accuracy_decimals: 0
+    update_interval: 180s
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x08) == 0) return NAN;
+
+      uint8_t percentage = 0;
+      uint8_t reg = 0xA4;
+      if (id(photopainter_i2c).write_readv(0x34, &reg, 1, &percentage, 1) !=
+          esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=battery_level stage=sample");
+        return {};
+      }
+      return percentage <= 100 ? optional<float>(percentage) : optional<float>();
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 50
+  - platform: template
+    id: photopainter_sd_total_space
+    name: PhotoPainter SD Card Total Space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=total path=/sdcard");
+        return {};
+      }
+      return total / (1024.0 * 1024.0);
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 20
+  - platform: template
+    id: photopainter_sd_free_space
+    name: PhotoPainter SD Card Free Space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=free path=/sdcard");
+        return {};
+      }
+      return free / (1024.0 * 1024.0);
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_sd_used_space
+    name: PhotoPainter SD Card Used Space
+    unit_of_measurement: MB
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=used path=/sdcard");
+        return {};
+      }
+      return (total - free) / (1024.0 * 1024.0);
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 30
+  - platform: uptime
+    id: photopainter_uptime
+    name: PhotoPainter Uptime
+    type: seconds
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 10
+  - platform: template
+    id: photopainter_free_heap
+    name: PhotoPainter Free Heap
+    icon: mdi:counter
+    unit_of_measurement: B
+    accuracy_decimals: 0
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 30s
+    lambda: return static_cast<float>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 20
+  - platform: template
+    id: photopainter_free_psram
+    name: PhotoPainter Free PSRAM
+    icon: mdi:counter
+    unit_of_measurement: B
+    accuracy_decimals: 0
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 30s
+    lambda: return static_cast<float>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 30
+binary_sensor:
+  - platform: template
+    id: photopainter_usb_connected
+    name: PhotoPainter USB-C Connected
+    device_class: plug
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status1) & 0x20) != 0;
+    on_state:
+      then:
+        - component.update: photopainter_usb_voltage
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 10
+  - platform: template
+    id: photopainter_battery_connected
+    name: PhotoPainter Battery Connected
+    device_class: power
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status1) & 0x08) != 0;
+    on_state:
+      then:
+        - component.update: photopainter_battery_voltage
+        - component.update: photopainter_battery_level
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 30
+  - platform: template
+    id: photopainter_battery_charging
+    name: PhotoPainter Battery Charging
+    device_class: battery_charging
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status2) & 0x60) == 0x20;
+    on_state:
+      then:
+        - component.update: photopainter_battery_voltage
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 60
+  - platform: template
+    id: photopainter_rtc_running
+    name: PhotoPainter RTC Running
+    lambda: |-
+      if (!id(photopainter_rtc_state_valid)) return {};
+      return (id(photopainter_rtc_seconds) & 0x80) == 0;
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 15
+  - platform: template
+    id: photopainter_sd_card_mounted
+    name: PhotoPainter SD Card Mounted
+    lambda: return id(photopainter_sd_mounted);
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 10
+  - platform: gpio
+    id: photopainter_key_button
+    name: PhotoPainter KEY Button
+    pin:
+      number: GPIO4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+      allow_other_uses: true
+    on_press:
+      - button.press: photopainter_demo_play_tune
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 20
+  - platform: gpio
+    id: photopainter_boot_button
+    name: PhotoPainter BOOT Button
+    pin:
+      number: GPIO0
+      ignore_strapping_warning: true
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+      allow_other_uses: true
+    on_press:
+      - lambda: id(photopainter_sleep_boot_pressed_ms) = millis();
+    on_release:
+      - lambda: |-
+          const uint32_t hold_ms = millis() - id(photopainter_sleep_boot_pressed_ms);
+          if (id(photopainter_sleep_boot_pressed_ms) != 0 &&
+              (hold_ms < 1500 || hold_ms > 5000)) {
+            ESP_LOGI("photopainter_deep_sleep",
+                     "event=boot_button result=ignored reason=%s hold_ms=%u window_ms=1500-5000",
+                     hold_ms < 1500 ? "hold_too_short" : "hold_too_long",
+                     static_cast<unsigned>(hold_ms));
+          }
+      - if:
+          condition:
+            lambda: return !id(photopainter_sleep_boot_armed);
+          then:
+            - delay: 2s
+            - lambda: |-
+                if (gpio_get_level(GPIO_NUM_0) != 0) {
+                  id(photopainter_sleep_boot_armed) = true;
+                  ESP_LOGI("photopainter_deep_sleep",
+                           "event=boot_button state=rearmed gpio0=1");
+                }
+    on_click:
+      - min_length: 1500ms
+        max_length: 5000ms
+        then:
+          - if:
+              condition:
+                lambda: return id(photopainter_sleep_boot_armed);
+              then:
+                - script.execute: photopainter_sleep_request
+              else:
+                - logger.log:
+                    tag: photopainter_deep_sleep
+                    level: INFO
+                    format: event=boot_button result=ignored reason=wake_guard
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 10
+  - platform: gpio
+    id: photopainter_pwr_button
+    name: PhotoPainter PWR Button
+    pin:
+      number: GPIO5
+      mode:
+        input: true
+    on_press:
+      - lambda: |-
+          id(photopainter_pwr_pressed_ms) = millis();
+          ESP_LOGW("photopainter_input",
+                   "event=pwr_button state=pressed note=long_hold_is_pmic_power_off");
+    on_release:
+      - lambda: |-
+          const uint32_t hold_ms = millis() - id(photopainter_pwr_pressed_ms);
+          id(photopainter_pwr_pressed_ms) = 0;
+          ESP_LOGI("photopainter_input", "event=pwr_button state=released hold_ms=%u",
+                   static_cast<unsigned>(hold_ms));
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 25
+  - platform: template
+    id: photopainter_display_status
+    name: PhotoPainter Display Status
+    lambda: return id(photopainter_display_active);
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 50
+  - platform: template
+    id: photopainter_aldo4_rail_status
+    name: PhotoPainter Display Power Rail
+    device_class: power
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_ldo_enable) & 0x08) != 0;
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 60
+  - platform: template
+    id: photopainter_amplifier_status
+    name: PhotoPainter Audio Amplifier Status
+    lambda: return id(photopainter_amplifier_enable).state;
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 60
+  - platform: template
+    id: photopainter_es8311_status
+    name: PhotoPainter Audio DAC Status
+    lambda: |-
+      if (!id(photopainter_audio_active)) return false;
+      return id(photopainter_es8311_present);
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 70
+  - platform: template
+    id: photopainter_es7210_status
+    name: PhotoPainter Audio ADC Status
+    lambda: |-
+      if (!id(photopainter_audio_active)) return false;
+      return id(photopainter_es7210_present);
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 80
+  - platform: template
+    id: photopainter_demo_voice_note_unread
+    name: PhotoPainter Demo New Voice Note
+    icon: mdi:email-mark-as-unread
+    lambda: return id(photopainter_demo_unread_voice_note);
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 50
+output:
+  - platform: gpio
+    id: photopainter_act_led_output
+    pin: GPIO42
+    inverted: true
+  - platform: gpio
+    id: photopainter_power_led_output
+    pin:
+      number: GPIO45
+      ignore_strapping_warning: true
+    inverted: true
+light:
+  - platform: binary
+    id: photopainter_act_led
+    name: PhotoPainter ACT LED
+    output: photopainter_act_led_output
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 30
+  - platform: binary
+    id: photopainter_power_led
+    name: PhotoPainter PWR LED
+    output: photopainter_power_led_output
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 40
+network: null
+switch:
+  - platform: gpio
+    id: photopainter_amplifier_enable
+    name: PhotoPainter Audio Amplifier
+    pin: GPIO7
+    inverted: false
+    restore_mode: ALWAYS_ON
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 20
+  - platform: template
+    id: photopainter_audio_enabled
+    name: PhotoPainter Audio Codecs Enabled
+    icon: mdi:audio-input-stereo-minijack
+    restore_mode: DISABLED
+    lambda: return id(photopainter_audio_active);
+    turn_off_action:
+      - script.execute: photopainter_audio_shutdown
+    turn_on_action:
+      - script.execute: photopainter_audio_restore
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 10
+  - platform: template
+    id: photopainter_display_enabled
+    name: PhotoPainter Display Enabled
+    icon: mdi:monitor
+    restore_mode: DISABLED
+    lambda: return id(photopainter_display_active);
+    turn_off_action:
+      - script.execute: photopainter_display_power_down
+    turn_on_action:
+      - script.execute: photopainter_display_power_up
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 10
+  - platform: template
+    id: photopainter_rotate_pages
+    name: PhotoPainter Rotate Pages
+    icon: mdi:rotate-right
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - logger.log:
+          tag: photopainter_dashboard
+          level: INFO
+          format: event=rotate_pages old=off new=on
+    on_turn_off:
+      - logger.log:
+          tag: photopainter_dashboard
+          level: INFO
+          format: event=rotate_pages old=on new=off
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 30
+audio_dac:
+  - platform: es8311
+    id: photopainter_audio_dac
+    i2c_id: photopainter_i2c
+    address: 24
+audio_adc:
+  - platform: es7210
+    id: photopainter_audio_adc
+    i2c_id: photopainter_i2c
+    address: 64
+    mic_gain: 30
+i2s_audio:
+  - id: photopainter_i2s
+    i2s_mclk_pin: GPIO14
+    i2s_bclk_pin: GPIO15
+    i2s_lrclk_pin: GPIO16
+speaker:
+  - platform: i2s_audio
+    id: photopainter_speaker
+    i2s_audio_id: photopainter_i2s
+    i2s_dout_pin: GPIO17
+    dac_type: external
+    audio_dac: photopainter_audio_dac
+media_player:
+  - platform: speaker
+    id: photopainter_media_player
+    name: PhotoPainter Speaker
+    volume_min: 0%
+    volume_max: 100%
+    announcement_pipeline:
+      speaker: photopainter_speaker
+    on_play:
+      - if:
+          condition:
+            lambda: return !id(photopainter_audio_active);
+          then:
+            - logger.log:
+                tag: photopainter_audio
+                level: WARN
+                format: event=media_request result=refused reason=audio_low_power
+            - media_player.stop: photopainter_media_player
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+      - if:
+          condition:
+            or:
+              - script.is_running: photopainter_demo_play_voice_note
+              - rtttl.is_playing:
+                  id: photopainter_demo_rtttl
+              - microphone.is_capturing: photopainter_microphone
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: event=media_request result=refused reason=audio_path_busy
+            - media_player.stop: photopainter_media_player
+    on_announcement:
+      - if:
+          condition:
+            lambda: return !id(photopainter_audio_active);
+          then:
+            - logger.log:
+                tag: photopainter_audio
+                level: WARN
+                format: event=announcement result=refused reason=audio_low_power
+            - media_player.stop: photopainter_media_player
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+      - if:
+          condition:
+            or:
+              - script.is_running: photopainter_demo_play_voice_note
+              - rtttl.is_playing:
+                  id: photopainter_demo_rtttl
+              - microphone.is_capturing: photopainter_microphone
+          then:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: event=announcement result=refused reason=audio_path_busy
+            - media_player.stop: photopainter_media_player
+microphone:
+  - platform: i2s_audio
+    id: photopainter_microphone
+    i2s_audio_id: photopainter_i2s
+    i2s_din_pin: GPIO18
+    adc_type: external
+    pdm: false
+    on_data:
+      - lambda: |-
+          if (id(photopainter_demo_record_file) == nullptr || x.empty()) return;
+          const std::vector<uint8_t> &data = x;
+          static std::vector<uint8_t> mono;
+          mono.clear();
+          mono.reserve(data.size() / 2);
+
+          for (size_t i = 0; i + 3 < data.size(); i += 4) {
+            const int32_t word =
+                static_cast<int32_t>(static_cast<uint32_t>(data[i]) |
+                (static_cast<uint32_t>(data[i + 1]) << 8) |
+                (static_cast<uint32_t>(data[i + 2]) << 16) |
+                (static_cast<uint32_t>(data[i + 3]) << 24));
+            const int32_t raw = word >> 16;
+            const uint16_t raw_magnitude =
+                static_cast<uint16_t>(raw < 0 ? -raw : raw);
+            if (raw_magnitude > id(photopainter_demo_record_peak_raw))
+              id(photopainter_demo_record_peak_raw) = raw_magnitude;
+
+            int32_t sample = raw * id(photopainter_demo_mic_gain);
+            if (sample > 32767) sample = 32767;
+            if (sample < -32768) sample = -32768;
+            const int16_t pcm = static_cast<int16_t>(sample);
+            const uint16_t magnitude = static_cast<uint16_t>(
+                pcm < 0 ? -static_cast<int32_t>(pcm) : pcm);
+            if (magnitude > id(photopainter_demo_record_peak))
+              id(photopainter_demo_record_peak) = magnitude;
+            mono.push_back(static_cast<uint8_t>(pcm & 0xFF));
+            mono.push_back(static_cast<uint8_t>((pcm >> 8) & 0xFF));
+          }
+
+          if (!mono.empty()) {
+            id(photopainter_demo_record_bytes) += fwrite(
+                mono.data(), 1, mono.size(), id(photopainter_demo_record_file));
+          }
+number:
+  - platform: template
+    id: photopainter_speaker_volume
+    name: PhotoPainter Speaker Volume
+    icon: mdi:volume-high
+    min_value: 0
+    max_value: 100
+    step: 5
+    unit_of_measurement: '%'
+    initial_value: 50
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - speaker.volume_set:
+            id: photopainter_speaker
+            volume: !lambda 'return 0.30f + ((x / 100.0f) * 0.55f);'
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_demo_mic_gain_control
+    name: PhotoPainter Demo Microphone Gain
+    icon: mdi:microphone-plus
+    min_value: 1
+    max_value: 32
+    step: 1
+    initial_value: 4
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: id(photopainter_demo_mic_gain) = static_cast<int32_t>(x);
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 50
+  - platform: template
+    id: photopainter_sleep_fallback_minutes
+    name: PhotoPainter Deep Sleep Fallback Minutes
+    icon: mdi:timer-outline
+    entity_category: config
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 2
+    restore_value: true
+    optimistic: true
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 20
+display:
+  - platform: epaper_spi
+    id: photopainter_display
+    spi_id: photopainter_display_spi
+    model: 7.3in-spectra-e6
+    cs_pin: GPIO9
+    dc_pin: GPIO8
+    busy_pin:
+      number: GPIO13
+      inverted: true
+    reset_pin: GPIO12
+    rotation: 180°
+    update_interval: never
+    show_test_card: false
+    lambda: |-
+      id(photopainter_display_refresh_started_ms) = millis();
+      // Page for this refresh: the selected page, or with rotation on, the page
+      // not drawn last time.
+      const bool rotate = id(photopainter_rotate_pages).state;
+      const auto selected = id(photopainter_display_page).active_index();
+      int page = (selected.has_value() && *selected == 1) ? 1 : 0;
+      if (rotate && id(photopainter_dashboard_rendered_page) >= 0) {
+        page = 1 - id(photopainter_dashboard_rendered_page);
+      }
+      id(photopainter_dashboard_rendered_page) = page;
+      // Mark the start of each refresh. The display shutdown wait uses this stamp
+      // to report how far into a refresh a shutdown request arrived, and it is the
+      // line a display-refresh-window test triggers on.
+      ESP_LOGI("photopainter_dashboard",
+               "event=render_begin stamp_ms=%u page=%s rotate=%d",
+               static_cast<unsigned>(id(photopainter_display_refresh_started_ms)),
+               page == 1 ? "sample_image" : "dashboard", rotate ? 1 : 0);
+      id(photopainter_displayed_page).publish_state(page == 1 ? "Sample Image" : "Dashboard");
+      if (page == 1) {
+        it.image(0, 0, id(photopainter_demo_sample_image));
+        return;
+      }
+      // has_state() alone is not "has a usable value". Battery sensors publish NAN
+      // when unavailable, and has_state() is true after any publish -- NAN
+      // included -- so a has_state()-only guard would draw "nan" where the panel
+      // is supposed to draw "--". Use this everywhere a float reaches the panel.
+      auto readable = [](esphome::sensor::Sensor *sn) -> bool {
+        return sn->has_state() && !std::isnan(sn->state);
+      };
+      auto readable_n = [](esphome::number::Number *nb) -> bool {
+        return nb->has_state() && !std::isnan(nb->state);
+      };
+      Color COLOR_BLACK(0, 0, 0);
+      Color COLOR_WHITE(255, 255, 255);
+      Color COLOR_YELLOW(255, 255, 0);
+      Color COLOR_RED(255, 0, 0);
+      Color COLOR_BLUE(0, 0, 255);
+      Color COLOR_GREEN(0, 255, 0);
+
+      it.fill(COLOR_WHITE);
+
+      // Dithered (light blue) rectangle: alternating 50/50 checkerboard.
+      auto draw_dithered_rectangle = [&](int rx, int ry, int rw, int rh, Color c1, Color c2) {
+        for (int py = ry; py < ry + rh; py++) {
+          for (int px = rx; px < rx + rw; px++) {
+            if ((px + py) % 2 == 0) {
+              it.draw_pixel_at(px, py, c1);
+            } else {
+              it.draw_pixel_at(px, py, c2);
+            }
+          }
+        }
+      };
+
+      // ESPHome logo with a dithered light-blue body.
+      auto draw_esphome_logo = [&](int x, int y) {
+        // Roof (dithered blue + white)
+        for (int i = 0; i < 18; i++) {
+          for (int px = x + 18 - i; px <= x + 18 + i; px++) {
+            if ((px + (y + i)) % 2 == 0) {
+              it.draw_pixel_at(px, y + i, COLOR_BLUE);
+            } else {
+              it.draw_pixel_at(px, y + i, COLOR_WHITE);
+            }
+          }
+        }
+
+        // House base (50% dithered light blue)
+        draw_dithered_rectangle(x + 2, y + 18, 33, 17, COLOR_BLUE, COLOR_WHITE);
+
+        // PCB antenna meander trace (solid white)
+        it.filled_rectangle(x + 9, y + 14, 3, 18, COLOR_WHITE);
+        it.filled_rectangle(x + 9, y + 14, 18, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 25, y + 14, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 17, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 17, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 20, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 25, y + 20, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 23, 13, 2, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 23, 2, 4, COLOR_WHITE);
+        it.filled_rectangle(x + 14, y + 26, 13, 2, COLOR_WHITE);
+      };
+
+      draw_esphome_logo(30, 20);
+
+      // Header bar (title starts at X = 75, right of the logo)
+      it.print(75, 25, id(photopainter_dashboard_title_font), COLOR_RED,
+               "Waveshare ESP32-S3-PhotoPainter");
+
+      // Live RSSI of the consumer's Wi-Fi connection (the same value ESPHome's
+      // wifi_signal sensor publishes); no Wi-Fi or no connection draws empty bars.
+      bool wifi_ok = false;
+      float rssi = -100.0f;
+      #ifdef USE_WIFI
+      if (wifi::global_wifi_component != nullptr &&
+          wifi::global_wifi_component->is_connected()) {
+        const int8_t live_rssi = wifi::global_wifi_component->wifi_rssi();
+        if (live_rssi != wifi::WIFI_RSSI_DISCONNECTED) {
+          wifi_ok = true;
+          rssi = live_rssi;
+        }
+      }
+      #endif
+
+      // Phone-style status icons (signal bars + battery), no identifying text
+      {
+        int bars_lit = 0;
+        if (rssi >= -55) bars_lit = 4;
+        else if (rssi >= -65) bars_lit = 3;
+        else if (rssi >= -75) bars_lit = 2;
+        else if (rssi >= -85) bars_lit = 1;
+
+        const int bar_w = 6, bar_gap = 3, bar_baseline = 28;
+        const int bar_heights[4] = {6, 11, 16, 21};
+        int bar_x = 693;
+        for (int i = 0; i < 4; i++) {
+          int h = bar_heights[i];
+          Color fill = (wifi_ok && i < bars_lit) ? COLOR_BLACK : COLOR_WHITE;
+          it.filled_rectangle(bar_x, bar_baseline - h, bar_w, h, fill);
+          it.rectangle(bar_x, bar_baseline - h, bar_w, h, COLOR_BLACK);
+          bar_x += bar_w + bar_gap;
+        }
+
+        if (id(photopainter_battery_connected).has_state() &&
+            id(photopainter_battery_connected).state) {
+          const int bx = 736, by = 10, bw = 26, bh = 14;
+          it.rectangle(bx, by, bw, bh, COLOR_BLACK);
+          it.filled_rectangle(bx + bw, by + 4, 3, bh - 8, COLOR_BLACK);
+
+          float level = readable(id(photopainter_battery_level))
+                            ? id(photopainter_battery_level).state
+                            : 0.0f;
+          bool charging = id(photopainter_battery_charging).has_state() &&
+                          id(photopainter_battery_charging).state;
+          int fill_w = static_cast<int>((bw - 4) * (level / 100.0f));
+          if (fill_w < 0) fill_w = 0;
+          if (fill_w > bw - 4) fill_w = bw - 4;
+          if (fill_w > 0) {
+            Color fill = charging ? COLOR_YELLOW : (level < 20 ? COLOR_RED : COLOR_GREEN);
+            it.filled_rectangle(bx + 2, by + 2, fill_w, bh - 4, fill);
+          }
+        }
+      }
+
+      // Timestamp
+      if (id(photopainter_rtc).now().is_valid()) {
+        it.strftime(770, 32, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "%Y-%m-%d  %H:%M", id(photopainter_rtc).now());
+      } else {
+        it.print(770, 32, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                 TextAlign::TOP_RIGHT, "Syncing time...");
+      }
+
+      // Uptime, grouped with the date/time rather than the boxes below
+      if (readable(id(photopainter_uptime))) {
+        uint32_t secs = static_cast<uint32_t>(id(photopainter_uptime).state);
+        uint32_t days = secs / 86400;
+        uint32_t hours = (secs % 86400) / 3600;
+        uint32_t mins = (secs % 3600) / 60;
+        if (days > 0) {
+          it.printf(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "Up: %lud %luh", days, hours);
+        } else {
+          it.printf(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                    TextAlign::TOP_RIGHT, "Up: %luh %lum", hours, mins);
+        }
+      } else {
+        it.print(770, 52, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                 TextAlign::TOP_RIGHT, "Up: --");
+      }
+
+      it.line(30, 75, 770, 75, COLOR_BLACK);
+
+      // Section 1: Environment + Audio -- two boxes sharing one outline
+      it.rectangle(28, 83, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 85, 174, 145, COLOR_GREEN);
+      it.rectangle(31, 86, 172, 143, COLOR_GREEN);
+      it.print(45, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "ENVIRONMENT");
+
+      if (readable(id(photopainter_temperature))) {
+        it.printf(45, 130, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Temp: %.1f °C", id(photopainter_temperature).state);
+      } else {
+        it.print(45, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Temp: -- °C");
+      }
+
+      if (readable(id(photopainter_humidity))) {
+        it.printf(45, 165, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Humidity: %.1f %%", id(photopainter_humidity).state);
+      } else {
+        it.print(45, 165, id(photopainter_dashboard_body_font), COLOR_BLACK, "Humidity: -- %");
+      }
+
+      it.rectangle(210, 85, 175, 145, COLOR_GREEN);
+      it.rectangle(211, 86, 173, 143, COLOR_GREEN);
+      it.print(225, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "AUDIO");
+
+      if (readable_n(id(photopainter_speaker_volume))) {
+        it.printf(225, 130, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Volume: %.0f %%", id(photopainter_speaker_volume).state);
+      } else {
+        it.print(225, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Volume: -- %");
+      }
+
+      if (readable_n(id(photopainter_demo_mic_gain_control))) {
+        it.printf(225, 165, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Mic Gain: %.0f", id(photopainter_demo_mic_gain_control).state);
+      } else {
+        it.print(225, 165, id(photopainter_dashboard_body_font), COLOR_BLACK, "Mic Gain: --");
+      }
+
+      // The unread flag tracks playback, not whether a recording exists, so file
+      // presence on the card is checked as well. Three states fit the panel box:
+      // New (recorded, not played back), Heard (played back), None (no file).
+      // With the card unmounted no recording can be reached, so it draws "--".
+      bool voice_note_unread = id(photopainter_demo_voice_note_unread).has_state() &&
+                               id(photopainter_demo_voice_note_unread).state;
+      const char *voice_note_state = "unknown";
+      if (id(photopainter_sd_mounted)) {
+        FILE *voice_note_file = fopen("/sdcard/voice.wav", "rb");
+        const bool voice_note_present = voice_note_file != nullptr;
+        if (voice_note_file != nullptr) fclose(voice_note_file);
+        voice_note_state = !voice_note_present ? "none" : voice_note_unread ? "new" : "heard";
+      }
+      const bool voice_note_new = strcmp(voice_note_state, "new") == 0;
+      const char *voice_note_label = voice_note_new ? "New"
+          : strcmp(voice_note_state, "heard") == 0 ? "Heard"
+          : strcmp(voice_note_state, "none") == 0 ? "None" : "--";
+      it.printf(225, 200, id(photopainter_dashboard_body_font),
+                voice_note_new ? COLOR_GREEN : COLOR_BLACK,
+                "Voice Note: %s", voice_note_label);
+
+      // Section 2: Power & Battery
+      it.rectangle(413, 83, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 85, 355, 145, COLOR_BLUE);
+      it.rectangle(416, 86, 353, 143, COLOR_BLUE);
+      it.print(430, 95, id(photopainter_dashboard_header_font), COLOR_BLACK, "POWER & BATTERY");
+
+      bool usb_on = id(photopainter_usb_connected).has_state() &&
+                    id(photopainter_usb_connected).state;
+      bool bat_on = id(photopainter_battery_connected).has_state() &&
+                    id(photopainter_battery_connected).state;
+      bool is_charging = id(photopainter_battery_charging).has_state() &&
+                         id(photopainter_battery_charging).state;
+
+      // Left column (X = 430)
+      it.printf(430, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "USB: %s",
+                usb_on ? "Connected" : "Disconnected");
+
+      if (readable(id(photopainter_usb_voltage))) {
+        it.printf(430, 170, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Voltage: %.2f V", id(photopainter_usb_voltage).state);
+      } else {
+        it.print(430, 170, id(photopainter_dashboard_body_font), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      // Right column (centre of the box: X = 592)
+      it.printf(592, 130, id(photopainter_dashboard_body_font), COLOR_BLACK, "Li-ion: %s",
+                bat_on ? "Present" : "Missing");
+
+      if (readable(id(photopainter_battery_level))) {
+        it.printf(592, 150, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Level: %.0f %%", id(photopainter_battery_level).state);
+      } else {
+        it.print(592, 150, id(photopainter_dashboard_body_font), COLOR_BLACK, "Level: -- %");
+      }
+
+      if (readable(id(photopainter_battery_voltage))) {
+        it.printf(592, 170, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Voltage: %.2f V", id(photopainter_battery_voltage).state);
+      } else {
+        it.print(592, 170, id(photopainter_dashboard_body_font), COLOR_BLACK, "Voltage: -- V");
+      }
+
+      it.printf(592, 190, id(photopainter_dashboard_body_font),
+                is_charging ? COLOR_GREEN : COLOR_BLACK,
+                "Charging: %s", is_charging ? "YES" : "NO");
+
+      // Section 3: SD Card + Free Memory -- two boxes sharing one outline
+      it.rectangle(28, 243, 359, 149, COLOR_BLACK);
+
+      it.rectangle(30, 245, 174, 145, COLOR_YELLOW);
+      it.rectangle(31, 246, 172, 143, COLOR_YELLOW);
+      it.print(45, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "SD CARD");
+
+      bool sd_mounted_st = id(photopainter_sd_card_mounted).has_state() &&
+                           id(photopainter_sd_card_mounted).state;
+      it.printf(45, 285, id(photopainter_dashboard_body_font),
+                sd_mounted_st ? COLOR_GREEN : COLOR_RED,
+                "Mounted: %s", sd_mounted_st ? "Yes" : "No");
+
+      if (sd_mounted_st && readable(id(photopainter_sd_free_space))) {
+        it.printf(45, 308, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Free: %.0f MB", id(photopainter_sd_free_space).state);
+      } else {
+        it.print(45, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "Free: -- MB");
+      }
+
+      if (sd_mounted_st && readable(id(photopainter_sd_used_space))) {
+        it.printf(45, 331, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Used: %.0f MB", id(photopainter_sd_used_space).state);
+      } else {
+        it.print(45, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Used: -- MB");
+      }
+
+      if (sd_mounted_st && readable(id(photopainter_sd_total_space))) {
+        it.printf(45, 354, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                  "Total: %.0f MB", id(photopainter_sd_total_space).state);
+      } else {
+        it.print(45, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "Total: -- MB");
+      }
+
+      it.rectangle(210, 245, 175, 145, COLOR_YELLOW);
+      it.rectangle(211, 246, 173, 143, COLOR_YELLOW);
+      it.print(225, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "FREE MEMORY");
+
+      // "Free" is already the box header; item labels omit the word so they
+      // don't overrun the box width. Same allocator queries as ESPHome's debug
+      // free/psram sensors, read at render time.
+      const uint32_t free_heap_bytes = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+      const uint32_t free_psram_bytes = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+      it.printf(225, 285, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                "Heap: %.0f KB", free_heap_bytes / 1024.0f);
+      it.printf(225, 308, id(photopainter_dashboard_body_font), COLOR_BLACK,
+                "PSRAM: %.0f KB", free_psram_bytes / 1024.0f);
+
+      // Flash space claimed by no partition. A failed size query leaves
+      // flash_total_bytes at 0, and the unchecked unsigned subtraction would wrap
+      // to ~4194304 KB, so both conditions are checked before drawing a value.
+      uint32_t flash_total_bytes = 0;
+      const bool flash_size_ok =
+          esp_flash_get_size(nullptr, &flash_total_bytes) == ESP_OK;
+      uint32_t partitions_total_bytes = 0;
+      esp_partition_iterator_t part_it = esp_partition_find(
+          ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+      while (part_it != nullptr) {
+        partitions_total_bytes += esp_partition_get(part_it)->size;
+        part_it = esp_partition_next(part_it);
+      }
+      // esp_partition_next() releases the iterator itself when it returns nullptr,
+      // so no release call is needed or possible here -- part_it is already null.
+      if (flash_size_ok && flash_total_bytes >= partitions_total_bytes) {
+        it.printf(225, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Flash: %.0f KB",
+                  (flash_total_bytes - partitions_total_bytes) / 1024.0f);
+      } else {
+        it.print(225, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "Flash: --");
+      }
+
+      // Section 4: Hardware Status
+      it.rectangle(413, 243, 359, 149, COLOR_BLACK);
+      it.rectangle(415, 245, 355, 145, COLOR_RED);
+      it.rectangle(416, 246, 353, 143, COLOR_RED);
+      it.print(430, 255, id(photopainter_dashboard_header_font), COLOR_BLACK, "HARDWARE STATUS");
+
+      // PCF85063 oscillator-stop flag: clear = the clock has run continuously since
+      // its time was last set; set = it stopped at some point (power lost beyond the
+      // backup cell, or first power-up), so its time is untrusted until the next
+      // write. No state = the chip could not be read. The backup cell itself
+      // cannot be measured; "Stopped" after a power cycle is the indirect sign.
+      bool rtc_ok = id(photopainter_rtc_running).has_state() &&
+                    id(photopainter_rtc_running).state;
+      const char *rtc_label = !id(photopainter_rtc_running).has_state() ? "ERR"
+                              : rtc_ok ? "Running" : "Stopped";
+      bool codec_ok = id(photopainter_es8311_status).has_state() &&
+                      id(photopainter_es8311_status).state;
+      bool adc_ok = id(photopainter_es7210_status).has_state() &&
+                    id(photopainter_es7210_status).state;
+      bool amp_on = id(photopainter_amplifier_status).has_state() &&
+                    id(photopainter_amplifier_status).state;
+
+      // The LED pins are driven as outputs with the input buffer disabled, so
+      // gpio_get_level() would always read 0; report the light state instead.
+      // The outputs are inverted, and is_on() already reports the logical (lit)
+      // state.
+      bool act_on = id(photopainter_act_led).current_values.is_on();
+      bool pwr_on = id(photopainter_power_led).current_values.is_on();
+
+      // GPIO0/GPIO4 are configured as inputs by their binary_sensor entries, so
+      // these reads are valid (active low: 0 = pressed).
+      bool boot_pressed = (gpio_get_level(GPIO_NUM_0) == 0);
+      bool key_pressed = (gpio_get_level(GPIO_NUM_4) == 0);
+
+      // Left column (X = 430)
+      it.printf(430, 285, id(photopainter_dashboard_body_font), COLOR_BLACK, "RTC: %s",
+                rtc_label);
+      it.printf(430, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "ADC: %s",
+                adc_ok ? "OK" : "ERR");
+      it.printf(430, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "DAC: %s",
+                codec_ok ? "OK" : "ERR");
+      it.printf(430, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "Amp: %s",
+                amp_on ? "ON" : "OFF");
+
+      // Right column (centre of the box: X = 592)
+      it.printf(592, 285, id(photopainter_dashboard_body_font), COLOR_BLACK, "LED-ACT: %s",
+                act_on ? "ON" : "OFF");
+      it.printf(592, 308, id(photopainter_dashboard_body_font), COLOR_BLACK, "LED-PWR: %s",
+                pwr_on ? "ON" : "OFF");
+      it.printf(592, 331, id(photopainter_dashboard_body_font), COLOR_BLACK, "BTN-KEY: %s",
+                key_pressed ? "PRESSED" : "IDLE");
+      it.printf(592, 354, id(photopainter_dashboard_body_font), COLOR_BLACK, "BTN-BOOT: %s",
+                boot_pressed ? "PRESSED" : "IDLE");
+
+      // Colour palette swatches
+      it.filled_rectangle(50, 405, 100, 45, COLOR_BLACK);
+      it.rectangle(50, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(170, 405, 100, 45, COLOR_WHITE);
+      it.rectangle(170, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(290, 405, 100, 45, COLOR_YELLOW);
+      it.rectangle(290, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(410, 405, 100, 45, COLOR_RED);
+      it.rectangle(410, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(530, 405, 100, 45, COLOR_BLUE);
+      it.rectangle(530, 405, 100, 45, COLOR_BLACK);
+
+      it.filled_rectangle(650, 405, 100, 45, COLOR_GREEN);
+      it.rectangle(650, 405, 100, 45, COLOR_BLACK);
+
+      // One line per refresh recording exactly what was drawn, emitted after every
+      // value has been read and before the buffer transfer. `nan` means the panel
+      // drew its "--" placeholder; nostate= names every entity that has never
+      // published, which separates a missing reading from a published NAN (for
+      // example, no cell fitted) and from a real 0.00.
+      auto value_s = [](esphome::sensor::Sensor *s) -> float {
+        return s->has_state() ? s->state : NAN;
+      };
+      auto value_n = [](esphome::number::Number *n) -> float {
+        return n->has_state() ? n->state : NAN;
+      };
+      std::string unset;
+      auto mark = [&](const char *nm, bool has) {
+        if (has) return;
+        if (!unset.empty()) unset += ",";
+        unset += nm;
+      };
+      mark("usb_v", id(photopainter_usb_voltage).has_state());
+      mark("bat_v", id(photopainter_battery_voltage).has_state());
+      mark("level", id(photopainter_battery_level).has_state());
+      mark("temp", id(photopainter_temperature).has_state());
+      mark("hum", id(photopainter_humidity).has_state());
+      mark("vol", id(photopainter_speaker_volume).has_state());
+      mark("mic_gain", id(photopainter_demo_mic_gain_control).has_state());
+      mark("sd_free", id(photopainter_sd_free_space).has_state());
+      mark("sd_used", id(photopainter_sd_used_space).has_state());
+      mark("sd_total", id(photopainter_sd_total_space).has_state());
+      mark("uptime", id(photopainter_uptime).has_state());
+      const char *unset_str = unset.empty() ? "-" : unset.c_str();
+      // Not connected (or no Wi-Fi) is logged as nan, matching the empty bars.
+      const float rssi_logged = wifi_ok ? rssi : NAN;
+
+      ESP_LOGI("photopainter_dashboard",
+               "event=render_values usb_present=%d usb_v=%.2f bat_present=%d bat_v=%.2f "
+               "level=%.0f charging=%d temp=%.1f hum=%.1f vol=%.0f mic_gain=%.0f unread=%d "
+               "voice_note=%s sd_mounted=%d sd_free=%.0f sd_used=%.0f sd_total=%.0f "
+               "rssi=%.0f uptime=%.0f heap=%u psram=%u clock=%d "
+               "rtc=%d dac=%d adc=%d amp=%d led_act=%d led_pwr=%d btn_key=%d btn_boot=%d "
+               "nostate=%s",
+               usb_on ? 1 : 0, value_s(id(photopainter_usb_voltage)),
+               bat_on ? 1 : 0, value_s(id(photopainter_battery_voltage)),
+               value_s(id(photopainter_battery_level)), is_charging ? 1 : 0,
+               value_s(id(photopainter_temperature)), value_s(id(photopainter_humidity)),
+               value_n(id(photopainter_speaker_volume)),
+               value_n(id(photopainter_demo_mic_gain_control)),
+               voice_note_unread ? 1 : 0, voice_note_state,
+               sd_mounted_st ? 1 : 0, value_s(id(photopainter_sd_free_space)),
+               value_s(id(photopainter_sd_used_space)), value_s(id(photopainter_sd_total_space)),
+               rssi_logged, value_s(id(photopainter_uptime)),
+               static_cast<unsigned>(free_heap_bytes), static_cast<unsigned>(free_psram_bytes),
+               id(photopainter_rtc).now().is_valid() ? 1 : 0,
+               rtc_ok ? 1 : 0, codec_ok ? 1 : 0, adc_ok ? 1 : 0, amp_on ? 1 : 0,
+               act_on ? 1 : 0, pwr_on ? 1 : 0, key_pressed ? 1 : 0, boot_pressed ? 1 : 0,
+               unset_str);
+button:
+  - platform: restart
+    id: photopainter_esp_restart
+    name: PhotoPainter Restart
+    icon: mdi:restart
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 80
+  - platform: template
+    id: photopainter_diagnostic_snapshot_button
+    name: PhotoPainter Diagnostic Register Snapshot
+    icon: mdi:chip
+    entity_category: diagnostic
+    on_press:
+      - script.execute: photopainter_diagnostic_register_snapshot
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_demo_play_tune
+    name: PhotoPainter Demo Play Test Tune
+    icon: mdi:music-note
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - switch.turn_on: photopainter_amplifier_enable
+            - rtttl.play:
+                id: photopainter_demo_rtttl
+                rtttl: FinalCount:d=4,o=5,b=125:8a#,8g#,2a#,2d#,2p,8a#,8g#,2a#,2f,2d#,8a#,8g#,2a#,2d#,2c#,8c,8c#,8c,2a#
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: event=tune result=refused reason=audio_unavailable_or_busy
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_demo_record_button
+    name: PhotoPainter Demo Record Voice Note
+    icon: mdi:microphone
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - script.execute: photopainter_demo_record_voice_note
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: event=record result=refused reason=audio_unavailable_or_busy
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 10
+  - platform: template
+    id: photopainter_demo_play_button
+    name: PhotoPainter Demo Play Voice Note
+    icon: mdi:volume-high
+    on_press:
+      - if:
+          condition:
+            and:
+              - lambda: return id(photopainter_audio_active);
+              - not:
+                  speaker.is_playing: photopainter_speaker
+              - not:
+                  microphone.is_capturing: photopainter_microphone
+          then:
+            - script.execute: photopainter_demo_play_voice_note
+          else:
+            - logger.log:
+                tag: photopainter_voice_demo
+                level: WARN
+                format: event=playback result=refused reason=audio_unavailable_or_busy
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 20
+  - platform: template
+    id: photopainter_demo_audio_stop
+    name: PhotoPainter Demo Stop Audio
+    icon: mdi:stop
+    on_press:
+      - script.execute: photopainter_audio_clients_stop
+    web_server:
+      sorting_group_id: photopainter_group_voice_notes
+      sorting_weight: 30
+  - platform: template
+    id: photopainter_sleep_button
+    name: PhotoPainter Deep Sleep
+    icon: mdi:power-sleep
+    on_press:
+      - script.execute: photopainter_sleep_request
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 10
+debug:
+  update_interval: 30s
+font:
+  - file: gfonts://Roboto
+    id: photopainter_dashboard_title_font
+    size: 32
+  - file: gfonts://Roboto
+    id: photopainter_dashboard_header_font
+    size: 20
+  - file: gfonts://Roboto
+    id: photopainter_dashboard_body_font
+    size: 18
+image:
+  - platform: file
+    id: photopainter_demo_sample_image
+    file: https://raw.githubusercontent.com/waveshareteam/ESP32-S3-PhotoPainter/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp
+    type: RGB
+    dither: NONE
+select:
+  - platform: template
+    id: photopainter_display_page
+    name: PhotoPainter Display Page
+    icon: mdi:image-multiple
+    options:
+      - Dashboard
+      - Sample Image
+    initial_option: Dashboard
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - lambda: |-
+            ESP_LOGI("photopainter_dashboard",
+                     "event=page_select page=%s redraw=%s", x.c_str(),
+                     !id(photopainter_dashboard_released) ? "deferred_to_first_refresh"
+                     : !id(photopainter_display_active) ? "skipped_display_off"
+                     : "requested");
+        - if:
+            condition:
+              lambda: |-
+                return id(photopainter_dashboard_released) &&
+                       id(photopainter_display_active);
+            then:
+              - component.update: photopainter_display
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 20
+text_sensor:
+  - platform: template
+    id: photopainter_displayed_page
+    name: PhotoPainter Displayed Page
+    icon: mdi:monitor-shimmer
+    entity_category: diagnostic
+    update_interval: never
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 40
+  - platform: template
+    id: photopainter_sleep_wake_cause
+    name: PhotoPainter Last Wake Cause
+    icon: mdi:power-sleep
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: return id(photopainter_sleep_wake_name);
+    web_server:
+      sorting_group_id: photopainter_group_deep_sleep
+      sorting_weight: 30
+rtttl:
+  id: photopainter_demo_rtttl
+  speaker: photopainter_speaker
+deep_sleep:
+  id: photopainter_deep_sleep
+  sleep_duration: 2min
+  esp32_ext1_wakeup:
+    mode: ANY_LOW
+    pins:
+      - number: GPIO0
+        ignore_strapping_warning: true
+        allow_other_uses: true
+      - number: GPIO4
+        allow_other_uses: true

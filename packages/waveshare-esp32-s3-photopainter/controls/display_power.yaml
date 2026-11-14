@@ -1,0 +1,259 @@
+globals:
+  - id: photopainter_display_active
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  - id: photopainter_display_refresh_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_display_wait_started_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+  - id: photopainter_display_shutdown_safe
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  - id: photopainter_display_power_down_ok
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  - id: photopainter_display_power_up_ok
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+switch:
+  - platform: template
+    id: photopainter_display_enabled
+    name: "PhotoPainter Display Enabled"
+    icon: "mdi:monitor"
+    restore_mode: DISABLED
+    lambda: return id(photopainter_display_active);
+    turn_off_action:
+      - script.execute: photopainter_display_power_down
+    turn_on_action:
+      - script.execute: photopainter_display_power_up
+
+script:
+  - id: photopainter_display_prepare_shutdown
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: return !id(photopainter_display_active);
+          then:
+            - lambda: |-
+                id(photopainter_display_shutdown_safe) = true;
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=complete result=not_required "
+                         "reason=aldo4_already_off safe=1");
+          else:
+            - component.suspend: photopainter_display
+            - lambda: |-
+                const bool idle = id(photopainter_display).is_idle();
+                const uint32_t stamp = id(photopainter_display_refresh_started_ms);
+                id(photopainter_display_shutdown_safe) = false;
+                id(photopainter_display_wait_started_ms) = millis();
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=start idle=%d refresh_age_ms=%ld "
+                         "timeout_ms=45000 expected=%s",
+                         idle ? 1 : 0,
+                         stamp == 0 ? -1L : static_cast<long>(millis() - stamp),
+                         idle ? "immediate" : "hold");
+            - wait_until:
+                timeout: 45s
+                condition:
+                  component.is_idle: photopainter_display
+            - lambda: |-
+                const uint32_t elapsed =
+                    millis() - id(photopainter_display_wait_started_ms);
+                const bool idle = id(photopainter_display).is_idle();
+                const bool failed = id(photopainter_display).is_failed();
+                id(photopainter_display_shutdown_safe) = idle || failed;
+                ESP_LOGI("photopainter_display",
+                         "event=shutdown_wait phase=complete result=%s elapsed_ms=%u "
+                         "idle=%d failed=%d safe=%d busy=%d",
+                         idle ? (elapsed < 100 ? "immediate" : "waited") : "timeout",
+                         static_cast<unsigned>(elapsed), idle ? 1 : 0, failed ? 1 : 0,
+                         id(photopainter_display_shutdown_safe) ? 1 : 0,
+                         gpio_get_level(GPIO_NUM_13));
+                id(photopainter_display_refresh_started_ms) = 0;
+            - if:
+                condition:
+                  lambda: return id(photopainter_display_shutdown_safe);
+                then:
+                  - lambda: |-
+                      id(photopainter_display).on_safe_shutdown();
+                      ESP_LOGI("photopainter_display",
+                               "event=safe_shutdown result=issued busy=%d",
+                               gpio_get_level(GPIO_NUM_13));
+                else:
+                  - logger.log:
+                      tag: photopainter_display
+                      level: ERROR
+                      format: "event=safe_shutdown result=skipped reason=refresh_not_idle"
+
+  - id: photopainter_display_power_down
+    mode: single
+    then:
+      - script.execute: photopainter_display_prepare_shutdown
+      - script.wait: photopainter_display_prepare_shutdown
+      - delay: 100ms
+      - lambda: |-
+          id(photopainter_display_power_down_ok) = false;
+          if (!id(photopainter_display_active)) {
+            id(photopainter_display_power_down_ok) = true;
+            ESP_LOGI("photopainter_display",
+                     "event=rail_transition old=off new=off result=noop "
+                     "reason=already_off rail=aldo4");
+            return;
+          }
+          if (!id(photopainter_display_shutdown_safe)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=unsafe_panel aldo4=on");
+            return;
+          }
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=i2c_unavailable aldo4=on");
+            return;
+          }
+
+          uint8_t reg = 0x90;
+          uint8_t before = 0;
+          if (id(photopainter_i2c).write_readv(0x34, &reg, 1, &before, 1) !=
+              esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=unknown new=unknown result=failed "
+                     "reason=reg90_read");
+            return;
+          }
+          const uint8_t desired = before & static_cast<uint8_t>(~0x08);
+          uint8_t data[2] = {0x90, desired};
+          if (id(photopainter_i2c).write(0x34, data, sizeof(data)) !=
+              esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=on result=failed "
+                     "reason=reg90_write reg90=0x%02X->0x%02X",
+                     before, desired);
+            return;
+          }
+
+          uint8_t after = 0;
+          const bool verified =
+              id(photopainter_i2c).write_readv(0x34, &reg, 1, &after, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              (after & 0x08) == 0;
+          if (!verified) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=on new=unknown result=failed "
+                     "reason=verify reg90=0x%02X->0x%02X",
+                     before, after);
+            return;
+          }
+
+          id(photopainter_axp_ldo_enable) = after;
+          id(photopainter_display_active) = false;
+          id(photopainter_display_power_down_ok) = true;
+          ESP_LOGI("photopainter_display",
+                   "event=rail_transition old=on new=off result=ok "
+                   "rail=aldo4 reg90=0x%02X->0x%02X aldo3=on",
+                   before, after);
+      - if:
+          condition:
+            lambda: return !id(photopainter_display_power_down_ok);
+          then:
+            - component.resume:
+                id: photopainter_display
+                update_interval: ${photopainter_display_refresh_interval}
+
+  - id: photopainter_display_power_up
+    mode: single
+    then:
+      - lambda: |-
+          id(photopainter_display_power_up_ok) = false;
+          if (id(photopainter_display_active)) {
+            id(photopainter_display_power_up_ok) = true;
+            ESP_LOGI("photopainter_display",
+                     "event=rail_transition old=on new=on result=noop "
+                     "reason=already_on rail=aldo4");
+            return;
+          }
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=off result=failed "
+                     "reason=i2c_unavailable rail=aldo4");
+            return;
+          }
+
+          uint8_t reg90 = 0x90;
+          uint8_t reg95 = 0x95;
+          uint8_t enables = 0;
+          uint8_t voltage = 0;
+          if (id(photopainter_i2c).write_readv(0x34, &reg90, 1, &enables, 1) !=
+                  esphome::i2c::ERROR_OK ||
+              id(photopainter_i2c).write_readv(0x34, &reg95, 1, &voltage, 1) !=
+                  esphome::i2c::ERROR_OK) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=off result=failed "
+                     "reason=baseline_read rail=aldo4");
+            return;
+          }
+
+          const uint8_t desired_voltage =
+              static_cast<uint8_t>((voltage & 0xE0) | 0x1C);
+          const uint8_t desired_enables =
+              static_cast<uint8_t>(enables | 0x08);
+          uint8_t voltage_data[2] = {0x95, desired_voltage};
+          uint8_t enable_data[2] = {0x90, desired_enables};
+          const bool writes_ok =
+              id(photopainter_i2c).write(0x34, voltage_data,
+                                         sizeof(voltage_data)) ==
+                  esphome::i2c::ERROR_OK &&
+              id(photopainter_i2c).write(0x34, enable_data,
+                                         sizeof(enable_data)) ==
+                  esphome::i2c::ERROR_OK;
+          delay(100);
+
+          uint8_t after90 = 0;
+          uint8_t after95 = 0;
+          const bool verified =
+              writes_ok &&
+              id(photopainter_i2c).write_readv(0x34, &reg90, 1, &after90, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              id(photopainter_i2c).write_readv(0x34, &reg95, 1, &after95, 1) ==
+                  esphome::i2c::ERROR_OK &&
+              (after90 & 0x08) != 0 && (after95 & 0x1F) == 0x1C;
+          if (!verified) {
+            ESP_LOGE("photopainter_display",
+                     "event=rail_transition old=off new=unknown result=failed "
+                     "reason=verify reg90=0x%02X->0x%02X "
+                     "reg95=0x%02X->0x%02X",
+                     enables, after90, voltage, after95);
+            return;
+          }
+
+          id(photopainter_axp_ldo_enable) = after90;
+          id(photopainter_display_active) = true;
+          id(photopainter_display_power_up_ok) = true;
+          ESP_LOGI("photopainter_display",
+                   "event=rail_transition old=off new=on result=ok "
+                   "rail=aldo4 reg90=0x%02X->0x%02X "
+                   "reg95=0x%02X->0x%02X aldo3=on",
+                   enables, after90, voltage, after95);
+      - if:
+          condition:
+            lambda: return id(photopainter_display_power_up_ok);
+          then:
+            - component.resume:
+                id: photopainter_display
+                update_interval: ${photopainter_display_refresh_interval}

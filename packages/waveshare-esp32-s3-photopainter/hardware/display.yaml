@@ -1,0 +1,24 @@
+# The board package exposes the panel but does not impose an application UI.
+# Consumers may use !extend photopainter_display to add a lambda/pages and an
+# update interval. Keeping the poller stopped also guarantees that no refresh
+# occurs before the consumer's displayed readings are ready.
+display:
+  - platform: epaper_spi
+    id: photopainter_display
+    spi_id: photopainter_display_spi
+    model: 7.3in-spectra-e6
+    cs_pin: GPIO9
+    dc_pin: GPIO8
+    busy_pin:
+      number: GPIO13
+      inverted: true
+    reset_pin: GPIO12
+    rotation: 180°
+    update_interval: never
+    show_test_card: false
+    # Deliberately empty. With no lambda or pages, ESPHome's epaper_spi forces
+    # show_test_card: true and update_interval: 1min, which would refresh the panel
+    # every minute in any composition without a layout (board-only, battery). A
+    # layer or consumer replaces this with its own lambda via !extend.
+    lambda: |-
+      (void) it;

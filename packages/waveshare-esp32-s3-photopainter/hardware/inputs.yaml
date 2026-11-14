@@ -1,0 +1,65 @@
+binary_sensor:
+  - platform: gpio
+    id: photopainter_key_button
+    name: "PhotoPainter KEY Button"
+    pin:
+      number: GPIO4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+
+  - platform: gpio
+    id: photopainter_boot_button
+    name: "PhotoPainter BOOT Button"
+    pin:
+      number: GPIO0
+      ignore_strapping_warning: true
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+
+  # PWR button (K2). The button drives the AXP2101 PWRON pin; transistor T1
+  # (BSS138) mirrors it onto GPIO5 with R24 pulling high, so GPIO5 reads high
+  # while PWR is pressed. The PMIC acts on PWRON itself: a long hold is a hardware
+  # power-off that de-energizes ALDO3 and leaves the shared I2C bus clamped until
+  # a full power drain. Firmware cannot intercept it, so it is monitored, not
+  # blocked. GPIO5 is not on the I2C bus, so the press path never touches I2C and
+  # stays observable when the bus is down; a hold is logged every second so that a
+  # power cut mid-press still leaves its duration in the log.
+  - platform: gpio
+    id: photopainter_pwr_button
+    name: "PhotoPainter PWR Button"
+    pin:
+      number: GPIO5
+      mode:
+        input: true
+    on_press:
+      - lambda: |-
+          id(photopainter_pwr_pressed_ms) = millis();
+          ESP_LOGW("photopainter_input",
+                   "event=pwr_button state=pressed note=long_hold_is_pmic_power_off");
+    on_release:
+      - lambda: |-
+          const uint32_t hold_ms = millis() - id(photopainter_pwr_pressed_ms);
+          id(photopainter_pwr_pressed_ms) = 0;
+          ESP_LOGI("photopainter_input", "event=pwr_button state=released hold_ms=%u",
+                   static_cast<unsigned>(hold_ms));
+
+globals:
+  # millis() at the current PWR press; 0 while released.
+  - id: photopainter_pwr_pressed_ms
+    type: uint32_t
+    initial_value: "0"
+
+interval:
+  # Held-time ticks: the PMIC may cut power before release is ever seen.
+  - interval: 1s
+    then:
+      - lambda: |-
+          const uint32_t pressed = id(photopainter_pwr_pressed_ms);
+          if (pressed != 0) {
+            ESP_LOGW("photopainter_input", "event=pwr_button state=held hold_ms=%u",
+                     static_cast<unsigned>(millis() - pressed));
+          }

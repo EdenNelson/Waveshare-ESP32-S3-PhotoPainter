@@ -1,0 +1,159 @@
+time:
+  - platform: pcf85063
+    id: photopainter_rtc
+    i2c_id: photopainter_i2c
+    address: 0x51
+    update_interval: never
+
+  - platform: sntp
+    id: photopainter_sntp_time
+    on_time_sync:
+      then:
+        - pcf85063.write_time:
+
+sensor:
+  - platform: shtcx
+    id: photopainter_environment
+    i2c_id: photopainter_i2c
+    address: 0x70
+    update_interval: ${photopainter_environment_update_interval}
+    temperature:
+      id: photopainter_temperature
+      name: "PhotoPainter Temperature"
+    humidity:
+      id: photopainter_humidity
+      name: "PhotoPainter Humidity"
+
+  - platform: template
+    id: photopainter_usb_voltage
+    name: "PhotoPainter USB-C Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: ${photopainter_power_update_interval}
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x20) == 0) return 0.0f;
+
+      uint8_t adc_enable = 0;
+      uint8_t adc_reg = 0x30;
+      if (id(photopainter_i2c).write_readv(0x34, &adc_reg, 1, &adc_enable, 1) !=
+          esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=usb_voltage stage=adc_enable");
+        return {};
+      }
+      if ((adc_enable & 0x04) == 0) {
+        uint8_t data[2] = {0x30, static_cast<uint8_t>(adc_enable | 0x04)};
+        if (id(photopainter_i2c).write(0x34, data, sizeof(data)) !=
+            esphome::i2c::ERROR_OK) {
+          ESP_LOGW("photopainter_telemetry",
+                   "event=read result=failed metric=usb_voltage stage=adc_enable_write");
+          return {};
+        }
+      }
+
+      uint8_t msb = 0;
+      uint8_t lsb = 0;
+      uint8_t msb_reg = 0x38;
+      uint8_t lsb_reg = 0x39;
+      if (id(photopainter_i2c).write_readv(0x34, &msb_reg, 1, &msb, 1) !=
+              esphome::i2c::ERROR_OK ||
+          id(photopainter_i2c).write_readv(0x34, &lsb_reg, 1, &lsb, 1) !=
+              esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=usb_voltage stage=sample");
+        return {};
+      }
+      return (((msb & 0x3F) << 8) | lsb) / 1000.0f;
+
+  - platform: template
+    id: photopainter_battery_voltage
+    name: "PhotoPainter Battery Voltage"
+    unit_of_measurement: "V"
+    device_class: voltage
+    accuracy_decimals: 2
+    update_interval: ${photopainter_power_update_interval}
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x08) == 0) return NAN;
+
+      uint8_t msb = 0;
+      uint8_t lsb = 0;
+      uint8_t msb_reg = 0x34;
+      uint8_t lsb_reg = 0x35;
+      if (id(photopainter_i2c).write_readv(0x34, &msb_reg, 1, &msb, 1) !=
+              esphome::i2c::ERROR_OK ||
+          id(photopainter_i2c).write_readv(0x34, &lsb_reg, 1, &lsb, 1) !=
+              esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=battery_voltage stage=sample");
+        return {};
+      }
+      return (((msb & 0x3F) << 8) | lsb) / 1000.0f;
+
+  - platform: template
+    id: photopainter_battery_level
+    name: "PhotoPainter Battery Level"
+    unit_of_measurement: "%"
+    device_class: battery
+    accuracy_decimals: 0
+    update_interval: ${photopainter_battery_level_update_interval}
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      if ((id(photopainter_axp_status1) & 0x08) == 0) return NAN;
+
+      uint8_t percentage = 0;
+      uint8_t reg = 0xA4;
+      if (id(photopainter_i2c).write_readv(0x34, &reg, 1, &percentage, 1) !=
+          esphome::i2c::ERROR_OK) {
+        ESP_LOGW("photopainter_telemetry",
+                 "event=read result=failed metric=battery_level stage=sample");
+        return {};
+      }
+      return percentage <= 100 ? optional<float>(percentage) : optional<float>();
+
+binary_sensor:
+  - platform: template
+    id: photopainter_usb_connected
+    name: "PhotoPainter USB-C Connected"
+    device_class: plug
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status1) & 0x20) != 0;
+    on_state:
+      then:
+        - component.update: photopainter_usb_voltage
+
+  - platform: template
+    id: photopainter_battery_connected
+    name: "PhotoPainter Battery Connected"
+    device_class: power
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status1) & 0x08) != 0;
+    on_state:
+      then:
+        - component.update: photopainter_battery_voltage
+        - component.update: photopainter_battery_level
+
+  - platform: template
+    id: photopainter_battery_charging
+    name: "PhotoPainter Battery Charging"
+    device_class: battery_charging
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(photopainter_axp_state_valid)) return {};
+      return (id(photopainter_axp_status2) & 0x60) == 0x20;
+    on_state:
+      then:
+        - component.update: photopainter_battery_voltage
+
+  - platform: template
+    id: photopainter_rtc_running
+    name: "PhotoPainter RTC Running"
+    lambda: |-
+      if (!id(photopainter_rtc_state_valid)) return {};
+      return (id(photopainter_rtc_seconds) & 0x80) == 0;

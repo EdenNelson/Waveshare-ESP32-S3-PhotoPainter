@@ -1,0 +1,50 @@
+# Local ESPHome configuration and build state. The wildcard covers the private
+# working source and every profile rendered from it, so a new private render
+# cannot land untracked-and-unignored with real credentials in it. The two
+# public profiles use the WaveshareESP32S3PhotoPainter73e6- prefix instead and
+# are unaffected.
+ESPHome/Office-PhotoPainter*.yaml
+secrets.yaml
+# ESPHome dashboard backups can hold the same credentials.
+*.backup
+.esphome/
+build/
+
+# Most development tooling remains local because it can render private source
+# profiles or sanitize raw logs. The package verification entry point is public
+# so every package consumer fixture can be rebuilt reproducibly.
+scripts/*
+!scripts/verify_esphome_packages.sh
+!scripts/generate_esphome_profiles.py
+AGENTS.md
+
+# Locally cached third-party reference material. The published provenance and
+# retrieval information lives in Documentation/README.md and References/.
+Documentation/*.pdf
+ESP32-S3-PhotoPainter-Demo/
+PhotoPainter_B-BMP/
+OpenDisplay/
+
+# Raw, unsanitized device logs. These can contain Wi-Fi credentials, API keys,
+# hostnames, and IP addresses, so they never leave the development machine.
+# Sanitized copies are published under Logs/ instead.
+DirtyLogs/
+
+# OS/editor artifacts
+.DS_Store
+**/.DS_Store
+*.swp
+*~
+
+# Local-only review notes. Generated against the private working configuration
+# and referencing its line numbers, so it stays on the development machine.
+FINDINGS.md
+
+# Real credentials for a flashable build. Never committed; ensure_secrets.py
+# copies it over secrets.yaml when present.
+ESPHome/secrets.real.yaml
+secrets.real.yaml
+
+# Full-resolution original of the README photo; the published copy is
+# Images/diagnostic-dashboard.jpg (resized, metadata stripped).
+Images/IMG_1469.png

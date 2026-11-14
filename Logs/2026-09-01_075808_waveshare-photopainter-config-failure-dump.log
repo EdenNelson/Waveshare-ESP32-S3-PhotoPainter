@@ -1,0 +1,12 @@
+INFO ESPHome 2026.8.2
+INFO Reading configuration Waveshare-PhotoPainter.yaml...
+Failed config
+
+wifi: [source Waveshare-PhotoPainter.yaml:714]
+  ssid: !secret wifi_ssid
+  
+  WPA password must be at least 8 characters long.
+  password: !secret wifi_password
+  ap: 
+    ssid: <fallback-ap-ssid>
+    password: <fallback-ap-password>

@@ -1,0 +1,24 @@
+esphome:
+  on_boot:
+    # Audio components initialize earlier. Apply the battery idle policy only
+    # after their setup routines have completed.
+    - priority: 200.0
+      then:
+        - script.execute: photopainter_audio_shutdown
+        - script.wait: photopainter_audio_shutdown
+
+switch:
+  - id: !extend photopainter_amplifier_enable
+    restore_mode: ALWAYS_OFF
+
+interval:
+  # This is an observability statement, not a measured-current claim.
+  - interval: 60s
+    then:
+      - lambda: |-
+          ESP_LOGI("photopainter_battery",
+                   "event=level characterization=unmeasured audio=%s "
+                   "amplifier=%s aldo3=on aldo4=%s",
+                   id(photopainter_audio_active) ? "active" : "low_power",
+                   id(photopainter_amplifier_enable).state ? "on" : "off",
+                   (id(photopainter_axp_ldo_enable) & 0x08) ? "on" : "off");

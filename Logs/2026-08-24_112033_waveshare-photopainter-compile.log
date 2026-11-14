@@ -1,0 +1,62 @@
+*** building configuration bundle for remote build ***
+INFO ESPHome 2026.8.0
+INFO Reading configuration /config/esphome/waveshare-photopainter.yaml...
+WARNING Bundle contains secrets (e.g. Wi-Fi passwords). Do not share it with untrusted parties.
+INFO Bundle created: /tmp/tmpnyjish8i.tar.gz (2 files, 3.1 KB)
+*** bundle ready (3 KiB); sending to build server ***
+INFO ESPHome 2026.8.0
+INFO Reading configuration /config/.esphome/.remote_builds/9CGd2Lta/waveshare-photopainter/waveshare-photopainter.yaml...
+INFO Generating C++ source...
+INFO Setting CONFIG_LWIP_MAX_SOCKETS to 17 (TCP=11 [api=3, captive_portal=3, web_server=5], UDP=3 [captive_portal=1, mdns=2], TCP_LISTEN=3 [api=1, ota=1, web_server_base=1])
+INFO Compiling app... Build path: /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail
+INFO Checking ESP-IDF 5.5.5 framework ...
+INFO Checking ESP-IDF 5.5.5 framework installation ...
+INFO Checking ESP-IDF 5.5.5 Python environment ...
+Executing action: all (aliases: build)
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build
+Executing "ninja all"...
+[1/5] cd /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/photopainter-display-rail.bin[K
+photopainter-display-rail.bin binary size 0xea290 bytes. Smallest app partition is 0x7c0000 bytes. 0x6d5d70 bytes (88%) free.
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[4/5] Completed 'bootloader'[KExecuting action: size
+Running ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build
+Executing "ninja all"...
+[1/5] cd /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/partition_table/partition-table.bin /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/photopainter-display-rail.bin[K
+photopainter-display-rail.bin binary size 0xea290 bytes. Smallest app partition is 0x7c0000 bytes. 0x6d5d70 bytes (88%) free.
+[1/1] cd /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/bootloader/esp-idf/esptool_py && /root/.cache/esphome/idf/penvs/5.5.5/bin/python /root/.cache/esphome/idf/frameworks/5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/bootloader/bootloader.bin[K
+Bootloader binary size 0x5720 bytes. 0x28e0 bytes (32%) free.
+[4/5] Completed 'bootloader'[KRunning ninja in directory /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build
+Executing "ninja size"...
+[0/2] Re-checking globbed directories...
+[0/2] cd /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build && /root/.cache/esphome/idf/tools/cmake/3.30.2/bin/cmake -D "IDF_SIZE_TOOL=/root/.cache/esphome/idf/penvs/5.5.5/bin/python;-m;esp_idf_size" -D MAP_FILE=/data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/photopainter-display-rail.map -D OUTPUT_JSON= -P /root/.cache/esphome/idf/frameworks/5.5.5/tools/cmake/run_size_tool.cmake
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory Type/Section ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Code          │       683648 │          │                │               │
+│    .text            │       683648 │          │                │               │
+│ Flash Data          │       177516 │          │                │               │
+│    .rodata          │       177260 │          │                │               │
+│    .appdesc         │          256 │          │                │               │
+│ DIRAM               │       110139 │    32.23 │         231621 │        341760 │
+│    .text            │        61579 │    18.02 │                │               │
+│    .bss             │        28552 │     8.35 │                │               │
+│    .data            │        19848 │     5.81 │                │               │
+│    .noinit          │          160 │     0.05 │                │               │
+│ IRAM                │        16384 │    100.0 │              0 │         16384 │
+│    .text            │        15356 │    93.73 │                │               │
+│    .vectors         │         1028 │     6.27 │                │               │
+│ RTC SLOW            │           32 │     0.39 │           8160 │          8192 │
+│    .force_slow      │           32 │     0.39 │                │               │
+│ RTC FAST            │           24 │     0.29 │           8168 │          8192 │
+│    .rtc_reserved    │           24 │     0.29 │                │               │
+└─────────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+Total image size: 959007 bytes (.bin may be padded larger)
+RAM:   [===       ]  32.2% (used 110139 bytes from 341760 bytes)
+Flash: [=         ]  11.8% (used 959007 bytes from 8126464 bytes)
+INFO Creating factory.bin...
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/firmware.factory.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/firmware.ota.bin
+INFO Created: /data/.remote_builds/9CGd2Lta/.esphome/build/photopainter-display-rail/build/firmware.elf
+INFO Build Info: config_hash=0x8a3ed358 build_time_str=2026-08-24 11:06:21 -0700
+INFO Successfully compiled program.

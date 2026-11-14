@@ -1,0 +1,5 @@
+packages:
+  - !include waveshare-esp32-s3-photopainter.yaml
+  - !include waveshare-esp32-s3-photopainter/demos/dashboard.yaml
+  - !include waveshare-esp32-s3-photopainter/demos/audio.yaml
+  - !include waveshare-esp32-s3-photopainter/demos/deep_sleep.yaml

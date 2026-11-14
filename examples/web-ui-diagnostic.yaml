@@ -1,0 +1,13 @@
+# Validation fixture: the diagnostic layer with web UI grouping, without the demo.
+# Access-point-only wifi: keeps it free of credentials.
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter-diagnostic.yaml
+  photopainter_web_ui: !include ../packages/waveshare-esp32-s3-photopainter-web-ui.yaml
+  photopainter_web_ui_diagnostic: !include ../packages/waveshare-esp32-s3-photopainter-web-ui-diagnostic.yaml
+
+esphome:
+  name: photopainter-web-ui-diagnostic
+  friendly_name: PhotoPainter Web UI Diagnostic
+
+wifi:
+  ap:

@@ -1,0 +1,32 @@
+# Public, synthetic site configuration used only to render standalone downloads.
+# These marker values become installation secret references in the downloads.
+esphome:
+  name: waveshare-photopainter
+  friendly_name: Waveshare PhotoPainter
+  area: Waveshare
+
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: UEhPVE9QQUlOVEVSLVJFRkVSRU5DRS1LRVktTUFSSyE=
+
+# Encrypted ESPHome OTA, reusing the API key (ESPHome 2026.9+). The web-page
+# firmware upload (platform: web_server) is deliberately not enabled.
+ota:
+  - platform: esphome
+    encryption:
+
+wifi:
+  ssid: __REFERENCE_WIFI_SSID__
+  password: __REFERENCE_WIFI_PASSWORD__
+  ap:
+    ssid: Waveshare PhotoPainter Fallback
+    password: __REFERENCE_FALLBACK_PASSWORD__
+
+captive_portal:
+
+web_server:
+  version: 3
+  auth:
+    username: photopainter-admin
+    password: __REFERENCE_WEB_SERVER_PASSWORD__

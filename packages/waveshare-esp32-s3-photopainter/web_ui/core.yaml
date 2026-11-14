@@ -1,0 +1,165 @@
+# Web UI grouping for the board package: web_server version 3, the shared
+# groups, and group placement for every core entity. Optional: include it only
+# when the device runs web_server (ESPHome rejects per-entity sorting without
+# it). Pair with web_ui/demo.yaml and web_ui/diagnostic.yaml for those layers.
+web_server:
+  version: 3
+  # Serve the UI script from the firmware instead of ESPHome's CDN, so the page
+  # always matches the ESPHome version that built it (a cached or newer CDN copy
+  # can ignore the sorting below) and works on networks without internet access.
+  local: true
+  sorting_groups:
+    - id: photopainter_group_display
+      name: "Display"
+      sorting_weight: 10
+    - id: photopainter_group_power
+      name: "Power"
+      sorting_weight: 20
+    - id: photopainter_group_audio
+      name: "Audio"
+      sorting_weight: 30
+    - id: photopainter_group_storage
+      name: "Storage"
+      sorting_weight: 40
+    - id: photopainter_group_environment
+      name: "Environment"
+      sorting_weight: 50
+    - id: photopainter_group_inputs
+      name: "Buttons & LEDs"
+      sorting_weight: 60
+    - id: photopainter_group_diagnostics
+      name: "Diagnostics"
+      sorting_weight: 90
+
+switch:
+  - id: !extend photopainter_display_enabled
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 10
+  - id: !extend photopainter_audio_enabled
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 10
+  - id: !extend photopainter_amplifier_enable
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 20
+
+binary_sensor:
+  - id: !extend photopainter_display_status
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 50
+  - id: !extend photopainter_aldo4_rail_status
+    web_server:
+      sorting_group_id: photopainter_group_display
+      sorting_weight: 60
+  - id: !extend photopainter_usb_connected
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 10
+  - id: !extend photopainter_battery_connected
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 30
+  - id: !extend photopainter_battery_charging
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 60
+  - id: !extend photopainter_amplifier_status
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 60
+  - id: !extend photopainter_es8311_status
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 70
+  - id: !extend photopainter_es7210_status
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 80
+  - id: !extend photopainter_sd_card_mounted
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 10
+  - id: !extend photopainter_rtc_running
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 15
+  - id: !extend photopainter_boot_button
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 10
+  - id: !extend photopainter_key_button
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 20
+  - id: !extend photopainter_pwr_button
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 25
+
+sensor:
+  # The SHTC3 readings are nested under their platform entry; extend the parent.
+  - id: !extend photopainter_environment
+    temperature:
+      web_server:
+        sorting_group_id: photopainter_group_environment
+        sorting_weight: 10
+    humidity:
+      web_server:
+        sorting_group_id: photopainter_group_environment
+        sorting_weight: 20
+  - id: !extend photopainter_usb_voltage
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 20
+  - id: !extend photopainter_battery_voltage
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 40
+  - id: !extend photopainter_battery_level
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 50
+  - id: !extend photopainter_sd_total_space
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 20
+  - id: !extend photopainter_sd_used_space
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 30
+  - id: !extend photopainter_sd_free_space
+    web_server:
+      sorting_group_id: photopainter_group_storage
+      sorting_weight: 40
+  - id: !extend photopainter_uptime
+    web_server:
+      sorting_group_id: photopainter_group_diagnostics
+      sorting_weight: 10
+
+button:
+  - id: !extend photopainter_esp_restart
+    web_server:
+      sorting_group_id: photopainter_group_power
+      sorting_weight: 80
+
+# media_player entities do not accept web_server sorting (ESPHome 2026.10), so
+# the speaker stays in the web UI's default media section.
+
+number:
+  - id: !extend photopainter_speaker_volume
+    web_server:
+      sorting_group_id: photopainter_group_audio
+      sorting_weight: 40
+
+light:
+  - id: !extend photopainter_act_led
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 30
+  - id: !extend photopainter_power_led
+    web_server:
+      sorting_group_id: photopainter_group_inputs
+      sorting_weight: 40

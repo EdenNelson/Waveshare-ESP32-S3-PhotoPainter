@@ -1,0 +1,110 @@
+[12:12:28][I][logger:122]: Log initialized
+[12:12:28][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[12:12:28][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[12:12:28][I][app:060]: Running through setup()
+[12:12:28][I][i2c.idf:205]: Performing bus recovery
+[12:12:28][E][i2c.idf:242]: Recovery failed: SCL is held LOW on the bus
+[12:12:28][I][rail_test:022]: === DISPLAY TEST: ALDO4-only (bit 0x08) ===
+[12:12:28][I][rail_test:023]: ESP reset reason=3, wakeup cause=0
+
+
+Terminal disconnected: NetworkError: The device has been lost.
+Waiting for the device to come back…
+Reconnected
+
+[12:12:33][I][logger:122]: Log initialized
+[12:12:33][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[12:12:33][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[12:12:33][I][app:060]: Running through setup()
+[12:12:33][I][i2c.idf:205]: Performing bus recovery
+[12:12:33][I][rail_test:022]: === DISPLAY TEST: ALDO4-only (bit 0x08) ===
+[12:12:33][I][rail_test:023]: ESP reset reason=1, wakeup cause=0
+[12:12:33][I][rail_test:046]: --- AXP2101 before-write snapshot ---
+[12:12:33][[D][esp-idf:000]: E (419) i2c.master: I2C software timeout
+[12:12:33][E][rail_test:105]: Could not read back LDO enable register
+[12:12:33][C][component:164]: Setup esphome.coroutine took 327ms
+[12:12:33][D][split_buffer:066]: Allocated 1 * 192000 bytes - 192000 bytes
+[12:12:33][D][spi_device:395]: mode 0, data_rate 20000kHz
+[12:12:33][C][wifi:649]: Starting
+[12:12:33][D][wifi:1334]: Starting scan
+[12:12:33][W][component:290]: api set Warning flag: waiting for client connection
+[12:12:33][I][app:117]: setup() finished successfully!
+[12:12:33][W][component:290]: wifi set Warning flag: scanning for networks
+[12:12:33][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-24 11:06:21 -0700
+[12:12:33][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[12:12:33][C][logger:223]: Logger:
+[12:12:33][C][logger:223]:   Max Level: DEBUG
+[12:12:33][C][logger:223]:   Initial Level: DEBUG
+[12:12:33][C][logger:230]:   Log Baud Rate: 115200
+[12:12:33][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[12:12:33][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[12:12:33][C][i2c.idf:092]: I2C Bus:
+[12:12:33][C][i2c.idf:093]:   SDA Pin: GPIO47
+[12:12:33][C][i2c.idf:093]:   SCL Pin: GPIO48
+[12:12:33][C][i2c.idf:093]:   Frequency: 100000 Hz
+[12:12:33][C][i2c.idf:103]:   Recovery: bus successfully recovered
+[12:12:33][C][spi:066]: SPI bus:
+[12:12:33][C][spi:131]:   CLK Pin: GPIO10
+[12:12:33][C][spi:131]:   SDI Pin: 
+[12:12:33][C][spi:131]:   SDO Pin: GPIO11
+[12:12:33][C][spi:074]:   Using HW SPI: SPI2_HOST
+[12:12:33][C][psram:015]: PSRAM:
+[12:12:33][C][psram:018]:   Available: YES
+[12:12:33][C][psram:020]:   Size: 8192 KB
+[12:12:33][C][epaper_spi:340]: E-Paper SPI
+[12:12:33][C][epaper_spi:340]:   Rotations: 180 °
+[12:12:33][C][epaper_spi:340]:   Dimensions: 800px x 480px
+[12:12:33][C][epaper_spi:341]:   Model: 7.3IN-SPECTRA-E6
+[12:12:33][C][epaper_spi:341]:   SPI Data Rate: 20MHz
+[12:12:33][C][epaper_spi:341]:   Full update every: 1
+[12:12:33][C][epaper_spi:341]:   Swap X/Y: NO
+[12:12:33][C][epaper_spi:341]:   Mirror X: NO
+[12:12:33][C][epaper_spi:341]:   Mirror Y: NO
+[12:12:33][C][epaper_spi:131]:   Reset Pin: GPIO12
+[12:12:33][C][epaper_spi:131]:   DC Pin: GPIO8
+[12:12:33][C][epaper_spi:131]:   Busy Pin: GPIO13
+[12:12:33][C][epaper_spi:131]:   CS Pin: GPIO9
+[12:12:33][C][epaper_spi:342]:   Update Interval: 900.0s
+[12:12:33][C][captive_portal:142]: Captive Portal:
+[12:12:33][C][wifi:1565]: WiFi:
+[12:12:33][C][wifi:1565]:   Local MAC: <mac-4>
+[12:12:33][C][wifi:1565]:   Connected: NO
+[12:12:33][C][web_server:424]: Web Server:
+[12:12:33][C][web_server:424]:   Address: <address-4>
+[12:12:33][C][esphome.ota:098]: Over-The-Air updates:
+[12:12:33][C][esphome.ota:098]:   Address: <address-5>
+[12:12:33][C][esphome.ota:098]:   Version: 2
+[12:12:33][C][safe_mode:058]: Safe Mode:
+[12:12:33][C][safe_mode:058]:   Successful after: 60s
+[12:12:33][C][safe_mode:058]:   Invoke after: 10 attempts
+[12:12:33][C][safe_mode:058]:   Duration: 300s
+[12:12:33][C][safe_mode:079]:   Bootloader rollback: support unknown
+[12:12:33][C][web_server.ota:256]: Web Server OTA
+[12:12:33][W][component:421]: display took a long time for an operation (106 ms), max is 50 ms
+[12:12:33][C][api:271]: Server:
+[12:12:33][C][api:271]:   Address: <address-6>
+[12:12:33][C][api:271]:   Listen backlog: 4
+[12:12:33][C][api:271]:   Max connections: 5
+[12:12:33][C][api:278]:   Noise encryption: YES
+[12:12:33][C][mdns:259]: mDNS:
+[12:12:33][C][mdns:259]:   Hostname: photopainter-display-rail
+[12:12:36][D][wifi:1494]: Found networks:
+[12:12:36][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -39dB P:0
+[12:12:36][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -65dB P:0
+[12:12:36][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -76dB P:0
+[12:12:36][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[12:12:36][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[12:12:38][I][wifi:1609]: Connected
+[12:12:38][D][wifi:1626]: Disabling AP
+[12:12:38][C][wifi:1268]:   IP Address: <ipv4-2>
+[12:12:38][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[12:12:38][C][wifi:1279]:   BSSID: <bssid-1>
+[12:12:38][C][wifi:1279]:   Hostname: 'photopainter-display-rail'
+[12:12:38][C][wifi:1279]:   Signal strength: -40 dB ▂▄▆█
+[12:12:38][C][wifi:1279]:   Channel: 11
+[12:12:38][C][wifi:1279]:   Subnet: <ipv4-3>
+[12:12:38][C][wifi:1279]:   Gateway: <ipv4-4>
+[12:12:38][C][wifi:1279]:   DNS1: <ipv4-5>
+[12:12:38][C][wifi:1279]:   DNS2: <ipv4-1>
+[12:12:38][W][component:313]: wifi cleared Warning flag
+[12:13:02][D][epaper_spi:237]: Display update took 29056 ms

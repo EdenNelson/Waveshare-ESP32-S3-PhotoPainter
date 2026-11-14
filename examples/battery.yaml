@@ -1,0 +1,6 @@
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter-battery.yaml
+
+esphome:
+  name: photopainter-battery
+  friendly_name: PhotoPainter Battery Oriented

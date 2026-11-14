@@ -1,0 +1,283 @@
+[10:18:11][I][logger:122]: Log initialized
+[10:18:11][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[10:18:11][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[10:18:11][I][app:060]: Running through setup()
+[10:18:11][I][i2c.idf:205]: Performing bus recovery
+[10:18:11][I][rail_test:021]: === AUDIO TEST: ALDO4-only hypothesis (bit 0x08) ===
+[10:18:11][I][rail_test:022]: ESP reset reason=1, wakeup cause=0
+[10:18:11][I][rail_test:047]: --- AXP2101 before-write snapshot ---
+xA4 = 0x00
+[10:18:11]ESP-ROM:esp32s3-20210327
+[10:18:11]Build:Mar 27 2021
+[10:18:11]rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+[10:18:11]Saved PC:0x4037977e
+[10:18:11]SPIWP:0xee
+[10:18:11]mode:DIO, clock div:1
+[10:18:11]load:0x3fce2820,len:0x1688
+[10:18:11]load:0x403c8700,len:0xe70
+[10:18:11]load:0x403cb700,len:0x31d0
+[10:18:11]entry 0x403c8944
+[10:18:11]I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[10:18:11]I (24) boot: Multicore bootloader
+[10:18:11]I (25) boot: chip revision: v0.2
+[10:18:11]I (25) boot: efuse block revision: v1.4
+[10:18:11]I (25) qio_mode: Enabling default flash chip QIO
+[10:18:11]I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[10:18:11]I (25) boot.esp32s3: SPI Mode       : QIO
+[10:18:11]I (26) boot.esp32s3: SPI Flash Size : 16MB
+[10:18:11]I (26) boot: Enabling RNG early entropy source...
+[10:18:11]I (26) boot: Partition Table:
+[10:18:11]I (26) boot: ## Label            Usage          Type ST Offset   Length
+[10:18:11]I (27) boot:  0 otadata          OTA data         01 00 00009000 00002000
+[10:18:11]I (27) boot:  1 phy_init         RF data          01 01 0000b000 00001000
+[10:18:11]I (27) boot:  2 app0             OTA app          00 10 00010000 007c0000
+[10:18:11]I (28) boot:  3 app1             OTA app          00 11 007d0000 007c0000
+[10:18:11]I (28) boot:  4 nvs              WiFi data        01 02 00f90000 00070000
+[10:18:11]I (28) boot: End of partition table
+[10:18:11]I (29) esp_image: segment 0: paddr=00010020 vaddr=3c0d0020 size=31a24h (203300) map
+[10:18:11]I (61) esp_image: segment 1: paddr=00041a4c vaddr=3fc97100 size=04ce0h ( 19680) load
+[10:18:11]I (65) esp_image: segment 2: paddr=00046734 vaddr=40374000 size=098e4h ( 39140) load
+[10:18:11]I (73) esp_image: segment 3: paddr=00050020 vaddr=42000020 size=c87b4h (821172) map
+[10:18:11]I (200) esp_image: segment 4: paddr=001187dc vaddr=4037d8e4 size=09728h ( 38696) load
+[10:18:11]I (208) esp_image: segment 5: paddr=00121f0c vaddr=50000000 size=00020h (    32) load
+[10:18:11]I (216) boot: Loaded app from partition at offset 0x10000
+[10:18:11]I (216) boot: Disabling RNG early entropy source...
+[10:18:11][I][logger:122]: Log initialized
+[10:18:11][C][safe_mode:201]: Unsuccessful boot attempts: 1
+[10:18:11][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[10:18:11][I][app:060]: Running through setup()
+[10:18:11][I][i2c.idf:205]: Performing bus recovery
+[10:18:11][I][rail_test:021]: === AUDIO TEST: ALDO4-only hypothesis (bit 0x08) ===
+[10:18:11][I][rail_test:022]: ESP reset reason=11, wakeup cause=0
+[10:18:11][I][rail_test:047]: --- AXP2101 before-write snapshot ---
+[10:18:11][I][rail_test:051]: AXP reg 0x00 = 0x20
+[10:18:11][I][rail_test:051]: AXP reg 0x01 = 0x15
+[10:18:11][I][rail_test:051]: AXP reg 0x03 = 0x4A
+[10:18:11][I][rail_test:051]: AXP reg 0x20 = 0x10
+[10:18:11][I][rail_test:051]: AXP reg 0x21 = 0x00
+[10:18:11][I][rail_test:051]: AXP reg 0x26 = 0x09
+[10:18:11][I][rail_test:051]: AXP reg 0x30 = 0x03
+[10:18:11][I][rail_test:051]: AXP reg 0x40 = 0xFF
+[10:18:11][I][rail_test:051]: AXP reg 0x41 = 0xFC
+[10:18:11][I][rail_test:051]: AXP reg 0x42 = 0x5F
+[10:18:11][I][rail_test:051]: AXP reg 0x48 = 0x40
+[10:18:11][I][rail_test:051]: AXP reg 0x49 = 0x80
+[10:18:11][I][rail_test:051]: AXP reg 0x4A = 0x40
+[10:18:11][I][rail_test:051]: AXP reg 0x80 = 0x0F
+[10:18:11][I][rail_test:051]: AXP reg 0x81 = 0x00
+[10:18:11][I][rail_test:051]: AXP reg 0x82 = 0x12
+[10:18:11][I][rail_test:051]: AXP reg 0x90 = 0xFF
+[10:18:11][I][rail_test:051]: AXP reg 0x91 = 0x01
+[10:18:11][I][rail_test:051]: AXP reg 0x94 = 0x1C
+[10:18:11][I][rail_test:051]: AXP reg 0x95 = 0x1C
+[10:18:11][I][rail_test:051]: AXP reg 0xA4 = 0x00
+[10:18:12][D][esp-idf:000]: E (375) i2c.master: I2C software timeout
+[10:18:12][E][rail_test:106]: Could not read back LDO enable register
+[10:18:12][C][component:164]: Setup esphome.coroutine took 284ms
+[10:18:12][D][esp-idf:000]: E (478) i2c.master: I2C software timeout
+[10:18:12][C][component:164]: Setup template.binary_sensor took 101ms
+[10:18:12][D][esp-idf:000]: E (580) i2c.master: I2C software timeout
+[10:18:12][C][component:164]: Setup template.binary_sensor took 101ms
+[10:18:12][D][esp-idf:000]: E (682) i2c.master: I2C software timeout
+[10:18:12][E][component:204]: es8311.audio_dac was marked as failed
+[10:18:12][E][component:297]: es8311.audio_dac set Error flag: unspecified
+[10:18:12][C][component:164]: Setup es8311.audio_dac took 103ms
+[10:18:12][D][esp-idf:000]: E (786) i2c.master: I2C software timeout
+[10:18:12][E][component:204]: es7210.audio_adc was marked as failed
+[10:18:12][E][component:297]: es7210.audio_adc set Error flag: unspecified
+[10:18:12][C][component:164]: Setup es7210.audio_adc took 103ms
+[10:18:12][D][esp-idf:000]: E (889) i2c.master: I2C software timeout
+[10:18:12][D][esp-idf:000]: E (990) i2c.master: I2C software timeout
+[10:18:12][C][component:164]: Setup i2s_audio.speaker took 202ms
+[10:18:12][D][esp-idf:000]: E (1092) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (1193) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (1294) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (1395) i2c.master: I2C software timeout
+[10:18:13][I][speaker_media_player:098]: Set up speaker media player
+[10:18:13][C][component:164]: Setup speaker.media_player took 405ms
+[10:18:13][C][wifi:649]: Starting
+[10:18:13][D][wifi:1334]: Starting scan
+[10:18:13][C][component:164]: Setup wifi took 54ms
+[10:18:13][W][component:290]: api set Warning flag: waiting for client connection
+[10:18:13][I][app:117]: setup() finished successfully!
+[10:18:13][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[10:18:13][D][esp-idf:000]: E (1562) i2c.master: I2C software timeout
+[10:18:13][W][component:421]: template.binary_sensor took a long time for an operation (102 ms), max is 50 ms
+[10:18:13][D][esp-idf:000]: E (1665) i2c.master: I2C software timeout
+[10:18:13][W][component:421]: template.binary_sensor took a long time for an operation (102 ms), max is 50 ms
+[10:18:13][W][component:290]: wifi set Warning flag: scanning for networks
+[10:18:13][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-24 10:10:03 -0700
+[10:18:13][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[10:18:13][C][logger:223]: Logger:
+[10:18:13][C][logger:223]:   Max Level: DEBUG
+[10:18:13][C][logger:223]:   Initial Level: DEBUG
+[10:18:13][C][logger:230]:   Log Baud Rate: 115200
+[10:18:13][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[10:18:13][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[10:18:13][D][esp-idf:000]: E (1790) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (1891) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (2008) i2c.master: I2C software timeout
+[10:18:13][D][esp-idf:000]: E (2109) i2c.master: I2C software timeout
+[10:18:13][C][i2c.idf:092]: I2C Bus:
+[10:18:13][C][i2c.idf:093]:   SDA Pin: GPIO47
+[10:18:13][C][i2c.idf:093]:   SCL Pin: GPIO48
+[10:18:13][C][i2c.idf:093]:   Frequency: 100000 Hz
+[10:18:13][C][i2c.idf:103]:   Recovery: bus successfully recovered
+[10:18:14][D][esp-idf:000]: E (2229) i2c.master: I2C software timeout
+[10:18:14][D][esp-idf:000]: E (2330) i2c.master: I2C software timeout
+[10:18:14][D][esp-idf:000]: E (2447) i2c.master: I2C software timeout
+[10:18:14][D][esp-idf:000]: E (2548) i2c.master: I2C software timeout
+[10:18:14][C][switch.gpio:088]: GPIO Switch 'Rail Test: Audio Amplifier'
+[10:18:14][C][switch.gpio:088]:   Restore Mode: always OFF
+[10:18:14][C][switch.gpio:131]:   Pin: GPIO7
+[10:18:14][D][esp-idf:000]: E (2667) i2c.master: I2C software timeout
+[10:18:14][D][esp-idf:000]: E (2768) i2c.master: I2C software timeout
+[10:18:14][C][template.sensor:017]: Template Sensor 'Rail Test: Microphone Bytes Received'
+[10:18:14][C][template.sensor:017]:   State Class: ''
+[10:18:14][C][template.sensor:017]:   Unit of Measurement: 'B'
+[10:18:14][C][template.sensor:017]:   Accuracy Decimals: 0
+[10:18:14][C][template.sensor:342]:   Update Interval: 2.0s
+[10:18:14][D][esp-idf:000]: E (2888) i2c.master: I2C software timeout
+[10:18:14][D][esp-idf:000]: E (2989) i2c.master: I2C software timeout
+[10:18:14][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: ES8311 ACK'
+[10:18:14][D][esp-idf:000]: E (3107) i2c.master: I2C software timeout
+[10:18:15][D][esp-idf:000]: E (3208) i2c.master: I2C software timeout
+[10:18:15][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: ES7210 ACK'
+[10:18:15][D][esp-idf:000]: E (3326) i2c.master: I2C software timeout
+[10:18:15][D][esp-idf:000]: E (3427) i2c.master: I2C software timeout
+[10:18:15][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: Microphone Capturing'
+[10:18:15][D][esp-idf:000]: E (3545) i2c.master: I2C software timeout
+[10:18:15][D][esp-idf:000]: E (3646) i2c.master: I2C software timeout
+[10:18:15][C][psram:015]: PSRAM:
+[10:18:15][C][psram:018]:   Available: YES
+[10:18:15][C][psram:020]:   Size: 8192 KB
+[10:18:15][C][es8311:052]: ES8311 Audio Codec:
+[10:18:15][C][es8311:052]:   Use MCLK: YES
+[10:18:15][C][es8311:052]:   Use Microphone: NO
+[10:18:15][C][es8311:052]:   DAC Bits per Sample: 16
+[10:18:15][C][es8311:052]:   Sample Rate: 16000
+[10:18:15][C][es8311:061]:   Failed to initialize!
+[10:18:15][E][component:143]:   es8311.audio_dac is marked FAILED: unspecified
+[10:18:15][D][esp-idf:000]: E (3766) i2c.master: I2C software timeout
+[10:18:15][D][esp-idf:000]: E (3867) i2c.master: I2C software timeout
+[10:18:15][C][es7210:027]: ES7210 audio ADC:
+[10:18:15][C][es7210:027]:   Bits Per Sample: 16
+[10:18:15][C][es7210:027]:   Sample Rate: 16000
+[10:18:15][E][es7210:034]:   Failed to initialize
+[10:18:15][E][component:143]:   es7210.audio_adc is marked FAILED: unspecified
+[10:18:15][D][esp-idf:000]: E (3987) i2c.master: I2C software timeout
+[10:18:15][D][esp-idf:000]: E (4088) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4205) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4306) i2c.master: I2C software timeout
+[10:18:16][D][wifi:1494]: Found networks:
+[10:18:16][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -43dB P:0
+[10:18:16][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -65dB P:0
+[10:18:16][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -68dB P:0
+[10:18:16][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[10:18:16][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[10:18:16][C][i2s_audio.microphone:053]: Microphone:
+[10:18:16][C][i2s_audio.microphone:053]:   Pin: 18
+[10:18:16][C][i2s_audio.microphone:053]:   PDM: NO
+[10:18:16][C][i2s_audio.microphone:053]:   DC offset correction: NO
+[10:18:16][D][esp-idf:000]: E (4446) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4547) i2c.master: I2C software timeout
+[10:18:16][C][rtttl:078]: Rtttl:
+[10:18:16][C][rtttl:078]:   Gain: 0.600000
+[10:18:16][D][esp-idf:000]: E (4665) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4766) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4883) i2c.master: I2C software timeout
+[10:18:16][D][esp-idf:000]: E (4984) i2c.master: I2C software timeout
+[10:18:16][C][i2s_audio.speaker:043]: Speaker:
+[10:18:16][C][i2s_audio.speaker:043]:   Pin: 17
+[10:18:16][C][i2s_audio.speaker:043]:   Buffer duration: 500
+[10:18:16][C][i2s_audio.speaker:049]:   Timeout: 500 ms
+[10:18:16][C][i2s_audio.speaker.std:067]:   Communication format: std
+[10:18:16][C][i2s_audio.speaker.std:072]:   Slot bit width: 16
+[10:18:16][D][esp-idf:000]: E (5105) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5206) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5323) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5424) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5541) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5642) i2c.master: I2C software timeout
+[10:18:17][C][captive_portal:142]: Captive Portal:
+[10:18:17][C][wifi:1565]: WiFi:
+[10:18:17][C][wifi:1565]:   Local MAC: <mac-4>
+[10:18:17][C][wifi:1565]:   Connected: NO
+[10:18:17][D][esp-idf:000]: E (5760) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (5861) i2c.master: I2C software timeout
+[10:18:17][C][web_server:424]: Web Server:
+[10:18:17][C][web_server:424]:   Address: <address-1>
+[10:18:17][D][esp-idf:000]: E (5979) i2c.master: I2C software timeout
+[10:18:17][D][esp-idf:000]: E (6080) i2c.master: I2C software timeout
+[10:18:17][C][esphome.ota:098]: Over-The-Air updates:
+[10:18:17][C][esphome.ota:098]:   Address: <address-2>
+[10:18:17][C][esphome.ota:098]:   Version: 2
+[10:18:18][D][esp-idf:000]: E (6199) i2c.master: I2C software timeout
+[10:18:18][D][esp-idf:000]: E (6300) i2c.master: I2C software timeout
+[10:18:18][C][safe_mode:058]: Safe Mode:
+[10:18:18][C][safe_mode:058]:   Successful after: 60s
+[10:18:18][C][safe_mode:058]:   Invoke after: 10 attempts
+[10:18:18][C][safe_mode:058]:   Duration: 300s
+[10:18:18][C][safe_mode:079]:   Bootloader rollback: support unknown
+[10:18:18][C][web_server.ota:256]: Web Server OTA
+[10:18:18][D][esp-idf:000]: E (6418) i2c.master: I2C software timeout
+[10:18:18][D][esp-idf:000]: E (6519) i2c.master: I2C software timeout
+[10:18:18][C][api:271]: Server:
+[10:18:18][C][api:271]:   Address: <address-3>
+[10:18:18][C][api:271]:   Listen backlog: 4
+[10:18:18][C][api:271]:   Max connections: 5
+[10:18:18][C][api:278]:   Noise encryption: YES
+[10:18:18][D][esp-idf:000]: E (6638) i2c.master: I2C software timeout
+[10:18:18][D][esp-idf:000]: E (6739) i2c.master: I2C software timeout
+[10:18:18][C][mdns:259]: mDNS:
+[10:18:18][C][mdns:259]:   Hostname: photopainter-audio-rail
+[10:18:18][D][esp-idf:000]: E (6857) i2c.master: I2C software timeout
+[10:18:18][D][esp-idf:000]: E (6958) i2c.master: I2C software timeout
+[10:18:18][D][esp-idf:000]: E (7075) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7176) i2c.master: I2C software timeout
+[10:18:19][I][wifi:1609]: Connected
+[10:18:19][D][wifi:1626]: Disabling AP
+[10:18:19][C][wifi:1268]:   IP Address: <ipv4-2>
+[10:18:19][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[10:18:19][C][wifi:1279]:   BSSID: <bssid-1>
+[10:18:19][C][wifi:1279]:   Hostname: 'photopainter-audio-rail'
+[10:18:19][C][wifi:1279]:   Signal strength: -43 dB ▂▄▆█
+[10:18:19][C][wifi:1279]:   Channel: 11
+[10:18:19][C][wifi:1279]:   Subnet: <ipv4-3>
+[10:18:19][C][wifi:1279]:   Gateway: <ipv4-4>
+[10:18:19][C][wifi:1279]:   DNS1: <ipv4-5>
+[10:18:19][C][wifi:1279]:   DNS2: <ipv4-1>
+[10:18:19][D][esp-idf:000]: E (7300) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7401) i2c.master: I2C software timeout
+[10:18:19][W][component:313]: wifi cleared Warning flag
+[10:18:19][D][esp-idf:000]: E (7519) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7620) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7737) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7838) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (7955) i2c.master: I2C software timeout
+[10:18:19][D][esp-idf:000]: E (8056) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8173) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8274) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8391) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8492) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8609) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8710) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8827) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (8928) i2c.master: I2C software timeout
+[10:18:20][D][esp-idf:000]: E (9045) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9146) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9263) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9364) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9481) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9582) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9699) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9800) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (9917) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (10018) i2c.master: I2C software timeout
+[10:18:21][D][esp-idf:000]: E (10135) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10236) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10353) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10454) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10572) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10673) i2c.master: I2C software timeout
+[10:18:22][D][esp-idf:000]: E (10790) i2c.master: I2C software timeout

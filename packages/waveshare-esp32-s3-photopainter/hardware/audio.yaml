@@ -1,0 +1,73 @@
+# Generic board audio support. Voice-note files, RTTTL tests, and KEY-button
+# behavior are demos and intentionally do not live here.
+network:
+
+switch:
+  - platform: gpio
+    id: photopainter_amplifier_enable
+    name: "PhotoPainter Audio Amplifier"
+    pin: GPIO7
+    inverted: false
+    restore_mode: ALWAYS_ON
+
+audio_dac:
+  - platform: es8311
+    id: photopainter_audio_dac
+    i2c_id: photopainter_i2c
+    address: 0x18
+
+audio_adc:
+  - platform: es7210
+    id: photopainter_audio_adc
+    i2c_id: photopainter_i2c
+    address: 0x40
+    mic_gain: 30
+
+i2s_audio:
+  - id: photopainter_i2s
+    i2s_mclk_pin: GPIO14
+    i2s_bclk_pin: GPIO15
+    i2s_lrclk_pin: GPIO16
+
+speaker:
+  - platform: i2s_audio
+    id: photopainter_speaker
+    i2s_audio_id: photopainter_i2s
+    i2s_dout_pin: GPIO17
+    dac_type: external
+    audio_dac: photopainter_audio_dac
+
+media_player:
+  - platform: speaker
+    id: photopainter_media_player
+    name: "PhotoPainter Speaker"
+    volume_min: 0%
+    volume_max: 100%
+    announcement_pipeline:
+      speaker: photopainter_speaker
+
+microphone:
+  - platform: i2s_audio
+    id: photopainter_microphone
+    i2s_audio_id: photopainter_i2s
+    i2s_din_pin: GPIO18
+    adc_type: external
+    pdm: false
+
+number:
+  - platform: template
+    id: photopainter_speaker_volume
+    name: "PhotoPainter Speaker Volume"
+    icon: "mdi:volume-high"
+    min_value: 0
+    max_value: 100
+    step: 5
+    unit_of_measurement: "%"
+    initial_value: 50
+    restore_value: true
+    optimistic: true
+    on_value:
+      then:
+        - speaker.volume_set:
+            id: photopainter_speaker
+            volume: !lambda return 0.30f + ((x / 100.0f) * 0.55f);

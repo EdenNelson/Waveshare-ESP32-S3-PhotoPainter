@@ -1,0 +1,214 @@
+globals:
+  - id: photopainter_audio_active
+    type: bool
+    restore_value: false
+    initial_value: "true"
+
+  - id: photopainter_es8311_present
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: photopainter_es7210_present
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+switch:
+  # ALDO3 always remains energized. This switch implements the reversible
+  # logical audio state with codec registers and the GPIO7 amplifier enable.
+  - platform: template
+    id: photopainter_audio_enabled
+    name: "PhotoPainter Audio Codecs Enabled"
+    icon: "mdi:audio-input-stereo-minijack"
+    restore_mode: DISABLED
+    lambda: return id(photopainter_audio_active);
+    turn_off_action:
+      - script.execute: photopainter_audio_shutdown
+    turn_on_action:
+      - script.execute: photopainter_audio_restore
+
+# The media player has no pre-play hook. Refuse a request immediately when the
+# codecs are in logical low power; otherwise make the amplifier state explicit
+# so a previous stop or manual GPIO change cannot produce silent playback.
+media_player:
+  - id: !extend photopainter_media_player
+    on_play:
+      - if:
+          condition:
+            lambda: return !id(photopainter_audio_active);
+          then:
+            - logger.log:
+                tag: photopainter_audio
+                level: WARN
+                format: "event=media_request result=refused reason=audio_low_power"
+            - media_player.stop: photopainter_media_player
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+    on_announcement:
+      - if:
+          condition:
+            lambda: return !id(photopainter_audio_active);
+          then:
+            - logger.log:
+                tag: photopainter_audio
+                level: WARN
+                format: "event=announcement result=refused reason=audio_low_power"
+            - media_player.stop: photopainter_media_player
+          else:
+            - switch.turn_on: photopainter_amplifier_enable
+
+script:
+  # Optional demo layers extend this one seam to release their own producers
+  # and file handles. Core power actions can therefore remain independent of
+  # those demos while still waiting for complete teardown.
+  - id: photopainter_audio_clients_stop
+    mode: single
+    then:
+      - media_player.stop: photopainter_media_player
+      - microphone.stop_capture: photopainter_microphone
+      - speaker.stop: photopainter_speaker
+      - switch.turn_off: photopainter_amplifier_enable
+
+  - id: photopainter_audio_shutdown
+    mode: single
+    then:
+      - script.execute: photopainter_audio_clients_stop
+      - script.wait: photopainter_audio_clients_stop
+      # A mid-stream transition needs time for both clients to release I2S and
+      # for the codecs to reach CSM state 0 before the low-power writes.
+      - delay: 500ms
+      - lambda: |-
+          const char *const TAG = "photopainter_audio";
+          const char *const old_state =
+              id(photopainter_audio_active) ? "active" : "low_power";
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "reason=i2c_unavailable amplifier=off aldo3=on",
+                     old_state, old_state);
+            return;
+          }
+
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto write_reg = [](uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            uint8_t data[2] = {reg, value};
+            return id(photopainter_i2c).write(address, data, sizeof(data)) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto update_bits = [&](uint8_t address, uint8_t reg,
+                                 uint8_t clear_mask, uint8_t set_mask) -> bool {
+            uint8_t before = 0;
+            if (!read_reg(address, reg, before)) return false;
+            const uint8_t desired =
+                (before & static_cast<uint8_t>(~clear_mask)) | set_mask;
+            return write_reg(address, reg, desired);
+          };
+
+          bool dac_ok = true;
+          dac_ok &= update_bits(0x18, 0x31, 0x00, 0x60);
+          dac_ok &= update_bits(0x18, 0x00, 0x80, 0x00);
+          delay(50);
+          uint8_t dac_csm = 0;
+          dac_ok &= read_reg(0x18, 0xFC, dac_csm);
+          dac_ok &= update_bits(0x18, 0x01, 0x3F, 0x00);
+
+          bool adc_ok = true;
+          adc_ok &= update_bits(0x40, 0x00, 0x01, 0x00);
+          delay(50);
+          uint8_t adc_csm = 0;
+          adc_ok &= read_reg(0x40, 0x0B, adc_csm);
+          adc_ok &= write_reg(0x40, 0x4B, 0xFF);
+          adc_ok &= write_reg(0x40, 0x4C, 0xFF);
+          adc_ok &= update_bits(0x40, 0x40, 0x00, 0x80);
+          adc_ok &= update_bits(0x40, 0x01, 0x00, 0x7F);
+          adc_ok &= update_bits(0x40, 0x06, 0x00, 0x07);
+
+          if (!dac_ok || !adc_ok) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "amplifier=off aldo3=on dac=%d adc=%d "
+                     "dac_csm=0x%02X adc_csm=0x%02X",
+                     old_state, old_state, dac_ok ? 1 : 0, adc_ok ? 1 : 0,
+                     dac_csm, adc_csm);
+            return;
+          }
+
+          id(photopainter_audio_active) = false;
+          id(photopainter_es8311_present) = false;
+          id(photopainter_es7210_present) = false;
+          ESP_LOGI(TAG,
+                   "event=transition old=%s new=low_power result=ok "
+                   "amplifier=off aldo3=on dac_csm=0x%02X adc_csm=0x%02X",
+                   old_state, dac_csm, adc_csm);
+
+  - id: photopainter_audio_restore
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_audio";
+          const char *const old_state =
+              id(photopainter_audio_active) ? "active" : "low_power";
+          if (!id(photopainter_shared_i2c_available)) {
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=%s result=failed "
+                     "reason=i2c_unavailable amplifier=off aldo3=on",
+                     old_state, old_state);
+            return;
+          }
+
+          // These setup routines restore the components' normal register sets.
+          // The shutdown-only mute and microphone-power registers are restored
+          // explicitly below because the component setup routines do not write them.
+          id(photopainter_audio_dac).setup();
+          id(photopainter_audio_adc).setup();
+          delay(100);
+
+          auto write_reg = [](uint8_t address, uint8_t reg, uint8_t value) -> bool {
+            uint8_t data[2] = {reg, value};
+            return id(photopainter_i2c).write(address, data, sizeof(data)) ==
+                   esphome::i2c::ERROR_OK;
+          };
+          auto read_reg = [](uint8_t address, uint8_t reg, uint8_t &value) -> bool {
+            return id(photopainter_i2c).write_readv(address, &reg, 1, &value, 1) ==
+                   esphome::i2c::ERROR_OK;
+          };
+
+          bool restore_ok = write_reg(0x18, 0x31, 0x00);
+          restore_ok &= write_reg(0x40, 0x4B, 0x0F);
+          restore_ok &= write_reg(0x40, 0x4C, 0x0F);
+          restore_ok &= write_reg(0x40, 0x06, 0x04);
+
+          uint8_t dac_id = 0;
+          uint8_t adc_id = 0;
+          uint8_t dac_mute = 0xFF;
+          restore_ok &= read_reg(0x18, 0xFD, dac_id);
+          restore_ok &= read_reg(0x40, 0x3D, adc_id);
+          restore_ok &= read_reg(0x18, 0x31, dac_mute);
+          if (!restore_ok || dac_mute != 0x00) {
+            id(photopainter_audio_active) = false;
+            id(photopainter_es8311_present) = false;
+            id(photopainter_es7210_present) = false;
+            ESP_LOGE(TAG,
+                     "event=transition old=%s new=low_power result=failed "
+                     "reason=codec_restore dac_id=0x%02X adc_id=0x%02X "
+                     "dac_mute=0x%02X amplifier=off aldo3=on",
+                     old_state, dac_id, adc_id, dac_mute);
+            return;
+          }
+
+          id(photopainter_audio_active) = true;
+          id(photopainter_es8311_present) = true;
+          id(photopainter_es7210_present) = true;
+          ESP_LOGI(TAG,
+                   "event=transition old=%s new=active result=ok "
+                   "dac_id=0x%02X adc_id=0x%02X dac_mute=0x%02X aldo3=on",
+                   old_state, dac_id, adc_id, dac_mute);
+      - if:
+          condition:
+            lambda: return id(photopainter_audio_active);
+          then:
+            - switch.turn_on: photopainter_amplifier_enable

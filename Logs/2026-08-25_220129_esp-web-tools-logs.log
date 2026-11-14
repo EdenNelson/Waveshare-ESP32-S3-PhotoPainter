@@ -1,0 +1,59 @@
+[22:01:16][0000.107|C0] I: === FIRMWARE INFO ===
+[22:01:16][0000.107|C0] I: Firmware Version: 2.26.2
+[22:01:16][0000.107|C0] I: Git SHA: 64184bbecc88a2d07332f6f28fc922f581619ffc
+[22:01:16][0000.107|C0] I: Reset reason: UNKNOWN (11)
+[22:01:16][0000.107|C0] I: === NORMAL BOOT ===
+[22:01:16][0000.107|C0] I: Deep sleep count (RTC): 0
+[22:01:16][0000.108|C0] I: Starting setup...
+[22:01:16][0000.108|C0] I: Config buffers: 2 x 4096 B reserved, internal free=235928
+[22:01:16][0000.108|C0] I: PIPE reorder queue: 33 slots x 252 B reserved in PSRAM, internal free=235928
+[22:01:16][0000.108|C0] I: Initializing config storage...
+[22:01:16]E (107) esp_littlefs: ./managed_components/joltwallet__littlefs/src/littlefs/lfs.c:1383:error: Corrupted dir pair at {0x0, 0x1}
+[22:01:16]
+[22:01:16]E (107) esp_littlefs: mount failed,  (-84)
+[22:01:16]E (111) esp_littlefs: Failed to initialize LittleFS
+[22:01:16][0000.126|C0] I: Config storage initialized successfully
+[22:01:16][0000.126|C0] I: Loading global configuration...
+[22:01:16][0000.127|C0] E: Global configuration load failed or no config found
+[22:01:16][0000.127|C0] I: TLS: encryption disabled, no record buffers reserved
+[22:01:16][0000.128|C0] I: LAN: reserved RX buffer 16384 B in PSRAM, internal free=233792, largest block=180212
+[22:01:16][0000.128|C0] I: [initio] >> LEDs
+[22:01:16][0000.134|C0] I: [initio] >> initPassiveBuzzers
+[22:01:16][0000.140|C0] I: [initio] >> pwr_pin
+[22:01:16][0000.146|C0] I: [initio] >> initDataBuses
+[22:01:16][0000.151|C0] I: === Initializing Data Buses ===
+[22:01:16][0000.151|C0] I: No data buses configured
+[22:01:16][0000.151|C0] I: [initio] >> initSensors
+[22:01:16][0000.157|C0] I: === Initializing Sensors ===
+[22:01:16][0000.157|C0] W: No sensors configured
+[22:01:16][0000.157|C0] I: [initio] << done
+[22:01:16][0000.162|C0] I: [WDT] no firmware watchdog on ESP32; IDF TWDT is enabled but no task that would catch a wedged loop() is subscribed
+[22:01:16][0000.162|C0] I: === Initializing Display ===
+[22:01:16][0000.162|C0] W: No display found
+[22:01:16][0000.162|C0] I: Display initialized
+[22:01:16][0000.162|C0] I: === Initializing ESP32 BLE ===
+[22:01:16][0000.162|C0] I: Device name will be: OD3C8C35
+[22:01:16][0000.211|C0] I: Setting preferred BLE ATT MTU to 256...
+[22:01:16][0000.211|C0] I: Server callbacks configured
+[22:01:16][0000.211|C0] I: BLE service 0x2446 created successfully
+[22:01:16][0000.212|C0] I: Characteristic created with properties: READ, NOTIFY, WRITE, WRITE_NR
+[22:01:16][0000.212|C0] I: Service UUID added to advertising
+[22:01:16][0000.212|C0] I: Device name added to advertising
+[22:01:16][   222][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   230][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   238][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   246][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   254][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   262][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   270][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   278][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   286][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][   294][E][esp32-hal-adc.c:303] __analogRead(): Pin 0 is not ADC pin!
+[22:01:16][0000.356|C0] I: === BLE advertising started successfully ===
+[22:01:16][0000.356|C0] I: Device ready: OD3C8C35
+[22:01:16][0000.356|C0] I: Waiting for BLE connections...
+[22:01:16][0000.356|C0] I: === Initializing WiFi ===
+[22:01:16][0000.357|C0] I: WiFi not enabled in communication_modes, skipping
+[22:01:16][0000.409|C0] I: === Initializing Buttons ===
+[22:01:16][0000.410|C0] I: === Setup completed successfully ===
+[22:01:16][0000.410|C0] I: Heap: free=169108 min=168916

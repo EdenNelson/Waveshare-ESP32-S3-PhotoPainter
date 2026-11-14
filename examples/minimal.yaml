@@ -1,0 +1,10 @@
+# Local validation fixture and minimal consumer-owned device configuration.
+# A real installation may add Wi-Fi, API, OTA, and secrets without modifying
+# the board package.
+
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter.yaml
+
+esphome:
+  name: photopainter-minimal
+  friendly_name: PhotoPainter Minimal

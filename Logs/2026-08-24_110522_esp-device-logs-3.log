@@ -1,0 +1,192 @@
+[11:04:16][W][component:290]:ESP-ROM:esp32s3-20210327
+[11:04:16]Build:Mar 27 2021
+[11:04:16]rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+[11:04:16]Saved PC:0x4037977e
+[11:04:16]SPIWP:0xee
+[11:04:16]mode:DIO, clock div:1
+[11:04:16]load:0x3fce2820,len:0x1688
+[11:04:16]load:0x403c8700,len:0xe70
+[11:04:16]load:0x403cb700,len:0x31d0
+[11:04:16]entry 0x403c8944
+[11:04:16]I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[11:04:16]I (24) boot: Multicore bootloader
+[11:04:16]I (25) boot: chip revision: v0.2
+[11:04:16]I (25) boot: efuse block revision: v1.4
+[11:04:16]I (25) qio_mode: Enabling default flash chip QIO
+[11:04:16]I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[11:04:16]I (25) boot.esp32s3: SPI Mode       : QIO
+[11:04:16]I (26) boot.esp32s3: SPI Flash Size : 16MB
+[11:04:16]I (26) boot: Enabling RNG early entropy source...
+[11:04:16]I (26) boot: Partition Table:
+[11:04:16]I (26) boot: ## Label            Usage          Type ST Offset   Length
+[11:04:16]I (26) boot:  0 otadata          OTA data         01 00 00009000 00002000
+[11:04:16]I (27) boot:  1 phy_init         RF data          01 01 0000b000 00001000
+[11:04:16]I (27) boot:  2 app0             OTA app          00 10 00010000 007c0000
+[11:04:16]I (28) boot:  3 app1             OTA app          00 11 007d0000 007c0000
+[11:04:16]I (28) boot:  4 nvs              WiFi data        01 02 00f90000 00070000
+[11:04:16]I (28) boot: End of partition table
+[11:04:16]I (29) esp_image: segment 0: paddr=00010020 vaddr=3c0d0020 size=31a24h (203300) map
+[11:04:16]I (61) esp_image: segment 1: paddr=00041a4c vaddr=3fc97100 size=04ce0h ( 19680) load
+[11:04:16]I (65) esp_image: segment 2: paddr=00046734 vaddr=40374000 size=098e4h ( 39140) load
+[11:04:16]I (73) esp_image: segment 3: paddr=00050020 vaddr=42000020 size=c87b8h (821176) map
+[11:04:16]I (200) esp_image: segment 4: paddr=001187e0 vaddr=4037d8e4 size=09728h ( 38696) load
+[11:04:16]I (208) esp_image: segment 5: paddr=00121f10 vaddr=50000000 size=00020h (    32) load
+[11:04:16]I (216) boot: Loaded app from partition at offset 0x10000
+[11:04:16]I (216) boot: Disabling RNG early entropy source...
+[11:04:17][I][logger:122]: Log initialized
+[11:04:17][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[11:04:17][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[11:04:17][I][app:060]: Running through setup()
+[11:04:17][I][i2c.idf:205]: Performing bus recovery
+[11:04:17][I][rail_test:022]: === AUDIO TEST: ALDO3-only (bit 0x04; schematic Audio_VCC) ===
+[11:04:17][I][rail_test:023]: ESP reset reason=11, wakeup cause=0
+[11:04:17][I][rail_test:048]: --- AXP2101 before-write snapshot ---
+[11:04:17][I][rail_test:052]: AXP reg 0x00 = 0x20
+[11:04:17][I][rail_test:052]: AXP reg 0x01 = 0x15
+[11:04:17][I][rail_test:052]: AXP reg 0x03 = 0x4A
+[11:04:17][I][rail_test:052]: AXP reg 0x20 = 0x10
+[11:04:17][I][rail_test:052]: AXP reg 0x21 = 0x00
+[11:04:17][I][rail_test:052]: AXP reg 0x26 = 0x08
+[11:04:17][I][rail_test:052]: AXP reg 0x30 = 0x03
+[11:04:17][I][rail_test:052]: AXP reg 0x40 = 0xFF
+[11:04:17][I][rail_test:052]: AXP reg 0x41 = 0xFC
+[11:04:17][I][rail_test:052]: AXP reg 0x42 = 0x5F
+[11:04:17][I][rail_test:052]: AXP reg 0x48 = 0x40
+[11:04:17][I][rail_test:052]: AXP reg 0x49 = 0x80
+[11:04:17][I][rail_test:052]: AXP reg 0x4A = 0x40
+[11:04:17][I][rail_test:052]: AXP reg 0x80 = 0x0F
+[11:04:17][I][rail_test:052]: AXP reg 0x81 = 0x00
+[11:04:17][I][rail_test:052]: AXP reg 0x82 = 0x12
+[11:04:17][I][rail_test:052]: AXP reg 0x90 = 0xF7
+[11:04:17][I][rail_test:052]: AXP reg 0x91 = 0x01
+[11:04:17][I][rail_test:052]: AXP reg 0x94 = 0x1C
+[11:04:17][I][rail_test:052]: AXP reg 0x95 = 0x1C
+[11:04:17][I][rail_test:052]: AXP reg 0xA4 = 0x00
+[11:04:17][I][rail_test:110]: LDO enable before=0xF7 desired=0xF7 readback=0xF7; ALDO3=ON ALDO4=OFF
+[11:04:17][I][rail_test:048]: --- AXP2101 after-write snapshot ---
+[11:04:17][I][rail_test:052]: AXP reg 0x00 = 0x20
+[11:04:17][I][rail_test:052]: AXP reg 0x01 = 0x15
+[11:04:17][I][rail_test:052]: AXP reg 0x03 = 0x4A
+[11:04:17][I][rail_test:052]: AXP reg 0x20 = 0x10
+[11:04:17][I][rail_test:052]: AXP reg 0x21 = 0x00
+[11:04:17][I][rail_test:052]: AXP reg 0x26 = 0x08
+[11:04:17][I][rail_test:052]: AXP reg 0x30 = 0x03
+[11:04:17][I][rail_test:052]: AXP reg 0x40 = 0xFF
+[11:04:17][I][rail_test:052]: AXP reg 0x41 = 0xFC
+[11:04:17][I][rail_test:052]: AXP reg 0x42 = 0x5F
+[11:04:17][I][rail_test:052]: AXP reg 0x48 = 0x40
+[11:04:17][I][rail_test:052]: AXP reg 0x49 = 0x80
+[11:04:17][I][rail_test:052]: AXP reg 0x4A = 0x40
+[11:04:17][I][rail_test:052]: AXP reg 0x80 = 0x0F
+[11:04:17][I][rail_test:052]: AXP reg 0x81 = 0x00
+[11:04:17][I][rail_test:052]: AXP reg 0x82 = 0x12
+[11:04:17][I][rail_test:052]: AXP reg 0x90 = 0xF7
+[11:04:17][I][rail_test:052]: AXP reg 0x91 = 0x01
+[11:04:17][I][rail_test:052]: AXP reg 0x94 = 0x1C
+[11:04:17][I][rail_test:052]: AXP reg 0x95 = 0x1C
+[11:04:17][I][rail_test:052]: AXP reg 0xA4 = 0x00
+[11:04:17][I][rail_test:133]: I2C after isolation: RTC=ACK SHTC3=ACK ES8311=ACK ES7210=ACK
+[11:04:17][I][rail_test:136]: Isolation setup complete; ESPHome components may now initialize
+[11:04:17][C][component:164]: Setup esphome.coroutine took 214ms
+[11:04:17][I][speaker_media_player:098]: Set up speaker media player
+[11:04:17][C][wifi:649]: Starting
+[11:04:17][D][wifi:1334]: Starting scan
+[11:04:17][C][component:164]: Setup wifi took 53ms
+[11:04:17][W][component:290]: api set Warning flag: waiting for client connection
+[11:04:17][I][app:117]: setup() finished successfully!
+[11:04:17][W][component:290]: wifi set Warning flag: scanning for networks
+[11:04:17][I][app:151]: ESPHome version 2026.8.0 compiled on 2026-08-24 10:23:10 -0700
+[11:04:17][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[11:04:17][C][logger:223]: Logger:
+[11:04:17][C][logger:223]:   Max Level: DEBUG
+[11:04:17][C][logger:223]:   Initial Level: DEBUG
+[11:04:17][C][logger:230]:   Log Baud Rate: 115200
+[11:04:17][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[11:04:17][C][logger:239]:   Task Log Buffer Size: 768 bytes
+[11:04:17][C][i2c.idf:092]: I2C Bus:
+[11:04:17][C][i2c.idf:093]:   SDA Pin: GPIO47
+[11:04:17][C][i2c.idf:093]:   SCL Pin: GPIO48
+[11:04:17][C][i2c.idf:093]:   Frequency: 100000 Hz
+[11:04:17][C][i2c.idf:103]:   Recovery: bus successfully recovered
+[11:04:17][C][switch.gpio:088]: GPIO Switch 'Rail Test: Audio Amplifier'
+[11:04:17][C][switch.gpio:088]:   Restore Mode: always OFF
+[11:04:17][C][switch.gpio:131]:   Pin: GPIO7
+[11:04:17][C][template.sensor:017]: Template Sensor 'Rail Test: Microphone Bytes Received'
+[11:04:17][C][template.sensor:017]:   State Class: ''
+[11:04:17][C][template.sensor:017]:   Unit of Measurement: 'B'
+[11:04:17][C][template.sensor:017]:   Accuracy Decimals: 0
+[11:04:17][C][template.sensor:342]:   Update Interval: 2.0s
+[11:04:17][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: ES8311 ACK'
+[11:04:17][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: ES7210 ACK'
+[11:04:17][C][template.binary_sensor:016]: Template Binary Sensor 'Rail Test: Microphone Capturing'
+[11:04:17][C][psram:015]: PSRAM:
+[11:04:17][C][psram:018]:   Available: YES
+[11:04:17][C][psram:020]:   Size: 8192 KB
+[11:04:17][C][es8311:052]: ES8311 Audio Codec:
+[11:04:17][C][es8311:052]:   Use MCLK: YES
+[11:04:17][C][es8311:052]:   Use Microphone: NO
+[11:04:17][C][es8311:052]:   DAC Bits per Sample: 16
+[11:04:17][C][es8311:052]:   Sample Rate: 16000
+[11:04:17][C][es7210:027]: ES7210 audio ADC:
+[11:04:17][C][es7210:027]:   Bits Per Sample: 16
+[11:04:17][C][es7210:027]:   Sample Rate: 16000
+[11:04:17][C][i2s_audio.microphone:053]: Microphone:
+[11:04:17][C][i2s_audio.microphone:053]:   Pin: 18
+[11:04:17][C][i2s_audio.microphone:053]:   PDM: NO
+[11:04:17][C][i2s_audio.microphone:053]:   DC offset correction: NO
+[11:04:17][C][rtttl:078]: Rtttl:
+[11:04:17][C][rtttl:078]:   Gain: 0.600000
+[11:04:17][C][i2s_audio.speaker:043]: Speaker:
+[11:04:17][C][i2s_audio.speaker:043]:   Pin: 17
+[11:04:17][C][i2s_audio.speaker:043]:   Buffer duration: 500
+[11:04:17][C][i2s_audio.speaker:049]:   Timeout: 500 ms
+[11:04:17][C][i2s_audio.speaker.std:067]:   Communication format: std
+[11:04:17][C][i2s_audio.speaker.std:072]:   Slot bit width: 16
+[11:04:17][C][captive_portal:142]: Captive Portal:
+[11:04:17][C][wifi:1565]: WiFi:
+[11:04:17][C][wifi:1565]:   Local MAC: <mac-4>
+[11:04:17][C][wifi:1565]:   Connected: NO
+[11:04:17][C][web_server:424]: Web Server:
+[11:04:17][C][web_server:424]:   Address: <address-1>
+[11:04:17][C][esphome.ota:098]: Over-The-Air updates:
+[11:04:17][C][esphome.ota:098]:   Address: <address-2>
+[11:04:17][C][esphome.ota:098]:   Version: 2
+[11:04:17][C][safe_mode:058]: Safe Mode:
+[11:04:17][C][safe_mode:058]:   Successful after: 60s
+[11:04:17][C][safe_mode:058]:   Invoke after: 10 attempts
+[11:04:17][C][safe_mode:058]:   Duration: 300s
+[11:04:17][C][safe_mode:079]:   Bootloader rollback: support unknown
+[11:04:17][C][web_server.ota:256]: Web Server OTA
+[11:04:17][C][api:271]: Server:
+[11:04:17][C][api:271]:   Address: <address-3>
+[11:04:17][C][api:271]:   Listen backlog: 4
+[11:04:17][C][api:271]:   Max connections: 5
+[11:04:17][C][api:278]:   Noise encryption: YES
+[11:04:17][C][mdns:259]: mDNS:
+[11:04:17][C][mdns:259]:   Hostname: photopainter-audio-rail
+[11:04:20][D][wifi:1494]: Found networks:
+[11:04:20][I][wifi:1465]: - <wifi-ssid-1> (<mac-1>) ▂▄▆█ Ch:11 -44dB P:0
+[11:04:20][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch: 1 -58dB P:0
+[11:04:20][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch:11 -71dB P:0
+[11:04:20][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[11:04:20][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-1>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[11:04:22][I][wifi:1609]: Connected
+[11:04:22][D][wifi:1626]: Disabling AP
+[11:04:22][C][wifi:1268]:   IP Address: <ipv4-2>
+[11:04:22][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[11:04:22][C][wifi:1279]:   BSSID: <bssid-1>
+[11:04:22][C][wifi:1279]:   Hostname: 'photopainter-audio-rail'
+[11:04:22][C][wifi:1279]:   Signal strength: -45 dB ▂▄▆█
+[11:04:22][C][wifi:1279]:   Channel: 11
+[11:04:22][C][wifi:1279]:   Subnet: <ipv4-3>
+[11:04:22][C][wifi:1279]:   Gateway: <ipv4-4>
+[11:04:22][C][wifi:1279]:   DNS1: <ipv4-5>
+[11:04:22][C][wifi:1279]:   DNS2: <ipv4-1>
+[11:04:22][W][component:313]: wifi cleared Warning flag
+[11:05:04][D][rtttl:295]: Playing song railtest
+[11:05:04][D][i2s_audio.speaker:063]: Starting
+[11:05:04][D][ring_buffer:035][speaker_task]: Created ring buffer with size 16000
+[11:05:06][D][i2s_audio.speaker:088]: Stopped
+[11:05:06][D][rtttl:430]: Playback finished
+[11:05:17][I][safe_mode:154]: Boot seems successful; resetting boot loop counter
+[11:05:18][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed

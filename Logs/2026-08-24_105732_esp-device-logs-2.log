@@ -1,0 +1,30 @@
+[10:56:55][I][logger:122]: Log initialized
+[10:56:55][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[10:56:55][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[10:56:55][I][app:060]: Running through setup()
+[10:56:55][I][i2c.idf:205]: Performing bus recovery
+[10:56:55][I][rail_test:022]: === AUDIO TEST: ALDO3-only (bit 0x04; schematic Audio_VCC) ===
+[10:56:55][I][rail_test:023]: ESP reset reason=1, wakeup cause=0
+[10:56:58][I][rail_test:048]: --- AXP2101 before-write snapsho[I][wifi:1609]: Connected
+[10:56:58][D][wifi:1626]: Disabling AP
+[10:56:58][C][wifi:1268]:   IP Address: <ipv4-2>
+[10:56:58][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[10:56:58][C][wifi:1279]:   BSSID: <bssid-1>
+[10:56:58][C][wifi:1279]:   Hostname: 'photopainter-audio-rail'
+[10:56:58][C][wifi:1279]:   Signal strength: -43 dB ▂▄▆█
+[10:56:58][C][wifi:1279]:   Channel: 11
+[10:56:58][C][wifi:1279]:   Subnet: <ipv4-3>
+[10:56:58][C][wifi:1279]:   Gateway: <ipv4-4>
+[10:56:58][C][wifi:1279]:   DNS1: <ipv4-5>
+[10:56:58][C][wifi:1279]:   DNS2: <ipv4-1>
+[10:56:58][W][component:313]: wifi cleared Warning flag
+[10:57:12][D][rtttl:295]: Playing song railtest
+[10:57:12][D][i2s_audio.speaker:063]: Starting
+[10:57:12][D][ring_buffer:035][speaker_task]: Created ring buffer with size 16000
+[10:57:13][D][i2s_audio.speaker:088]: Stopped
+[10:57:13][D][rtttl:430]: Playback finished
+[10:57:18][D][rtttl:295]: Playing song railtest
+[10:57:18][D][i2s_audio.speaker:063]: Starting
+[10:57:18][D][ring_buffer:035][speaker_task]: Created ring buffer with size 16000
+[10:57:19][D][i2s_audio.speaker:088]: Stopped
+[10:57:19][D][rtttl:430]: Playback finished

@@ -1,0 +1,110 @@
+esphome:
+  on_boot:
+    # PMIC initialization runs at 790. Mount storage immediately afterward,
+    # once board power and the SPI bus are available.
+    - priority: 780.0
+      then:
+        - lambda: |-
+            sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+            host.slot = SPI3_HOST;
+
+            sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+            slot_config.gpio_cs = GPIO_NUM_38;
+            slot_config.host_id = SPI3_HOST;
+
+            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+                .format_if_mount_failed = false,
+                .max_files = 5,
+                .allocation_unit_size = 16 * 1024,
+            };
+
+            sdmmc_card_t *card = nullptr;
+            const esp_err_t result = esp_vfs_fat_sdspi_mount(
+                "/sdcard", &host, &slot_config, &mount_config, &card);
+            const bool old_mounted = id(photopainter_sd_mounted);
+            id(photopainter_sd_mounted) = result == ESP_OK;
+            ESP_LOGI("photopainter_storage",
+                     "event=mount old=%s new=%s result=%s path=/sdcard error=%s",
+                     old_mounted ? "mounted" : "unmounted",
+                     id(photopainter_sd_mounted) ? "mounted" : "unmounted",
+                     result == ESP_OK ? "ok" : "failed", esp_err_to_name(result));
+
+esp32:
+  framework:
+    advanced:
+      include_builtin_idf_components:
+        - fatfs
+        - sdmmc
+        - esp_driver_sdspi
+
+globals:
+  - id: photopainter_sd_mounted
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+spi:
+  # The mount code deliberately selects SPI3_HOST, so this host is explicit.
+  - id: photopainter_sd_spi
+    interface: spi3
+    clk_pin: GPIO39
+    mosi_pin: GPIO41
+    miso_pin: GPIO40
+
+sensor:
+  - platform: template
+    id: photopainter_sd_total_space
+    name: "PhotoPainter SD Card Total Space"
+    unit_of_measurement: "MB"
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=total path=/sdcard");
+        return {};
+      }
+      return total / (1024.0 * 1024.0);
+
+  - platform: template
+    id: photopainter_sd_free_space
+    name: "PhotoPainter SD Card Free Space"
+    unit_of_measurement: "MB"
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=free path=/sdcard");
+        return {};
+      }
+      return free / (1024.0 * 1024.0);
+
+  - platform: template
+    id: photopainter_sd_used_space
+    name: "PhotoPainter SD Card Used Space"
+    unit_of_measurement: "MB"
+    accuracy_decimals: 0
+    update_interval: 300s
+    lambda: |-
+      if (!id(photopainter_sd_mounted)) return {};
+      uint64_t total = 0;
+      uint64_t free = 0;
+      if (esp_vfs_fat_info("/sdcard", &total, &free) != ESP_OK) {
+        ESP_LOGW("photopainter_storage",
+                 "event=capacity result=failed metric=used path=/sdcard");
+        return {};
+      }
+      return (total - free) / (1024.0 * 1024.0);
+
+binary_sensor:
+  - platform: template
+    id: photopainter_sd_card_mounted
+    name: "PhotoPainter SD Card Mounted"
+    lambda: return id(photopainter_sd_mounted);

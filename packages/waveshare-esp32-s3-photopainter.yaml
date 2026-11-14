@@ -1,0 +1,33 @@
+# Primary reusable board package.
+#
+# This file is the stable public entry point. The relative includes are an
+# implementation detail and may be reorganized without changing the consumer
+# package URL.
+
+esphome:
+  # Public C++ dependency contract shared by every variant. Keep the complete
+  # reference-profile set here so consumer lambdas can use the same board APIs
+  # without importing a demo or relying on transitive component headers.
+  includes:
+    - "<esp_vfs_fat.h>"        # SD mounting and FAT capacity/file support
+    - "<sdmmc_cmd.h>"          # SD/MMC host and card definitions
+    - "<driver/i2c_master.h>"  # Shared-bus reset/recovery
+    - "<esp_flash.h>"          # Physical flash size
+    - "<esp_partition.h>"      # Flash partition enumeration
+    - "<esp_sleep.h>"          # ESP32-S3 wake-cause reporting in the optional demo
+    - "<driver/rtc_io.h>"      # RTC pull configuration for deep-sleep wake pins in the optional demo
+
+packages:
+  - !include waveshare-esp32-s3-photopainter/core/platform.yaml
+  - !include waveshare-esp32-s3-photopainter/core/buses.yaml
+  - !include waveshare-esp32-s3-photopainter/core/power.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/telemetry.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/storage.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/inputs.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/indicators.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/audio.yaml
+  - !include waveshare-esp32-s3-photopainter/controls/audio_power.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/display.yaml
+  - !include waveshare-esp32-s3-photopainter/controls/display_power.yaml
+  - !include waveshare-esp32-s3-photopainter/controls/system_power.yaml
+  - !include waveshare-esp32-s3-photopainter/hardware/status.yaml

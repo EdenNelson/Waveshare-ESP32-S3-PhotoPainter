@@ -1,0 +1,6 @@
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter-demo.yaml
+
+esphome:
+  name: photopainter-demo
+  friendly_name: PhotoPainter Demo

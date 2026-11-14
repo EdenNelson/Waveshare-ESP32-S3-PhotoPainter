@@ -1,0 +1,70 @@
+# Upstream source references
+
+The full Waveshare demonstration tree is useful when tracing why this board
+behaves as it does, but it is not vendored here. The links below are pinned to an
+exact commit so a claim in [`HARDWARE.md`](../HARDWARE.md) can be checked against
+the source it came from, whatever upstream does later.
+
+## Primary vendor source
+
+- Repository: <https://github.com/waveshareteam/ESP32-S3-PhotoPainter>
+- Pinned reference: [`a5e8f757ba0cafbb5586f07d3e83bda3184c0845`](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/tree/a5e8f757ba0cafbb5586f07d3e83bda3184c0845)
+- Upstream release noted at that commit: 1.5.0
+- Commit date: 2026-05-19 +08:00
+- Pin last checked against upstream: 2026-08-31. The pin is deliberate, not a
+  claim that it is upstream's newest commit; re-check before relying on it.
+
+Relevant immutable paths:
+
+- [PhotoPainter board pin definitions](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/main/boards/waveshare-s3-PhotoPainter/config.h)
+- [PhotoPainter board integration](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/main/boards/waveshare-s3-PhotoPainter/esp32-s3-PhotoPainter.cc)
+- [AXP2101 PMIC initialization](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/pmicpower/power_bsp.cpp)
+- [Display implementation and e-paper pins](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/port_bsp/display_bsp.cpp)
+- [SD card implementation](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/port_bsp/sdcard_bsp.cpp)
+- [Audio codec implementation](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/port_bsp/codec_bsp.cpp)
+- [Button implementation](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/port_bsp/button_bsp.c)
+- [LED implementation](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/01_Example/xiaozhi-esp32/components/port_bsp/led_bsp.c)
+- [Standalone Arduino PMIC/audio example](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/a5e8f757ba0cafbb5586f07d3e83bda3184c0845/05_ArduinoExample/01_Audio_Test/power_bsp.cpp)
+
+The vendor project contains an MIT-licensed Xiaozhi-based application plus
+components with their own licenses. Refer to the licenses in that repository;
+the GPL-3.0 license of this ESPHome research project does not replace them.
+
+## Secondary upstream
+
+The vendor application is derived from the Xiaozhi ESP32 project:
+
+- Repository: <https://github.com/78/xiaozhi-esp32>
+- Reference observed during this curation, as of 2026-08-31:
+  [`bb9122ab08c3083eeb4f67b3974b7afe771723b8`](https://github.com/78/xiaozhi-esp32/tree/bb9122ab08c3083eeb4f67b3974b7afe771723b8)
+
+Use the Waveshare repository for PhotoPainter-specific evidence; use Xiaozhi
+only to trace shared framework behavior or licensing.
+
+## Vendor downloads
+
+These archives are linked from the Waveshare product wiki and were cached locally
+during the research. They are not republished here.
+
+- [ESP32-S3-PhotoPainter-Demo.zip](https://files.waveshare.com/wiki/ESP32-S3-PhotoPainter/ESP32-S3-PhotoPainter-Demo.zip):
+  the vendor demo source, SD card assets, and the factory firmware image
+  (`ESP32-S3-PhotoPainter-factory.bin`).
+- [Pre-dithered sample `2.bmp`](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp)
+  at commit `7600e4c` (2025-11-17): 800 x 480, already reduced to the panel's six
+  colours. The demo's sample-image page downloads it at compile time from this
+  immutable commit (SHA-256
+  `447cfb524a99ba7be53b62cf6c29bf353a00734c4a09d3f9d8a48016d0c08e52`). Later
+  commits replaced these files with full-colour originals, which is why the pin
+  is older than the one above.
+- [PhotoPainter_B-BMP.zip](https://files.waveshare.com/wiki/PhotoPainter%20(B)/PhotoPainter_B-BMP.zip):
+  eight sample six-colour bitmaps at 800 x 480 and 480 x 800. The 480 x 480
+  dithering test image is a separate file in the vendor repository; see
+  [TESTING.md](../TESTING.md#native-image-dithering).
+
+## One caveat on early evidence
+
+Some early diagnostics were informed by an older vendor snapshot with different
+directory names and PMIC code (`components/axpPower/axp_prot.cpp`), whose exact
+upstream commit could not be established. Nothing stated in this repository rests
+on it alone — everything was rechecked against the pinned source above or against
+the physical board.

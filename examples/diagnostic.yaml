@@ -1,0 +1,6 @@
+packages:
+  photopainter: !include ../packages/waveshare-esp32-s3-photopainter-diagnostic.yaml
+
+esphome:
+  name: photopainter-diagnostic
+  friendly_name: PhotoPainter Diagnostic

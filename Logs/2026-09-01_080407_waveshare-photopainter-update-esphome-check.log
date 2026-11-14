@@ -1,0 +1,5 @@
+installed: 2026.8.2
+latest:    2026.8.2
+install:   homebrew (/opt/homebrew/bin/esphome -> /opt/homebrew/Cellar/esphome/2026.8.2/libexec/bin/esphome)
+
+already current; nothing to do

@@ -1,0 +1,5 @@
+# Optional web UI grouping for the board package. Include alongside the board
+# package when the device runs web_server; it sets web_server version 3.
+
+packages:
+  - !include waveshare-esp32-s3-photopainter/web_ui/core.yaml

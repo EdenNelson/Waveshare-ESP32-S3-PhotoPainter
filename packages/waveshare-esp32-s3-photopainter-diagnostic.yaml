@@ -1,0 +1,4 @@
+packages:
+  - !include waveshare-esp32-s3-photopainter.yaml
+  - !include waveshare-esp32-s3-photopainter/diagnostics/runtime.yaml
+  - !include waveshare-esp32-s3-photopainter/diagnostics/registers.yaml

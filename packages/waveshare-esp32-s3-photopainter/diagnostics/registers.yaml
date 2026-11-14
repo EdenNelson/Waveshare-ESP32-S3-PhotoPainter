@@ -1,0 +1,126 @@
+# Read-only snapshots of the registers that the shared hardware implementation
+# depends on. The lists intentionally avoid broad, undocumented sweeps: some
+# status/interrupt registers on embedded devices have read side effects.
+esphome:
+  on_boot:
+    - priority: -200.0
+      then:
+        - wait_until:
+            timeout: 10s
+            condition:
+              lambda: return id(photopainter_power_init_complete);
+        - script.execute: photopainter_diagnostic_register_snapshot
+
+script:
+  - id: photopainter_diagnostic_register_snapshot
+    mode: single
+    then:
+      - lambda: |-
+          const char *const TAG = "photopainter_registers";
+          struct RegisterRef {
+            uint8_t address;
+            uint8_t reg;
+            const char *device;
+            const char *name;
+          };
+
+          // These are the registers read, verified, or modified by the board
+          // package. Keeping the snapshot coupled to that set makes a log useful
+          // when a state transition or recovery attempt fails.
+          static const RegisterRef core_registers[] = {
+            {0x34, 0x00, "AXP2101", "status1"},
+            {0x34, 0x01, "AXP2101", "status2"},
+            {0x34, 0x03, "AXP2101", "chip_id"},
+            {0x34, 0x10, "AXP2101", "common_config"},
+            {0x34, 0x20, "AXP2101", "power_on_reason"},
+            {0x34, 0x21, "AXP2101", "power_off_reason"},
+            {0x34, 0x12, "AXP2101", "batfet_control"},
+            {0x34, 0x22, "AXP2101", "pwroff_enable"},
+            {0x34, 0x25, "AXP2101", "pwroff_sequence"},
+            {0x34, 0x27, "AXP2101", "pwrkey_levels"},
+            {0x34, 0x82, "AXP2101", "dcdc1_voltage"},
+            {0x34, 0x90, "AXP2101", "ldo_enable"},
+            {0x34, 0x94, "AXP2101", "aldo3_voltage"},
+            {0x34, 0x95, "AXP2101", "aldo4_voltage"},
+            {0x51, 0x00, "PCF85063", "control1"},
+            {0x51, 0x01, "PCF85063", "control2"},
+            {0x51, 0x04, "PCF85063", "seconds"},
+            {0x51, 0x05, "PCF85063", "minutes"},
+            {0x51, 0x06, "PCF85063", "hours"},
+            {0x51, 0x07, "PCF85063", "days"},
+            {0x51, 0x08, "PCF85063", "weekdays"},
+            {0x51, 0x09, "PCF85063", "months"},
+            {0x51, 0x0A, "PCF85063", "years"},
+          };
+          static const RegisterRef audio_registers[] = {
+            {0x18, 0x00, "ES8311", "reset"},
+            {0x18, 0x01, "ES8311", "clock_manager1"},
+            {0x18, 0x31, "ES8311", "dac_control"},
+            {0x18, 0xFC, "ES8311", "csm_state"},
+            {0x40, 0x00, "ES7210", "reset"},
+            {0x40, 0x01, "ES7210", "clock_off"},
+            {0x40, 0x06, "ES7210", "power_down"},
+            {0x40, 0x0B, "ES7210", "csm_state"},
+            {0x40, 0x40, "ES7210", "analog_system"},
+            {0x40, 0x4B, "ES7210", "mic12_power"},
+            {0x40, 0x4C, "ES7210", "mic34_power"},
+          };
+
+          auto read_one = [&](const RegisterRef &item) -> bool {
+            uint8_t value = 0;
+            const auto result = id(photopainter_i2c).write_readv(
+                item.address, &item.reg, 1, &value, 1);
+            if (result == esphome::i2c::ERROR_OK) {
+              ESP_LOGD(TAG,
+                       "event=register device=%s address=0x%02X reg=0x%02X "
+                       "name=%s result=ok value=0x%02X",
+                       item.device, item.address, item.reg, item.name, value);
+              return true;
+            }
+            ESP_LOGE(TAG,
+                     "event=register device=%s address=0x%02X reg=0x%02X "
+                     "name=%s result=failed error=%u",
+                     item.device, item.address, item.reg, item.name,
+                     static_cast<unsigned>(result));
+            return false;
+          };
+
+          const int sda = gpio_get_level(GPIO_NUM_47);
+          const int scl = gpio_get_level(GPIO_NUM_48);
+          ESP_LOGI(TAG,
+                   "event=snapshot phase=start bus=%s sda=%d scl=%d "
+                   "audio_active=%d",
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   sda, scl, id(photopainter_audio_active) ? 1 : 0);
+
+          uint16_t passed = 0;
+          uint16_t failed = 0;
+          for (const auto &item : core_registers) {
+            read_one(item) ? passed++ : failed++;
+          }
+          if (id(photopainter_audio_active)) {
+            for (const auto &item : audio_registers) {
+              read_one(item) ? passed++ : failed++;
+            }
+          } else {
+            ESP_LOGI(TAG,
+                     "event=device_snapshot device=audio_codecs result=skipped "
+                     "reason=logical_low_power");
+          }
+
+          ESP_LOGI(TAG,
+                   "event=snapshot phase=complete result=%s passed=%u failed=%u "
+                   "sda=%d scl=%d",
+                   failed == 0 ? "ok" : "degraded",
+                   static_cast<unsigned>(passed),
+                   static_cast<unsigned>(failed),
+                   gpio_get_level(GPIO_NUM_47), gpio_get_level(GPIO_NUM_48));
+
+button:
+  - platform: template
+    id: photopainter_diagnostic_snapshot_button
+    name: "PhotoPainter Diagnostic Register Snapshot"
+    icon: "mdi:chip"
+    entity_category: diagnostic
+    on_press:
+      - script.execute: photopainter_diagnostic_register_snapshot

@@ -1,0 +1,499 @@
+[21:26:04][I][logger:122]: Log initialized
+[21:26:04][C][safe_mode:201]: Unsuccessful boot attempts: 0
+[21:26:04][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[21:26:04][I][app:060]: Running through setup()
+[21:26:04][I][i2c.idf:205]: Performing bus recovery
+[21:26:04][I][axp_diag:044]: [+   0 ms] === Starting PMIC & Peripheral Init ===
+[21:26:04][I][axp_diag:088]: [+   1 ms] PMIC responsive on try 1! Chip ID: 0x4A
+[21:26:04][I][axp_diag:101]: [+   4 ms] Baseline State -> DC[I][es8311_diag:300]: Reg 0x02 (CLK_MGR   ): 0x08 
+[21:26:04]ESP-ROM:esp32s3-20210327
+[21:26:04]Build:Mar 27 2021
+[21:26:04]rst:0x15 (USB_UART_CHIP_RESET),boot:0xb (SPI_FAST_FLASH_BOOT)
+[21:26:04]Saved PC:0x40379b92
+[21:26:04]SPIWP:0xee
+[21:26:04]mode:DIO, clock div:1
+[21:26:04]load:0x3fce2820,len:0x1688
+[21:26:04]load:0x403c8700,len:0xe70
+[21:26:04]load:0x403cb700,len:0x31d0
+[21:26:04]entry 0x403c8944
+[21:26:04]I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[21:26:04]I (24) boot: Multicore bootloader
+[21:26:04]I (25) boot: chip revision: v0.2
+[21:26:04]I (25) boot: efuse block revision: v1.4
+[21:26:04]I (25) qio_mode: Enabling default flash chip QIO
+[21:26:04]I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[21:26:04]I (25) boot.esp32s3: SPI Mode       : QIO
+[21:26:04]I (26) boot.esp32s3: SPI Flash Size : 16MB
+[21:26:04]I (26) boot: Enabling RNG early entropy source...
+[21:26:04]I (26) boot: Partition Table:
+[21:26:04]I (26) boot: ## Label            Usage          Type ST Offset   Length
+[21:26:04]I (26) boot:  0 otadata          OTA data         01 00 00009000 00002000
+[21:26:04]I (27) boot:  1 phy_init         RF data          01 01 0000b000 00001000
+[21:26:04]I (27) boot:  2 app0             OTA app          00 10 00010000 007c0000
+[21:26:04]I (28) boot:  3 app1             OTA app          00 11 007d0000 007c0000
+[21:26:04]I (28) boot:  4 nvs              WiFi data        01 02 00f90000 00070000
+[21:26:04]I (28) boot: End of partition table
+[21:26:04]I (29) esp_image: segment 0: paddr=00010020 vaddr=3c0f0020 size=3e3cch (254924) map
+[21:26:04]I (69) esp_image: segment 1: paddr=0004e3f4 vaddr=3fc97600 size=01c24h (  7204) load
+[21:26:04]I (70) esp_image: segment 2: paddr=00050020 vaddr=42000020 size=ea5cch (959948) map
+[21:26:04]I (219) esp_image: segment 3: paddr=0013a5f4 vaddr=3fc99224 size=031e4h ( 12772) load
+[21:26:04]I (222) esp_image: segment 4: paddr=0013d7e0 vaddr=40374000 size=13520h ( 79136) load
+[21:26:04]I (238) esp_image: segment 5: paddr=00150d08 vaddr=50000000 size=00020h (    32) load
+[21:26:04]I (246) boot: Loaded app from partition at offset 0x10000
+[21:26:04]I (246) boot: Disabling RNG early entropy source...
+[21:26:05][I][logger:122]: Log initialized
+[21:26:05][C][safe_mode:201]: Unsuccessful boot attempts: 1
+[21:26:05][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed
+[21:26:05][I][app:060]: Running through setup()
+[21:26:05][I][i2c.idf:205]: Performing bus recovery
+[21:26:05][I][axp_diag:044]: [+   0 ms] === Starting PMIC & Peripheral Init ===
+[21:26:05][I][axp_diag:088]: [+   1 ms] PMIC responsive on try 1! Chip ID: 0x4A
+[21:26:05][I][axp_diag:101]: [+   4 ms] Baseline State -> DCDC1: 0x12, ALDO3: 0x1C, ALDO4: 0x1C, LDO_EN: 0xFF
+[21:26:05][I][axp_diag:118]: [+   6 ms] Power rails already active (Warm boot). Skipping power write.
+[21:26:05][I][axp_diag:159]: [+   7 ms] Probing target downstream I2C devices...
+[21:26:05][I][axp_diag:162]: [+   8 ms] RTC (0x51): PRESENT
+[21:26:05][I][axp_diag:175]: [+  10 ms] SHTC3 Sensor (0x70): PRESENT (Woken from Sleep)
+[21:26:05][I][axp_diag:179]: [+  11 ms] ES7210 Audio ADC (0x40): PRESENT
+[21:26:05][I][axp_diag:183]: [+  13 ms] ES8311 Audio Codec (0x18): PRESENT
+[21:26:05][I][axp_diag:190]: [+  14 ms] Initialization complete. Handing over to display component.
+[21:26:05][I][es8311_diag:200]: === ES8311 Post-Init Detailed Register Dump ===
+[21:26:05][I][es8311_diag:300]: Reg 0x00 (RESET/CTRL): 0x80 | CSM:ON, Mode:Slave, ResetsActive:0x00
+[21:26:05][I][es8311_diag:300]: Reg 0x01 (CLK_MGR   ): 0x3F | Src:MCLK, MCLK:ON, BCLK:ON, ADC_CLK:ON, DAC_CLK:ON
+[21:26:05][I][es8311_diag:300]: Reg 0x02 (CLK_MGR   ): 0x08 
+[21:26:05][I][es8311_diag:300]: Reg 0x03 (CLK_MGR   ): 0x10 
+[21:26:05][I][es8311_diag:300]: Reg 0x04 (CLK_MGR   ): 0x20 
+[21:26:05][I][es8311_diag:300]: Reg 0x05 (CLK_MGR   ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x06 (CLK_MGR   ): 0x03 
+[21:26:05][I][es8311_diag:300]: Reg 0x07 (CLK_MGR   ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x08 (CLK_MGR   ): 0xFF 
+[21:26:05][I][es8311_diag:300]: Reg 0x09 (SDP       ): 0x0C | DAC In Mute:NO, WL:16-bit, Format:I2S
+[21:26:05][I][es8311_diag:300]: Reg 0x0A (SDP       ): 0x0C | ADC Out Mute:NO, WL:16-bit, Format:I2S
+[21:26:05][I][es8311_diag:300]: Reg 0x0B (SYSTEM    ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x0C (SYSTEM    ): 0x20 
+[21:26:05][I][es8311_diag:300]: Reg 0x0D (SYSTEM    ): 0x02 | AnalogPwr:UP, VMID:2
+[21:26:05][I][es8311_diag:300]: Reg 0x0E (SYSTEM    ): 0x02 | PGA:UP, ADC_Modulator:UP
+[21:26:05][I][es8311_diag:300]: Reg 0x0F (SYSTEM    ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x10 (SYSTEM    ): 0x13 
+[21:26:05][I][es8311_diag:300]: Reg 0x11 (SYSTEM    ): 0x7C 
+[21:26:05][I][es8311_diag:300]: Reg 0x12 (SYSTEM    ): 0x00 | DAC:UP, RefBuf:OFF
+[21:26:05][I][es8311_diag:300]: Reg 0x13 (SYSTEM    ): 0x10 | Output Drive:Headphone Driver
+[21:26:05][I][es8311_diag:300]: Reg 0x14 (SYSTEM    ): 0x1A | DMIC:OFF, Input:MIC1P-MIC1N, PGA Gain:+30dB
+[21:26:05][I][es8311_diag:300]: Reg 0x15 (ADC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x16 (ADC       ): 0x07 | ADC Digital Scale Up:+42dB
+[21:26:05][I][es8311_diag:300]: Reg 0x17 (ADC       ): 0xC8 | ADC Digital Vol: 4.5dB
+[21:26:05][I][es8311_diag:300]: Reg 0x18 (ADC       ): 0x00 | ALC:Disabled, AutoMute:Disabled
+[21:26:05][I][es8311_diag:300]: Reg 0x19 (ADC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x1A (ADC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x1B (ADC       ): 0x0C 
+[21:26:05][I][es8311_diag:300]: Reg 0x1C (ADC       ): 0x6A 
+[21:26:05][I][es8311_diag:300]: Reg 0x1D (ADC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x1E (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x1F (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x20 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x21 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x22 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x23 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x24 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x25 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x26 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x27 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x28 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x29 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2A (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2B (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2C (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2D (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2E (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x2F (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x30 (ADCEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x31 (DAC       ): 0x00 | DSM Mute:unmuted, DEM Mute:unmuted, PhaseInvert:Normal
+[21:26:05][I][es8311_diag:300]: Reg 0x32 (DAC       ): 0x92 | DAC Vol: -22.5dB
+[21:26:05][I][es8311_diag:300]: Reg 0x33 (DAC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x34 (DAC       ): 0x00 | Dynamic Range Compression:Disabled
+[21:26:05][I][es8311_diag:300]: Reg 0x35 (DAC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x36 (DAC       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x37 (DAC       ): 0x08 
+[21:26:05][I][es8311_diag:300]: Reg 0x38 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x39 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3A (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3B (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3C (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3D (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3E (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x3F (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x40 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x41 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x42 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x43 (DACEQ     ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0x44 (GPIO      ): 0x00 | Direct Hardware Loopback (ADC->DAC):Disabled
+[21:26:05][I][es8311_diag:300]: Reg 0x45 (GP        ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0xFA (I2C       ): 0x00 
+[21:26:05][I][es8311_diag:300]: Reg 0xFC (FLAG      ): 0x70 
+[21:26:05][I][es8311_diag:300]: Reg 0xFD (CHIP_ID   ): 0x83 | Chip Hardware Identification Byte
+[21:26:05][I][es8311_diag:300]: Reg 0xFE (CHIP_ID   ): 0x11 | Chip Hardware Identification Byte
+[21:26:05][I][es8311_diag:300]: Reg 0xFF (CHIP_ID   ): 0x01 | Chip Hardware Identification Byte
+[21:26:05][I][es8311_diag:332]: === End ES8311 Register Dump ===
+[21:26:05][I][es7210_diag:337]: === ES7210 Post-Init Detailed Register Dump ===
+[21:26:05][I][es7210_diag:455]: Reg 0x00 (RESET     ): 0x41 | CSM:ON, AutoSeq:Enabled, ResetsActive:0x40
+[21:26:05][I][es7210_diag:455]: Reg 0x01 (CLK_MGR   ): 0x34 | MCLK:ON, MasterCLK:OFF, ADC12_CLK:ON, ADC34_CLK:OFF
+[21:26:05][I][es7210_diag:455]: Reg 0x02 (CLK_MGR   ): 0xC1 | Mult:x2, Div:1
+[21:26:05][I][es7210_diag:455]: Reg 0x03 (CLK_MGR   ): 0x04 | MCLK Src:Pad, SCLK Div:4
+[21:26:05][I][es7210_diag:455]: Reg 0x04 (CLK_MGR   ): 0x01 
+[21:26:05][I][es7210_diag:455]: Reg 0x05 (CLK_MGR   ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x06 (SYS_TIME  ): 0x04 | DLL Pwr:DOWN, TDMIN PullDown:ON, PullUps:ON
+[21:26:05][I][es7210_diag:455]: Reg 0x07 (SYS_TIME  ): 0x20 
+[21:26:05][I][es7210_diag:455]: Reg 0x08 (SYS_TIME  ): 0x10 | ClockMode:Slave, Speed:Single, EQ:ON, SCLK Invert:NO
+[21:26:05][I][es7210_diag:455]: Reg 0x09 (SYS_TIME  ): 0x30 
+[21:26:05][I][es7210_diag:455]: Reg 0x0A (SYS_TIME  ): 0x30 
+[21:26:05][I][es7210_diag:455]: Reg 0x0B (STATUS/INT): 0x02 | CSM State:Normal
+[21:26:05][I][es7210_diag:455]: Reg 0x0C (STATUS/INT): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x0D (STATUS/INT): 0x09 
+[21:26:05][I][es7210_diag:455]: Reg 0x10 (SDP/DMIC  ): 0x00 | DMIC12:OFF, DMIC34:OFF, Gain12:+0dB, Gain34:+0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x11 (SDP/DMIC  ): 0x60 | WL:16-bit, Format:I2S, LRP:Normal
+[21:26:05][I][es7210_diag:455]: Reg 0x12 (SDP/DMIC  ): 0x00 | Mode:ADC12->SDOUT1/ADC34->SDOUT2, SDOUT1 Tri:NO, SDOUT2 Tri:NO
+[21:26:05][I][es7210_diag:455]: Reg 0x13 (ADC_CTRL  ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x14 (ADC_CTRL  ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x15 (ADC_CTRL  ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x16 (ALC/GAIN  ): 0x00 | ALC12 Mode:0x0, ALC34 Mode:0x0
+[21:26:05][I][es7210_diag:455]: Reg 0x17 (ALC/GAIN  ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x18 (ALC/GAIN  ): 0xF7 
+[21:26:05][I][es7210_diag:455]: Reg 0x19 (ALC/GAIN  ): 0xF7 
+[21:26:05][I][es7210_diag:455]: Reg 0x1A (ALC/GAIN  ): 0x00 
+[21:26:05][I][es7210_diag:455]: Reg 0x1B (ALC/GAIN  ): 0xBF | Vol/Max Gain: 0.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x1C (ALC/GAIN  ): 0xBF | Vol/Max Gain: 0.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x1D (ALC/GAIN  ): 0xBF | Vol/Max Gain: 0.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x1E (ALC/GAIN  ): 0xBF | Vol/Max Gain: 0.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x20 (HPF       ): 0x0A 
+[21:26:05][I][es7210_diag:455]: Reg 0x21 (HPF       ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x22 (HPF       ): 0x0A 
+[21:26:05][I][es7210_diag:455]: Reg 0x23 (HPF       ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x24 (EQ        ): 0x11 
+[21:26:05][I][es7210_diag:455]: Reg 0x25 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x26 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x27 (EQ        ): 0x0A 
+[21:26:05][I][es7210_diag:455]: Reg 0x28 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x29 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x2A (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x2B (EQ        ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x2C (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x2D (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x2E (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x2F (EQ        ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x30 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x31 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x32 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x33 (EQ        ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x34 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x35 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x36 (EQ        ): 0xFF 
+[21:26:05][I][es7210_diag:455]: Reg 0x37 (EQ        ): 0x2A 
+[21:26:05][I][es7210_diag:455]: Reg 0x3D (CHIP_ID   ): 0x72 | Chip Hardware Identification Byte
+[21:26:05][I][es7210_diag:455]: Reg 0x3E (CHIP_ID   ): 0x10 | Chip Hardware Identification Byte
+[21:26:05][I][es7210_diag:455]: Reg 0x3F (CHIP_ID   ): 0x04 | Chip Hardware Identification Byte
+[21:26:05][I][es7210_diag:455]: Reg 0x40 (ANALOG    ): 0x42 | Analog Pwr:UP, VX2OFF:OFF (3.3V)
+[21:26:05][I][es7210_diag:455]: Reg 0x41 (ANALOG    ): 0x70 | Bias Voltage Level: 2.87V
+[21:26:05][I][es7210_diag:455]: Reg 0x42 (ANALOG    ): 0x70 | Bias Voltage Level: 2.87V
+[21:26:05][I][es7210_diag:455]: Reg 0x43 (MIC_GAIN  ): 0x1A | Input Select:SELECTED, PGA Gain: +30.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x44 (MIC_GAIN  ): 0x1A | Input Select:SELECTED, PGA Gain: +30.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x45 (MIC_GAIN  ): 0x1A | Input Select:SELECTED, PGA Gain: +30.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x46 (MIC_GAIN  ): 0x1A | Input Select:SELECTED, PGA Gain: +30.0dB
+[21:26:05][I][es7210_diag:455]: Reg 0x47 (MIC_GAIN  ): 0x08 
+[21:26:05][I][es7210_diag:455]: Reg 0x48 (MIC_GAIN  ): 0x08 
+[21:26:05][I][es7210_diag:455]: Reg 0x49 (MIC_GAIN  ): 0x08 
+[21:26:05][I][es7210_diag:455]: Reg 0x4A (MIC_GAIN  ): 0x08 
+[21:26:05][I][es7210_diag:455]: Reg 0x4B (PWR_DOWN  ): 0x00 | VREF_PDN:0, MICBIAS_PDN:0, PGA_PDN:0x0, MOD_PDN:0x0
+[21:26:05][I][es7210_diag:455]: Reg 0x4C (PWR_DOWN  ): 0x00 | VREF_PDN:0, MICBIAS_PDN:0, PGA_PDN:0x0, MOD_PDN:0x0
+[21:26:05][I][es7210_diag:487]: === End ES7210 Register Dump ===
+[21:26:05][I][rtc_diag:492]: === PCF85063ATL Register Dump ===
+[21:26:05][I][rtc_diag:577]: Reg 0x00 (Control_1    ): 0x00 | STOP:RUNNING, 12/24h:24-hour, CapSel:7pF
+[21:26:05][I][rtc_diag:577]: Reg 0x01 (Control_2    ): 0x00 | AIE:OFF, AF:CLEAR, TF:CLEAR, CLKOUT:32.768kHz
+[21:26:05][I][rtc_diag:577]: Reg 0x02 (Offset       ): 0x00 | Mode:Normal (2h), OffsetVal:0 LSBs
+[21:26:05][I][rtc_diag:577]: Reg 0x03 (RAM_byte     ): 0x00 
+[21:26:05][I][rtc_diag:577]: Reg 0x04 (Seconds      ): 0x05 | OS Flag:OK, Sec:05
+[21:26:05][I][rtc_diag:577]: Reg 0x05 (Minutes      ): 0x26 | Raw BCD: 0x26
+[21:26:05][I][rtc_diag:577]: Reg 0x06 (Hours        ): 0x04 | Raw BCD: 0x04
+[21:26:05][I][rtc_diag:577]: Reg 0x07 (Days         ): 0x01 | Raw BCD: 0x01
+[21:26:05][I][rtc_diag:577]: Reg 0x08 (Weekdays     ): 0x03 
+[21:26:05][I][rtc_diag:577]: Reg 0x09 (Months       ): 0x09 | Raw BCD: 0x09
+[21:26:05][I][rtc_diag:577]: Reg 0x0A (Years        ): 0x26 | Raw BCD: 0x26
+[21:26:05][I][rtc_diag:577]: Reg 0x0B (Second_alarm ): 0x80 
+[21:26:05][I][rtc_diag:577]: Reg 0x0C (Minute_alarm ): 0x80 
+[21:26:05][I][rtc_diag:577]: Reg 0x0D (Hour_alarm   ): 0x80 
+[21:26:05][I][rtc_diag:577]: Reg 0x0E (Day_alarm    ): 0x80 
+[21:26:05][I][rtc_diag:577]: Reg 0x0F (Weekday_alarm): 0x80 
+[21:26:05][I][rtc_diag:577]: Reg 0x10 (Timer_value  ): 0x00 
+[21:26:05][I][rtc_diag:577]: Reg 0x11 (Timer_mode   ): 0x18 | TE:Disabled, TIE:Disabled, Mode:Level, ClockSrc:1/60Hz
+[21:26:05][I][rtc_diag:580]: === End PCF85063ATL Register Dump ===
+[21:26:06][I][sd_card:604]: SD Card mounted successfully at /sdcard
+[21:26:06][D][pcf85063:082]: Read  04:26:05 2026-09-01  OSC:ON CLKOUT:0
+[21:26:06][D][time:104]: Synchronized time: 2026-08-31 21:26:05
+[21:26:06][C][component:164]: Setup esphome.coroutine took 956ms
+[21:26:06][D][pcf85063:082]: Read  04:26:05 2026-09-01  OSC:ON CLKOUT:0
+[21:26:06][I][speaker_media_player:098]: Set up speaker media player
+[21:26:06][D][split_buffer:066]: Allocated 1 * 192000 bytes - 192000 bytes
+[21:26:06][D][spi_device:395]: mode 0, data_rate 20000kHz
+[21:26:06][C][wifi:649]: Starting
+[21:26:06][D][wifi:1334]: Starting scan
+[21:26:06][C][component:164]: Setup wifi took 50ms
+[21:26:06][I][app:117]: setup() finished successfully!
+[21:26:06][I][power_control:635]: Restored startup preferences: audio=ON display=ON.
+[21:26:06][W][component:290]: wifi set Warning flag: scanning for networks
+[21:26:06][D][sntp:099]: Synchronized time: 2026-08-31 21:26:05
+[21:26:06][D][pcf85063:095]: Write 04:26:05 2026-09-01  OSC:ON CLKOUT:0
+[21:26:06][I][app:151]: ESPHome version 2026.8.2 compiled on 2026-08-31 21:16:49 -0700
+[21:26:06][I][app:158]: ESP32 Chip: ESP32-S3 rev0.2, 2 core(s)
+[21:26:06][C][logger:223]: Logger:
+[21:26:06][C][logger:223]:   Max Level: DEBUG
+[21:26:06][C][logger:223]:   Initial Level: DEBUG
+[21:26:06][C][logger:230]:   Log Baud Rate: 115200
+[21:26:06][C][logger:230]:   Hardware UART: USB_SERIAL_JTAG
+[21:26:06][C][logger:239]:   Task Log Buffer Size: 4096 bytes
+[21:26:06][C][i2c.idf:092]: I2C Bus:
+[21:26:06][C][i2c.idf:093]:   SDA Pin: GPIO47
+[21:26:06][C][i2c.idf:093]:   SCL Pin: GPIO48
+[21:26:06][C][i2c.idf:093]:   Frequency: 100000 Hz
+[21:26:06][C][i2c.idf:103]:   Recovery: bus successfully recovered
+[21:26:06][C][spi:066]: SPI bus:
+[21:26:06][C][spi:131]:   CLK Pin: GPIO10
+[21:26:06][C][spi:131]:   SDI Pin: 
+[21:26:06][C][spi:131]:   SDO Pin: GPIO11
+[21:26:06][C][spi:074]:   Using HW SPI: SPI2_HOST
+[21:26:06][C][spi:066]: SPI bus:
+[21:26:06][C][spi:131]:   CLK Pin: GPIO39
+[21:26:06][C][spi:131]:   SDI Pin: GPIO40
+[21:26:06][C][spi:131]:   SDO Pin: GPIO41
+[21:26:06][C][spi:074]:   Using HW SPI: SPI3_HOST
+[21:26:06][C][switch.gpio:088]: GPIO Switch 'Audio: Amplifier Power'
+[21:26:06][C][switch.gpio:088]:   Restore Mode: always ON
+[21:26:06][C][switch.gpio:131]:   Pin: GPIO7
+[21:26:06][C][template.number:016]: Template Number 'Audio: Volume'
+[21:26:06][C][template.number:187]:   Icon: 'mdi:volume-high'
+[21:26:06][C][template.number:202]:   Unit of Measurement: '%'
+[21:26:06][C][template.number:049]:   Optimistic: YES
+[21:26:06][C][template.number:342]:   Update Interval: 60.0s
+[21:26:06][C][template.number:016]: Template Number 'Audio: Mic Gain'
+[21:26:06][C][template.number:187]:   Icon: 'mdi:microphone-plus'
+[21:26:06][C][template.number:049]:   Optimistic: YES
+[21:26:06][C][template.number:342]:   Update Interval: 60.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'Power USB-C: Voltage'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: 'V'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 2
+[21:26:06][C][template.sensor:196]:   Device Class: 'voltage'
+[21:26:06][C][template.sensor:342]:   Update Interval: 60.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Voltage'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: 'V'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 2
+[21:26:06][C][template.sensor:196]:   Device Class: 'voltage'
+[21:26:06][C][template.sensor:342]:   Update Interval: 60.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'Power Li-ion Battery: Level'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: '%'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 0
+[21:26:06][C][template.sensor:196]:   Device Class: 'battery'
+[21:26:06][C][template.sensor:342]:   Update Interval: 180.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'SD Card: Total Space'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: 'MB'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 0
+[21:26:06][C][template.sensor:342]:   Update Interval: 300.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'SD Card: Free Space'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: 'MB'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 0
+[21:26:06][C][template.sensor:342]:   Update Interval: 300.0s
+[21:26:06][C][template.sensor:017]: Template Sensor 'SD Card: Used Space'
+[21:26:06][C][template.sensor:017]:   State Class: ''
+[21:26:06][C][template.sensor:017]:   Unit of Measurement: 'MB'
+[21:26:06][C][template.sensor:017]:   Accuracy Decimals: 0
+[21:26:06][C][template.sensor:342]:   Update Interval: 300.0s
+[21:26:06][C][uptime.sensor:017]: Uptime Sensor 'Status: Uptime'
+[21:26:06][C][uptime.sensor:017]:   State Class: 'total_increasing'
+[21:26:06][C][uptime.sensor:017]:   Unit of Measurement: 's'
+[21:26:06][C][uptime.sensor:017]:   Accuracy Decimals: 0
+[21:26:06][C][uptime.sensor:196]:   Device Class: 'duration'
+[21:26:06][C][uptime.sensor:187]:   Icon: 'mdi:timer-outline'
+[21:26:06][C][uptime.sensor:019]:   Type: Seconds
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Power Li-ion Battery: Charging'
+[21:26:06][C][template.binary_sensor:196]:   Device Class: 'battery_charging'
+[21:26:06][C][gpio.binary_sensor:016]: GPIO Binary Sensor 'Button: KEY'
+[21:26:06][C][gpio.binary_sensor:131]:   Pin: GPIO4
+[21:26:06][C][gpio.binary_sensor:061]:   Mode: interrupt
+[21:26:06][C][gpio.binary_sensor:063]:   Interrupt Type: ANY_EDGE
+[21:26:06][C][gpio.binary_sensor:016]: GPIO Binary Sensor 'Button: BOOT'
+[21:26:06][C][gpio.binary_sensor:131]:   Pin: GPIO0
+[21:26:06][C][gpio.binary_sensor:061]:   Mode: interrupt
+[21:26:06][C][gpio.binary_sensor:063]:   Interrupt Type: ANY_EDGE
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: USB-C'
+[21:26:06][C][template.binary_sensor:196]:   Device Class: 'plug'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Power Connected: Li-ion Battery'
+[21:26:06][C][template.binary_sensor:196]:   Device Class: 'power'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: TF Connector (TFX-18-001P) Mounted'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: RTC (PCF85063ATL)'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Display (7.3in Spectra E6)'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Display Power Rail (ALDO4)'
+[21:26:06][C][template.binary_sensor:196]:   Device Class: 'power'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Audio Amp (NS4150B)'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Audio DAC (ES8311)'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Audio ADC (ES7210)'
+[21:26:06][C][template.binary_sensor:016]: Template Binary Sensor 'Status: Audio New Voice Note'
+[21:26:06][C][gpio.output:009]: Binary Output:
+[21:26:06][C][gpio.output:131]:   Pin: GPIO42
+[21:26:06][C][gpio.output:011]:   Inverted: YES
+[21:26:06][C][gpio.output:009]: Binary Output:
+[21:26:06][C][gpio.output:131]:   Pin: GPIO45
+[21:26:06][C][gpio.output:011]:   Inverted: YES
+[21:26:06][C][light:101]: Light 'LED: ACT'
+[21:26:06][C][light:101]: Light 'LED: PWR'
+[21:26:06][C][template.switch:088]: Template Switch 'Audio: Codecs Enabled'
+[21:26:06][C][template.switch:088]:   Restore Mode: disabled 
+[21:26:06][C][template.switch:187]:   Icon: 'mdi:audio-input-stereo-minijack'
+[21:26:06][C][template.switch:055]:   Optimistic: NO
+[21:26:06][C][template.switch:088]: Template Switch 'Display: Enabled'
+[21:26:06][C][template.switch:088]:   Restore Mode: disabled 
+[21:26:06][C][template.switch:187]:   Icon: 'mdi:monitor'
+[21:26:06][C][template.switch:055]:   Optimistic: NO
+[21:26:06][C][psram:015]: PSRAM:
+[21:26:06][C][psram:018]:   Available: YES
+[21:26:06][C][psram:020]:   Size: 8192 KB
+[21:26:06][C][pcf85063:020]: PCF85063:
+[21:26:06][C][pcf85063:021]:   Address: 0x51
+[21:26:06][C][time:049]: Timezone: UTC-8:00 (DST UTC-7:00)
+[21:26:06][C][time:055]: Current time: 2026-08-31 21:26:05
+[21:26:06][C][es8311:052]: ES8311 Audio Codec:
+[21:26:06][C][es8311:052]:   Use MCLK: YES
+[21:26:06][C][es8311:052]:   Use Microphone: NO
+[21:26:06][C][es8311:052]:   DAC Bits per Sample: 16
+[21:26:06][C][es8311:052]:   Sample Rate: 16000
+[21:26:06][C][es7210:027]: ES7210 audio ADC:
+[21:26:06][C][es7210:027]:   Bits Per Sample: 16
+[21:26:06][C][es7210:027]:   Sample Rate: 16000
+[21:26:06][C][i2s_audio.microphone:053]: Microphone:
+[21:26:06][C][i2s_audio.microphone:053]:   Pin: 18
+[21:26:06][C][i2s_audio.microphone:053]:   PDM: NO
+[21:26:06][C][i2s_audio.microphone:053]:   DC offset correction: NO
+[21:26:06][C][rtttl:078]: Rtttl:
+[21:26:06][C][rtttl:078]:   Gain: 0.600000
+[21:26:06][C][shtcx:051]: SHTCx:
+[21:26:06][C][shtcx:051]:   Model: SHTC3 (0887)
+[21:26:06][C][shtcx:055]:   Address: 0x70
+[21:26:06][C][shtcx:342]:   Update Interval: 60.0s
+[21:26:06][C][shtcx:017]:   Temperature 'Environment: Temperature'
+[21:26:06][C][shtcx:017]:     State Class: 'measurement'
+[21:26:06][C][shtcx:017]:     Unit of Measurement: '°C'
+[21:26:06][C][shtcx:017]:     Accuracy Decimals: 1
+[21:26:06][C][shtcx:196]:     Device Class: 'temperature'
+[21:26:06][C][shtcx:017]:   Humidity 'Environment: Humidity'
+[21:26:06][C][shtcx:017]:     State Class: 'measurement'
+[21:26:06][C][shtcx:017]:     Unit of Measurement: '%'
+[21:26:06][C][shtcx:017]:     Accuracy Decimals: 1
+[21:26:06][C][shtcx:196]:     Device Class: 'humidity'
+[21:26:07][C][i2s_audio.speaker:043]: Speaker:
+[21:26:07][C][i2s_audio.speaker:043]:   Pin: 17
+[21:26:07][C][i2s_audio.speaker:043]:   Buffer duration: 500
+[21:26:07][C][i2s_audio.speaker:049]:   Timeout: 500 ms
+[21:26:07][C][i2s_audio.speaker.std:067]:   Communication format: std
+[21:26:07][C][i2s_audio.speaker.std:072]:   Slot bit width: 16
+[21:26:07][C][epaper_spi:340]: E-Paper SPI
+[21:26:07][C][epaper_spi:340]:   Rotations: 180 °
+[21:26:07][C][epaper_spi:340]:   Dimensions: 800px x 480px
+[21:26:07][C][epaper_spi:341]:   Model: 7.3IN-SPECTRA-E6
+[21:26:07][C][epaper_spi:341]:   SPI Data Rate: 20MHz
+[21:26:07][C][epaper_spi:341]:   Full update every: 1
+[21:26:07][C][epaper_spi:341]:   Swap X/Y: NO
+[21:26:07][C][epaper_spi:341]:   Mirror X: NO
+[21:26:07][C][epaper_spi:341]:   Mirror Y: NO
+[21:26:07][C][epaper_spi:131]:   Reset Pin: GPIO12
+[21:26:07][C][epaper_spi:131]:   DC Pin: GPIO8
+[21:26:07][C][epaper_spi:131]:   Busy Pin: GPIO13
+[21:26:07][C][epaper_spi:131]:   CS Pin: GPIO9
+[21:26:07][C][epaper_spi:338]:   Update Interval: never
+[21:26:07][C][captive_portal:142]: Captive Portal:
+[21:26:07][C][wifi:1565]: WiFi:
+[21:26:07][C][wifi:1565]:   Local MAC: <mac-1>
+[21:26:07][C][wifi:1565]:   Connected: NO
+[21:26:07][C][web_server:418]: Web Server:
+[21:26:07][C][web_server:418]:   Address: <address-1>
+[21:26:07][C][sntp:058]: SNTP Time:
+[21:26:07][C][sntp:061]:   Server 0: '0.pool.ntp.org'
+[21:26:07][C][sntp:061]:   Server 1: '1.pool.ntp.org'
+[21:26:07][C][sntp:061]:   Server 2: '2.pool.ntp.org'
+[21:26:07][C][time:049]: Timezone: UTC-8:00 (DST UTC-7:00)
+[21:26:07][C][time:055]: Current time: 2026-08-31 21:26:06
+[21:26:07][C][esphome.ota:098]: Over-The-Air updates:
+[21:26:07][C][esphome.ota:098]:   Address: <address-2>
+[21:26:07][C][esphome.ota:098]:   Version: 2
+[21:26:07][C][safe_mode:058]: Safe Mode:
+[21:26:07][C][safe_mode:058]:   Successful after: 60s
+[21:26:07][C][safe_mode:058]:   Invoke after: 10 attempts
+[21:26:07][C][safe_mode:058]:   Duration: 300s
+[21:26:07][C][safe_mode:079]:   Bootloader rollback: support unknown
+[21:26:07][C][web_server.ota:256]: Web Server OTA
+[21:26:07][C][api:271]: Server:
+[21:26:07][C][api:271]:   Address: <address-3>
+[21:26:07][C][api:271]:   Listen backlog: 4
+[21:26:07][C][api:271]:   Max connections: 5
+[21:26:07][C][api:278]:   Noise encryption: YES
+[21:26:07][C][wifi_signal.sensor:017]: WiFi Signal 'Status: WiFi Signal'
+[21:26:07][C][wifi_signal.sensor:017]:   State Class: 'measurement'
+[21:26:07][C][wifi_signal.sensor:017]:   Unit of Measurement: 'dBm'
+[21:26:07][C][wifi_signal.sensor:017]:   Accuracy Decimals: 0
+[21:26:07][C][wifi_signal.sensor:196]:   Device Class: 'signal_strength'
+[21:26:07][C][mdns:259]: mDNS:
+[21:26:07][C][mdns:259]:   Hostname: waveshare-photopainter
+[21:26:07][C][debug:017]: Debug component:
+[21:26:07][C][debug:017]:   Free space on heap 'Status: Free Heap'
+[21:26:07][C][debug:017]:     State Class: 'measurement'
+[21:26:07][C][debug:017]:     Unit of Measurement: 'B'
+[21:26:07][C][debug:017]:     Accuracy Decimals: 0
+[21:26:07][C][debug:187]:     Icon: 'mdi:counter'
+[21:26:07][D][debug:031]: ESPHome version 2026.8.2
+[21:26:07][D][debug:035]: Free Heap Size: 233356 bytes
+[21:26:07][D][debug:256]: ESP32 debug info:
+[21:26:07][D][debug:256]:   Chip: ESP32-S3
+[21:26:07][D][debug:256]:   Cores: 2
+[21:26:07][D][debug:256]:   Revision: 2
+[21:26:07][D][debug:256]:   CPU Frequency: 240 MHz
+[21:26:07][D][debug:256]:   ESP-IDF Version: v5.5.5
+[21:26:07][D][debug:256]:   EFuse MAC: <mac-1>
+[21:26:07][D][debug:256]:   Reset Reason: USB peripheral
+[21:26:07][D][debug:256]:   Wakeup Cause: undefined
+[21:26:07][D][debug:276]:   Framework: ESP-IDF
+[21:26:07][C][debug:159]: Partition table:
+[21:26:07][C][debug:159]:   Name         Type Subtype  Address    Size      
+[21:26:07][C][debug:166]:   otadata      1    0        0x00009000 0x00002000
+[21:26:07][C][debug:166]:   phy_init     1    1        0x0000B000 0x00001000
+[21:26:07][C][debug:166]:   app0         0    16       0x00010000 0x007C0000
+[21:26:07][C][debug:166]:   app1         0    17       0x007D0000 0x007C0000
+[21:26:07][C][debug:166]:   nvs          1    2        0x00F90000 0x00070000
+[21:26:08][D][wifi:1494]: Found networks:
+[21:26:08][I][wifi:1465]: - <wifi-ssid-1> (<mac-2>) ▂▄▆█ Ch:11 -46dB P:0
+[21:26:08][I][wifi:1465]: - <wifi-ssid-1> (<mac-3>) ▂▄▆█ Ch: 1 -66dB P:0
+[21:26:08][I][wifi:1465]: - <wifi-ssid-1> (<mac-4>) ▂▄▆█ Ch:11 -70dB P:0
+[21:26:08][D][wifi:1891]: Retry phase: INITIAL_CONNECT → SCAN_CONNECTING
+[21:26:08][I][wifi:1128]: Connecting to <wifi-ssid-1> (<mac-2>) (priority 0, attempt 1/2 in phase SCAN_CONNECTING)...
+[21:26:11][I][power_control:1374]: === Reconciling restored startup power state ===
+[21:26:11][I][audio_power:1241]: Re-running the ESPHome ES8311 and ES7210 setup routines.
+[21:26:11][I][audio_power:1257]: Logical audio restart: ES8311=OK (ID 0x83), ES7210=OK (ID 0x72).
+[21:26:11][I][display_power:1403]: Saved display state is ON; requesting the delayed first boot refresh.
+[21:26:11][W][component:421]: a scheduled task took a long time for an operation (143 ms), max is 50 ms
+[21:26:11][I][wifi:1609]: Connected
+[21:26:11][D][wifi:1626]: Disabling AP
+[21:26:11][C][wifi:1268]:   IP Address: <ipv4-1>
+[21:26:11][C][wifi:1279]:   SSID: <wifi-ssid-1>
+[21:26:11][C][wifi:1279]:   BSSID: <bssid-1>
+[21:26:11][C][wifi:1279]:   Hostname: 'waveshare-photopainter'
+[21:26:11][C][wifi:1279]:   Signal strength: -45 dB ▂▄▆█
+[21:26:11][C][wifi:1279]:   Channel: 11
+[21:26:11][C][wifi:1279]:   Subnet: <ipv4-2>
+[21:26:11][C][wifi:1279]:   Gateway: <ipv4-3>
+[21:26:11][C][wifi:1279]:   DNS1: <ipv4-4>
+[21:26:11][C][wifi:1279]:   DNS2: <ipv4-5>
+[21:26:11][W][component:313]: wifi cleared Warning flag
+[21:26:14][W][component:421]: display took a long time for an operation (104 ms), max is 50 ms
+[21:26:37][D][sntp:099]: Synchronized time: 2026-08-31 21:26:37
+[21:26:37][D][pcf85063:095]: Write 04:26:37 2026-09-01  OSC:ON CLKOUT:0
+[21:26:43][D][epaper_spi:237]: Display update took 29079 ms
+[21:27:05][I][safe_mode:154]: Boot seems successful; resetting boot loop counter
+[21:27:07][D][preferences:254]: Writing 1 items: 0 cached, 1 written, 0 failed

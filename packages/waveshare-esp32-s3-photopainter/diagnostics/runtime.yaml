@@ -1,0 +1,132 @@
+esphome:
+  on_boot:
+    # Run after component setup so the first snapshot states which readings have
+    # arrived and which have not, rather than reporting setup-time placeholders.
+    - priority: -100.0
+      then:
+        - script.execute: photopainter_diagnostic_snapshot
+
+logger:
+  level: DEBUG
+  # ESPHome's security guide warns Wi-Fi credentials can appear at DEBUG; the
+  # diagnostic layer keeps the wifi tag at INFO while everything else is DEBUG.
+  logs:
+    wifi: INFO
+  task_log_buffer_size: 4096
+  # The full snapshot line plus a worst-case nostate= list exceeds the default
+  # 512-byte line buffer; a truncated snapshot would silently drop fields.
+  tx_buffer_size: 1024
+
+debug:
+  update_interval: 30s
+
+sensor:
+  # Same allocator calls as ESPHome's debug sensors, as top-level entities with
+  # their own IDs so consumers (and the optional web UI grouping) can !extend them.
+  - platform: template
+    id: photopainter_free_heap
+    name: "PhotoPainter Free Heap"
+    icon: "mdi:counter"
+    unit_of_measurement: "B"
+    accuracy_decimals: 0
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 30s
+    lambda: return static_cast<float>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+
+  - platform: template
+    id: photopainter_free_psram
+    name: "PhotoPainter Free PSRAM"
+    icon: "mdi:counter"
+    unit_of_measurement: "B"
+    accuracy_decimals: 0
+    state_class: measurement
+    entity_category: diagnostic
+    update_interval: 30s
+    lambda: return static_cast<float>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+
+globals:
+  - id: photopainter_snapshot_seq
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+script:
+  # Periodic full-entity level report. It pairs with ESPHome's DEBUG publish and
+  # state-change lines so every value is stated even when it never changes, and
+  # it reads only cached entity state, so it runs regardless of which subsystem
+  # is powered. Conventions:
+  #   nan / -1   no usable value; the key also appears in nostate= when the entity
+  #              has never published. A nan absent from nostate= is a published
+  #              "unavailable" (for example, no cell fitted).
+  #   seq=       increments once per line; a gap means a snapshot was lost.
+  - id: photopainter_diagnostic_snapshot
+    mode: queued
+    then:
+      - lambda: |-
+          std::string nostate;
+          auto missing = [&](const char *key) {
+            if (!nostate.empty()) nostate += ",";
+            nostate += key;
+          };
+          auto value = [&](const char *key, sensor::Sensor *entity) -> float {
+            if (!entity->has_state()) {
+              missing(key);
+              return NAN;
+            }
+            return entity->state;
+          };
+          auto level = [&](const char *key, binary_sensor::BinarySensor *entity) -> int {
+            if (!entity->has_state()) {
+              missing(key);
+              return -1;
+            }
+            return entity->state ? 1 : 0;
+          };
+
+          // Evaluate into locals in a fixed order; argument evaluation order in
+          // the log call is unspecified and would scramble nostate=.
+          // Live uptime, not the uptime sensor's last publish, which can trail by
+          // up to its update interval.
+          const float uptime = static_cast<float>(millis() / 1000U);
+          const int usb = level("usb", id(photopainter_usb_connected));
+          const float usb_v = value("usb_v", id(photopainter_usb_voltage));
+          const int bat = level("bat", id(photopainter_battery_connected));
+          const float bat_v = value("bat_v", id(photopainter_battery_voltage));
+          const float bat_pct = value("bat_pct", id(photopainter_battery_level));
+          const int charging = level("charging", id(photopainter_battery_charging));
+          const float temp = value("temp_c", id(photopainter_temperature));
+          const float rh = value("rh_pct", id(photopainter_humidity));
+          const int rtc = level("rtc_running", id(photopainter_rtc_running));
+          const int sd = level("sd", id(photopainter_sd_card_mounted));
+          const float sd_total = value("sd_total_mb", id(photopainter_sd_total_space));
+          const float sd_free = value("sd_free_mb", id(photopainter_sd_free_space));
+          const float sd_used = value("sd_used_mb", id(photopainter_sd_used_space));
+          const int key = level("key", id(photopainter_key_button));
+          const int boot = level("boot", id(photopainter_boot_button));
+          const int display = level("display", id(photopainter_display_status));
+          const int aldo4 = level("aldo4", id(photopainter_aldo4_rail_status));
+          const int amp = level("amp", id(photopainter_amplifier_status));
+          const int dac = level("dac", id(photopainter_es8311_status));
+          const int adc = level("adc", id(photopainter_es7210_status));
+          const float heap = value("heap", id(photopainter_free_heap));
+          const float psram = value("psram", id(photopainter_free_psram));
+
+          id(photopainter_snapshot_seq) += 1;
+          ESP_LOGI("photopainter_snapshot",
+                   "event=snapshot seq=%u uptime_s=%.0f usb=%d usb_v=%.2f bat=%d "
+                   "bat_v=%.2f bat_pct=%.0f charging=%d temp_c=%.1f rh_pct=%.1f "
+                   "rtc_running=%d sd=%d sd_total_mb=%.0f sd_free_mb=%.0f "
+                   "sd_used_mb=%.0f key=%d boot=%d display=%d aldo4=%d amp=%d "
+                   "dac=%d adc=%d heap=%.0f psram=%.0f bus=%s nostate=%s",
+                   (unsigned) id(photopainter_snapshot_seq), uptime, usb, usb_v,
+                   bat, bat_v, bat_pct, charging, temp, rh, rtc, sd, sd_total,
+                   sd_free, sd_used, key, boot, display, aldo4, amp, dac, adc,
+                   heap, psram,
+                   id(photopainter_shared_i2c_available) ? "available" : "unavailable",
+                   nostate.empty() ? "-" : nostate.c_str());
+
+interval:
+  - interval: 60s
+    then:
+      - script.execute: photopainter_diagnostic_snapshot

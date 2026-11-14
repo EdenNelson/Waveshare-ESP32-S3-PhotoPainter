@@ -1,0 +1,10 @@
+=== Waveshare-PhotoPainter.yaml ===
+secrets:  wrote a temporary placeholder secrets.yaml
+config:   valid
+compile:  succeeded (0 warning(s) from ESP-IDF and components, not this config)
+warnings: none from this config's own code
+cleanup:  removed secrets.yaml
+cleanup:  deleted images built from placeholder credentials (a relink regenerates them):
+    .esphome/build/waveshare-photopainter/build/firmware.factory.bin
+    .esphome/build/waveshare-photopainter/build/firmware.ota.bin
+note:     this run used fake Wi-Fi credentials, so it proves the config builds -- not that it is ready to flash
