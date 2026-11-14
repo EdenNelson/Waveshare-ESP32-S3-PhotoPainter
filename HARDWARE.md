@@ -475,10 +475,11 @@ measurements and additions that have not been made yet.
 - GPIO21 PMIC-interrupt support in ESPHome
 - Physical repeat-cycle regression of the new demo deep-sleep path, especially
   BOOT/KEY ext1 wake versus timer fallback and post-wake codec restoration
-- **Measured 2026-11-14 (PPK2 run 1):** switching ALDO4 off while the ESP32 is
-  awake *raised* input current (about +8 mA with audio on, +50 mA with audio off),
-  consistent with the hypothesis below; deep sleep with ALDO4 off is 16.07 mA.
-  See [the run record](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md).
+- **Measured and fixed 2026-11-14:** switching ALDO4 off while the ESP32 is awake
+  *raised* input current (+8 mA with audio on, +50 mA with audio off; [run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md)),
+  confirming the hypothesis below. Driving CS, DC, and RESET low before clearing
+  ALDO4 (rc.12) removed it entirely ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)).
+  With the fix, ALDO4 off saves only ~0.6 mA while awake.
 - Whether the e-paper signal lines back-power the panel while ALDO4 is off. The
   ESP32 keeps driving the panel's SPI and control pins, and ESPHome's shutdown
   hook sends the panel's deep-sleep command during a reboot or deep-sleep entry

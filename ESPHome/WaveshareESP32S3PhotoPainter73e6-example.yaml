@@ -11,7 +11,7 @@ esphome:
   min_version: 2026.9.0
   project:
     name: edennelson.waveshare-esp32s3-photopainter
-    version: 1.0.0-rc.11
+    version: 1.0.0-rc.12
   on_boot:
     - priority: 790.0
       then:
@@ -1007,6 +1007,25 @@ script:
                      "reason=reg90_read");
             return;
           }
+          // Stop back-powering the panel through its inputs. While the ESP32 is
+          // awake it keeps CS (GPIO9) and RESET (GPIO12) high and DC (GPIO8) at its
+          // last level; with ALDO4 off those lines feed the unpowered panel through
+          // its input protection (PPK2 run 1: ALDO4 off raised awake current by
+          // 8-50 mA). Drive the GPIO-controlled lines low before cutting the rail.
+          // The panel is already in deep sleep and is reset on the next refresh.
+          // SCLK/MOSI belong to the SPI peripheral; their levels are logged.
+          gpio_set_level(GPIO_NUM_9, 0);
+          gpio_set_level(GPIO_NUM_8, 0);
+          gpio_set_level(GPIO_NUM_12, 0);
+          for (gpio_num_t pin : {GPIO_NUM_8, GPIO_NUM_9, GPIO_NUM_10, GPIO_NUM_11, GPIO_NUM_12}) {
+            gpio_input_enable(pin);
+          }
+          ESP_LOGI("photopainter_display",
+                   "event=panel_lines state=parked dc=%d cs=%d sclk=%d mosi=%d reset=%d",
+                   gpio_get_level(GPIO_NUM_8), gpio_get_level(GPIO_NUM_9),
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_11),
+                   gpio_get_level(GPIO_NUM_12));
+
           const uint8_t desired = before & static_cast<uint8_t>(~0x08);
           uint8_t data[2] = {0x90, desired};
           if (id(photopainter_i2c).write(0x34, data, sizeof(data)) !=
@@ -1114,6 +1133,15 @@ script:
           id(photopainter_axp_ldo_enable) = after90;
           id(photopainter_display_active) = true;
           id(photopainter_display_power_up_ok) = true;
+          // Rail is back: return CS and RESET to their idle-high levels (DC is set
+          // per transfer). The next refresh resets and re-initializes the panel.
+          gpio_set_level(GPIO_NUM_9, 1);
+          gpio_set_level(GPIO_NUM_12, 1);
+          ESP_LOGI("photopainter_display",
+                   "event=panel_lines state=restored dc=%d cs=%d sclk=%d mosi=%d reset=%d",
+                   gpio_get_level(GPIO_NUM_8), gpio_get_level(GPIO_NUM_9),
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_11),
+                   gpio_get_level(GPIO_NUM_12));
           ESP_LOGI("photopainter_display",
                    "event=rail_transition old=off new=on result=ok "
                    "rail=aldo4 reg90=0x%02X->0x%02X "

@@ -498,7 +498,9 @@ mean and peak current. PMIC power-off is not measured: it is not part of the
 supported configuration (see [PMIC power off — removed](#pmic-power-off--removed)).
 
 **Run order:** A, B, C, D, E, F (which ends in G), then the second and third
-repeats, then X once at the very end. State C needs audio switched back **on**
+repeats, then X once at the very end. A private test build can run A–E ×3 then
+F/G from one button, logging `photopainter_test event=auto_test state=… rep=…`
+at each boundary (see run 2); automated timing gave a spread under ±0.6 mA. State C needs audio switched back **on**
 before the display rail goes off; it is easy to skip, so call each step out.
 Record whether a web UI or API log client is connected: both add idle current. USB-C first; the battery-input run repeats the same table, since USB
 power can disguise the battery-side figure.

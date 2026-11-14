@@ -63,6 +63,9 @@ same package source.
 - **Microphone gain defaults to 4**, measured against the ES7210 delivering
   roughly 12% of full scale in a normal room.
 
+- **Display rail off no longer back-powers the panel.** CS, DC, and RESET are
+  driven low before ALDO4 is cleared and restored after it returns; measured
+  before/after in PPK2 runs 1 and 2 (8–49 mA removed while awake).
 - **No refresh without a layout.** The panel is declared with an empty drawing
   lambda, so board-only and battery compositions never refresh it (ESPHome would
   otherwise force a test card every minute).

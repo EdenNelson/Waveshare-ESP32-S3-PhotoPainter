@@ -133,9 +133,10 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
 - **First current measurements are recorded** (2026-11-14, USB-C at 5.0 V):
   [PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md). Idle with
   everything on is about 120 mA at 5 V, audio logical shutdown saves about 56 mA,
-  and deep sleep is about 16 mA. Switching the display rail off while awake
-  currently *raises* current (under investigation). These are one board and one
-  supply; the battery-input run is still to do.
+  and deep sleep is about 16 mA. A back-powering fault that made the display
+  rail switch *raise* current was found and fixed in rc.12
+  ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)). These are
+  one board and one supply; the battery-input run is still to do.
 
 Not yet built or characterized:
 

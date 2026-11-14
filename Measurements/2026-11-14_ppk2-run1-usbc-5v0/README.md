@@ -92,4 +92,5 @@ F ends at the wake current rise.
   unplugged), which is the figure that maps to battery life.
 - A repeat with no web UI or log client connected, for idle numbers that match an
   unattended installation.
-- A fix for finding 2, followed by C and D re-measured.
+- ~~A fix for finding 2, followed by C and D re-measured.~~ Done in
+  [run 2](../2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md): fixed in rc.12.
