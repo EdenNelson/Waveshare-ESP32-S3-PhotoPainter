@@ -104,10 +104,9 @@ same package source.
 
 ### Not claimed
 
-The first PPK2 run (USB-C at 5.0 V) is recorded in
-[`Measurements/`](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md). The
-battery-oriented composition and the deep-sleep demo are not battery-life claims
-until the battery-input run backs them.
+PPK2 runs on USB-C at 5.0 V and on the battery input at 4.0 V are recorded in
+[`Measurements/`](Measurements/). They report current per state on one board
+at one cell voltage. No battery-life figure is claimed for any particular cell.
 
 ## Pre-release development
 

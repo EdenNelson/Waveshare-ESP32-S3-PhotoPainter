@@ -448,7 +448,11 @@ the device through an I/O pin, or trigger watchdog and component-state failures.
 
 **First run recorded 2026-11-14:** USB-C at 5.0 V, firmware 1.0.0-rc.11 —
 [results and boundary lines](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md).
-It is one board and one supply topology; the battery-input run is still to do.
+[Run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md) (rc.12, USB-C)
+re-measured the display-rail states after the back-powering fix, and
+[run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md) (2026-11-16)
+repeated the sequence at 4.0 V into the battery connector with USB-C unplugged.
+All three are one board.
 Any power statement not backed by a recorded run remains data-sheet inference.
 
 A Nordic Power Profiler Kit II is on hand as of 2026-09-23. A claim about a

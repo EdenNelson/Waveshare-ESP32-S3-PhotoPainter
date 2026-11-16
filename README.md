@@ -135,12 +135,16 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
   everything on is about 120 mA at 5 V, audio logical shutdown saves about 56 mA,
   and deep sleep is about 16 mA. A back-powering fault that made the display
   rail switch *raise* current was found and fixed in rc.12
-  ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)). These are
-  one board and one supply; the battery-input run is still to do.
+  ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)).
+- **Battery-input current is recorded** (2026-11-16, 4.0 V at the battery
+  connector, USB-C unplugged): [PPK2 run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md).
+  Deep sleep draws **14.5 mA** from the battery, idle with everything on 135 mA,
+  one refresh 1.32 mAh, and one wake cycle 2.04 mAh. These figures come from one
+  board at one cell voltage.
 
 Not yet built or characterized:
 
-- Current consumption on battery input, and without monitoring clients connected
+- Current at cell voltages other than 4.0 V, and without monitoring clients connected
 - Repeat-cycle regression across the power-state matrix
 - Battery ADC enable behaviour across the power-state matrix
 - Native `image:` dithering against Waveshare's 480 x 480 sample image

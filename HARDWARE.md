@@ -416,9 +416,13 @@ down.
 | ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **4.79 mA** |
 | Cost of keeping I2C working | **≈ 11.3 mA** |
 
+On battery input (4.0 V at the battery connector, USB-C unplugged), the same
+sleep sequence draws **14.46 mA** (57.8 mW), against 80.4 mW through USB-C
+([run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md)).
+
 Not yet measured: ALDO3 on with the codecs left at their power-on defaults (a fix
 without a codec driver), a `REG90 = 0x00` sleep that also clears ALDO1/ALDO2, and
-any of this on battery input.
+the ALDO3-off clamped comparison on battery input.
 
 ## Audio codecs: what setup() does not restore
 

@@ -3,8 +3,9 @@
 First current measurement on this board, taken with the procedure in
 [TESTING.md](../../TESTING.md#current-consumption). One board, one supply
 topology, one session. Treat these as a first characterization, not as
-battery-life claims: the battery-input run has not been done, and two monitoring
-clients were connected throughout (see the run header).
+battery-life claims: this run powers the board through USB-C (the battery-input
+figures are in [run 3](../2026-11-16_ppk2-run3-battery-4v0/README.md)), and two
+monitoring clients were connected throughout (see the run header).
 
 ## Run header
 
@@ -88,8 +89,8 @@ F ends at the wake current rise.
 
 ## Not yet done
 
-- The battery-input run (PPK2 at ~4.0 V into the battery connector, USB-C
-  unplugged), which is the figure that maps to battery life.
+- ~~The battery-input run (PPK2 at ~4.0 V into the battery connector, USB-C
+  unplugged).~~ Done in [run 3](../2026-11-16_ppk2-run3-battery-4v0/README.md).
 - A repeat with no web UI or log client connected, for idle numbers that match an
   unattended installation.
 - ~~A fix for finding 2, followed by C and D re-measured.~~ Done in
