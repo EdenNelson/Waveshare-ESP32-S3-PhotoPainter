@@ -84,8 +84,9 @@ refresh only.
 
 ## Not measured
 
-- **The ALDO3-off clamped sleep (state X) on battery input.** The F − X cost of
-  keeping I2C working (≈ 11.3 mA) was measured on USB-C only.
+- ~~The ALDO3-off clamped sleep (state X) on battery input.~~ Done in
+  [run 4](../2026-11-16_ppk2-run4-battery-4v0-clamp/README.md): 3.18 mA, so
+  keeping I2C working costs 11.27 mA from the battery.
 - More than one repetition of F and G on battery input.
 - Battery voltages other than 4.0 V. A real cell falls toward 3.0 V as it
   discharges, and the current at a lower voltage was not measured.

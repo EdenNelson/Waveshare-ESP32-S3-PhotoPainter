@@ -318,7 +318,9 @@ clamp survives reflashing, because flashing does not de-energize the rail.
 with SDA and SCL high. By the next poll, 4.07 s later, both lines were held low
 (`sda=0 scl=0`) and the PMIC and RTC were unreachable, and after an ESP32 deep
 sleep and wake every poll and bounded recovery failed. A write that succeeds
-does not show the bus survived it.
+does not show the bus survived it. A repeat on battery input (2026-11-16,
+[run 4](Measurements/2026-11-16_ppk2-run4-battery-4v0-clamp/README.md)) narrowed the
+bracket: working 1 ms after the write, clamped 2.48 s after it.
 
 **Recovery requires a full power draindown.** Disconnect USB-C *and* the
 battery, and leave the board disconnected for at least one minute so the bulk
@@ -386,7 +388,7 @@ and [run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md): USB-C at
    line back-powers the unpowered panel: +8 mA with audio on, +50 mA with audio
    off. Driving CS, DC, and RESET low removed it entirely.
 4. **A successful write does not prove the bus survived.** The ALDO3 clamp
-   develops as the rail discharges (working at +3 ms, clamped by +4.07 s).
+   develops as the rail discharges (working at +1 ms, clamped by +2.48 s).
 
 **Entering sleep**
 
@@ -410,19 +412,19 @@ let the rail settle, restore CS and RESET high, then run the panel's normal rese
 and init before the first refresh. Restore codec registers if they were shut
 down.
 
-| Deep sleep, ALDO4 off | Mean current |
-| --- | --- |
-| ALDO3 on, codecs in logical low power (this sequence) | **16.07 mA** |
-| ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **4.79 mA** |
-| Cost of keeping I2C working | **≈ 11.3 mA** |
+| Deep sleep, ALDO4 off | Battery 4.0 V | USB-C 5.0 V |
+| --- | --- | --- |
+| ALDO3 on, codecs in logical low power (this sequence) | **14.46 mA** (57.8 mW) | 16.07 mA (80.4 mW) |
+| ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **3.18 mA** (12.7 mW) | 4.79 mA (24.0 mW) |
+| Cost of keeping I2C working | **11.27 mA** (45.1 mW) | 11.28 mA (56.4 mW) |
 
-On battery input (4.0 V at the battery connector, USB-C unplugged), the same
-sleep sequence draws **14.46 mA** (57.8 mW), against 80.4 mW through USB-C
-([run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md)).
+The battery column is 4.0 V at the battery connector with USB-C unplugged
+([run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md),
+[run 4](Measurements/2026-11-16_ppk2-run4-battery-4v0-clamp/README.md)). The I2C
+cost is the same current on both supplies.
 
 Not yet measured: ALDO3 on with the codecs left at their power-on defaults (a fix
-without a codec driver), a `REG90 = 0x00` sleep that also clears ALDO1/ALDO2, and
-the ALDO3-off clamped comparison on battery input.
+without a codec driver), and a `REG90 = 0x00` sleep that also clears ALDO1/ALDO2.
 
 ## Audio codecs: what setup() does not restore
 

@@ -1,0 +1,34 @@
+[10:14:31.130][I][app:164]: ESPHome version 2026.10.2 compiled on 2026-11-16 10:00:04 -0800
+[10:14:31.141][I][app:166]: Project edennelson.waveshare-esp32s3-photopainter version 1.0.0-rc.12
+[10:14:56.013][W][photopainter_power:340]: event=rtc_osc_flag old=stopped new=running seconds=0x55 ctrl_ok=1 rtc_ctrl1=0x00 rtc_ctrl2=0x00 irq_ok=1 axp_irq0=0x00 axp_irq1=0x20 axp_irq2=0x40 status1=0x18 status2=0x55 uptime_ms=32785
+[10:15:27.848][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x18 status2=0x55 ldo_enable=0xFF rtc_seconds=0x25 display=active audio=active amplifier=on sd=mounted sda=1 scl=1
+[10:15:43.658][W][photopainter_test:5712]: event=clamp_test phase=begin note=unsupported_state_ppk2_comparison
+[10:15:43.658][I][photopainter_display:064]: event=shutdown_wait phase=start idle=1 refresh_age_ms=72026 timeout_ms=45000 expected=immediate
+[10:15:43.658][I][photopainter_display:080]: event=shutdown_wait phase=complete result=immediate elapsed_ms=1 idle=1 failed=0 safe=1 busy=0
+[10:15:43.658][I][photopainter_display:094]: event=safe_shutdown result=issued busy=0
+[10:15:43.759][I][photopainter_display:153]: event=panel_lines state=parked dc=0 cs=0 sclk=0 mosi=0 reset=0
+[10:15:43.760][I][photopainter_display:186]: event=rail_transition old=on new=off result=ok rail=aldo4 reg90=0xFF->0xF7 aldo3=on
+[10:15:43.760][W][photopainter_test:067]: event=clamp_test phase=aldo3_off reg90=0xF7->0xF3 aldo4=0 display_power_down_ok=1 gpio7_amp=0 uptime_ms=80500
+[10:15:43.761][W][photopainter_test:078]: event=clamp_test phase=after_write write_ok=1 readback_ok=1 readback=0xF3 sda=1 scl=1 (readback failure = bus clamped, expected)
+[10:15:46.236][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[10:15:46.236][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[10:15:46.254][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=1 sda=0 scl=0
+[10:15:46.736][W][photopainter_test:089]: event=clamp_test phase=enter_deep_sleep timer=2min aldo3=off aldo4=off bus_expected=clamped
+[10:15:47.766][I][deep_sleep:057]: Beginning sleep
+[10:15:47.769][I][deep_sleep:059]: Sleeping for 120000000us
+[10:18:03.915][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[10:18:03.915][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[10:18:03.916][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=2 sda=0 scl=0
+[10:18:03.970][W][photopainter_i2c:248]: event=recovery_attempt attempt=1 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:04.066][W][photopainter_i2c:248]: event=recovery_attempt attempt=2 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:04.177][W][photopainter_i2c:248]: event=recovery_attempt attempt=3 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:04.277][E][photopainter_i2c:276]: event=recovery result=exhausted bus=unavailable
+[10:18:13.904][W][photopainter_i2c:319]: event=poll result=failed device=axp2101 rtc=failed sda=0 scl=0
+[10:18:13.904][W][photopainter_i2c:352]: event=poll result=failed device=pcf85063 axp=failed sda=0 scl=0
+[10:18:13.904][W][photopainter_i2c:378]: event=poll result=bus_failure fail_streak=3 sda=0 scl=0
+[10:18:13.922][W][photopainter_i2c:248]: event=recovery_attempt attempt=1 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:14.049][W][photopainter_i2c:248]: event=recovery_attempt attempt=2 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:14.176][W][photopainter_i2c:248]: event=recovery_attempt attempt=3 reset=ESP_OK sda=0->0 scl=0->0 pmic=0 rtc=0
+[10:18:14.277][E][photopainter_i2c:276]: event=recovery result=exhausted bus=unavailable
+[10:20:19.248][W][photopainter_power:340]: event=rtc_osc_flag old=stopped new=running seconds=0x19 ctrl_ok=1 rtc_ctrl1=0x00 rtc_ctrl2=0x00 irq_ok=1 axp_irq0=0x00 axp_irq1=0x20 axp_irq2=0x40 status1=0x18 status2=0x55 uptime_ms=14505
+[10:21:05.639][I][photopainter_state:410]: event=level power_ready=1 bus=available axp_valid=1 rtc_valid=1 status1=0x18 status2=0x55 ldo_enable=0xFF rtc_seconds=0x59 display=active audio=active amplifier=on sd=mounted sda=1 scl=1

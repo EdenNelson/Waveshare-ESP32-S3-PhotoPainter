@@ -139,8 +139,10 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
 - **Battery-input current is recorded** (2026-11-16, 4.0 V at the battery
   connector, USB-C unplugged): [PPK2 run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md).
   Deep sleep draws **14.5 mA** from the battery, idle with everything on 135 mA,
-  one refresh 1.32 mAh, and one wake cycle 2.04 mAh. These figures come from one
-  board at one cell voltage.
+  one refresh 1.32 mAh, and one wake cycle 2.04 mAh. Keeping the shared I2C bus
+  working through deep sleep costs 11.3 mA on either supply
+  ([run 4](Measurements/2026-11-16_ppk2-run4-battery-4v0-clamp/README.md)). These
+  figures come from one board at one cell voltage.
 
 Not yet built or characterized:
 
