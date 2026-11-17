@@ -16,14 +16,25 @@
 #
 # Pages: "PhotoPainter Display Page" selects the dashboard or a sample image,
 # and "PhotoPainter Rotate Pages" alternates them on each scheduled refresh. The
-# sample is Waveshare's own pre-dithered six-colour 800x480 bitmap, downloaded
-# at compile time from an immutable commit of the vendor repository, so this
-# package never redistributes it. Its pixels already use the panel's six exact
-# colours, so it is embedded as RGB with no further dithering.
+# sample is a rainbow lorikeet photo (David Clode, Unsplash licence), already
+# reduced to the panel's six colours with Atkinson dithering by the MIT-licensed
+# PhotoPainter Spectra 6 image converter. It is downloaded at compile time from an immutable commit of
+# that repository, so this package never redistributes it. Its pixels already use
+# the panel's six exact colours, so it is embedded as RGB with no further
+# dithering.
+#
+# Scheduled refresh: this layer gives the panel its 900 s interval
+# (photopainter_display_refresh_interval). The board package resumes the panel
+# with whatever interval it already has, so a build without a layout never
+# redraws a blank page when the display rail is switched back on.
 #
 # Free heap and free PSRAM are read from the ESP-IDF heap allocator at render
 # time, using the same calls as ESPHome's debug sensors, so this layer does not
 # depend on, or duplicate, the diagnostic layer's debug entities.
+
+substitutions:
+  photopainter_display_refresh_interval: 900s
+
 font:
   - file: "gfonts://Roboto"
     id: photopainter_dashboard_title_font
@@ -204,8 +215,14 @@ esphome:
                         id: photopainter_display
                         update_interval: ${photopainter_display_refresh_interval}
                   else:
-                    # The display was switched off while the gate waited. Its
-                    # power-up script resumes the poller when the rail returns.
+                    # The display was switched off while the gate waited. Set the
+                    # interval without starting the poller (resume then suspend, in
+                    # one step, so no refresh runs against the unpowered panel);
+                    # the power-up script resumes it when the rail returns.
+                    - component.resume:
+                        id: photopainter_display
+                        update_interval: ${photopainter_display_refresh_interval}
+                    - component.suspend: photopainter_display
                     - logger.log:
                         tag: photopainter_dashboard
                         level: WARN
@@ -700,10 +717,11 @@ display:
 image:
   - platform: file
     id: photopainter_demo_sample_image
-    # Waveshare ESP32-S3-PhotoPainter, commit 7600e4c (2025-11-17),
-    # 02_SDCARD/06_user_Foundation_img/2.bmp: 800x480, six panel colours.
-    # SHA-256 447cfb524a99ba7be53b62cf6c29bf353a00734c4a09d3f9d8a48016d0c08e52
-    file: https://raw.githubusercontent.com/waveshareteam/ESP32-S3-PhotoPainter/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp
+    # Toon-nooT/PhotoPainter-E-Ink-Spectra-6-image-converter, commit 74a575d
+    # (2025-09-06), samples/david-clode-G7Jd9fMuRHs-unsplash_scale_ATK_output.bmp:
+    # 800x480, six panel colours, Atkinson dithering. Photo: David Clode, Unsplash licence.
+    # SHA-256 1000f22ec6b308d27f52652a3327a67abc7de0d67adb06132036531971e02af0
+    file: https://raw.githubusercontent.com/Toon-nooT/PhotoPainter-E-Ink-Spectra-6-image-converter/74a575d3871230ab7981992ade5fc3a035bf79ef/samples/david-clode-G7Jd9fMuRHs-unsplash_scale_ATK_output.bmp
     type: RGB
     dither: NONE
 

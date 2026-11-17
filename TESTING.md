@@ -6,11 +6,11 @@ results were reached and how to reproduce them on your own unit: how to capture 
 log that means something, how to read it, the procedures that have a known-good
 result to compare against, and what has not been done yet.
 
-The largest remaining evidence gap is that **no current consumption has been
-measured, at all.** A Nordic Power Profiler Kit II (PPK2) is now available, so
-the work is no longer blocked on equipment. See
-[Current consumption](#current-consumption--ppk2-available-nothing-measured-yet)
-below before treating any power-saving statement here as a result.
+Current consumption is measured with a Nordic Power Profiler Kit II (PPK2) on
+one board, through USB-C and through the battery connector; the records are in
+[`Measurements/`](Measurements/). See [Current consumption](#current-consumption)
+below for the procedure and for what a power statement needs before it counts
+as a result.
 
 One rule underpins all of it: **do not change multiple PMIC variables in the same
 test.** A retained PMIC state can hide a missing initialization step, so a
@@ -46,10 +46,10 @@ The generator's `--check` verifies both committed standalone downloads against
 their package compositions and validates the resolved standalone YAML. Adding
 `--compile` builds both standalone downloads with synthetic credentials and
 writes logs under ignored `build/reference-verification/`. The package verifier
-runs the generator's stale-output check, validates all four consumer fixtures,
-prints their merged `esphome.includes` lists, checks each variant's headers
-against both complete reference profiles, and compiles minimal, demo,
-diagnostic, and battery images.
+runs the generator's stale-output check, validates all six consumer fixtures
+(minimal, demo, diagnostic, battery, web-ui, and web-ui-diagnostic), prints their
+merged `esphome.includes` lists, checks each fixture's headers against both
+standalone profiles, and compiles all six.
 `--config-only` skips compilation. The script works from any working directory;
 `ESPHOME_BIN` selects a different executable. It stops on the first failure and
 reports the profile and log path. Logs and resolved configurations are retained
@@ -59,9 +59,9 @@ Fixtures contain no real credentials. They test package merging through a
 consumer-owned `esphome:` stanza; packages are not validated in isolation.
 Compilation verifies generated C++ and dependencies, not hardware behavior. The
 standalone generator checks configuration equivalence to its package source;
-package-built images still need physical regression coverage for boot readiness, SD access,
-audio off/on and demo interruption, ALDO4 cycles, and terminal PMIC commands.
-No package power-consumption claim has been measured with the PPK2.
+package-built images were also exercised on hardware: boot readiness, SD access,
+audio off/on, ALDO4 cycles, deep sleep with timer, BOOT, and KEY wake, and the
+PPK2 runs in [`Measurements/`](Measurements/).
 
 ## Capturing logs: serial is the wrong tool for power tests
 
@@ -149,10 +149,10 @@ Conventions in the snapshot line:
 
 ### Pre-release vocabulary
 
-The captures under [`Logs/`](Logs/) and the expected output in the procedures
-below were recorded with pre-release builds (through 0.9.112), which used an
-`obs` tag and a different line format. The 1.0.0 regression run re-records each
-procedure in the package vocabulary above. To read the older captures:
+Some expected output in the procedures below was recorded with pre-release
+builds (through 0.9.112), which used an `obs` tag and a different line format.
+The captures under [`Logs/`](Logs/) are older still and use their own diagnostic
+tags; [`Logs/README.md`](Logs/README.md) explains them. To read the `obs` lines:
 
 | Line | States |
 | --- | --- |
@@ -219,9 +219,10 @@ The panel's safe shutdown waits for the display component to report idle, with a
 45 s timeout as the last-resort bound. Refreshes are 900 s apart, so the wait is
 never exercised by accident. To reach it:
 
-1. Toggle **Display: Enabled** ON — this requests an immediate refresh.
+1. Toggle **PhotoPainter Display Enabled** ON — in a build that draws to the panel
+   (the demo dashboard), this starts a refresh within a few seconds.
 2. Wait for `render begin stamp=…`.
-3. Toggle **Display: Enabled** OFF before `Display update took …` is logged.
+3. Toggle **PhotoPainter Display Enabled** OFF before `Display update took …` is logged.
 
 ```text
 wait display_idle idle=no refresh_age=112ms timeout=45000ms expect=hold
@@ -238,7 +239,7 @@ difference from the previous 40 s render-stamp wait, which released on a clock
 and held ~10.8 s past a 29094 ms refresh in the trace above.
 
 `result=TIMEOUT` means the panel never reached idle inside 45 s. The safe-shutdown
-hook is then skipped and `display_power_down_script` refuses to clear ALDO4:
+hook is then skipped and `photopainter_display_power_down` refuses to clear ALDO4:
 
 ```text
 wait display_idle result=TIMEOUT elapsed=45001ms idle=no failed=no safe=no
@@ -356,7 +357,7 @@ For battery and VBUS ADC diagnosis, also capture `0x34`, `0x35`, `0x38`, and
 | U2 | Connected | Connected | Complete power loss | USB cold boot with battery/charger |
 | B1 | Disconnected | Connected | PMIC fully off | Battery-only cold boot |
 | R1 | Same as prior run | Same as prior run | ESP software restart | Warm reset with retained PMIC state |
-| P1 | Disconnected | Connected | PWR-button off/on | PMIC button lifecycle |
+| P1 | Disconnected | Connected | PWR short press (under 6 s) | Press logged with hold time; no action taken. Never hold PWR 6 s or longer: that is a hardware power-off and clamps the bus |
 | S1 | Disconnected | Connected | Intentional sleep/wake | Low-power restoration |
 | W1 | Connected | Connected | Watchdog reset | Fault recovery with retained rails |
 
@@ -392,11 +393,14 @@ characterization and regression coverage, not proving feasibility:
 
 1. Preserve every unrelated bit in AXP2101 registers `0x90` and `0x91`, and
    record actual readback rather than only the intended write.
-2. Measure supply current with ALDO4 on and off, at otherwise identical state.
+2. ~~Measure supply current with ALDO4 on and off, at otherwise identical
+   state.~~ Done: PPK2 runs 1–3, states A/C and B/D.
 3. Repeat several cycles in a row and confirm each restore produces a clean full
    refresh.
 4. Repeat under USB-only and battery-only operation; watch for USB or signal-pin
-   back-powering that can disguise the actual rail behavior.
+   back-powering that can disguise the actual rail behavior. Signal-pin
+   back-powering was found in run 1 and fixed in rc.12 (run 2); runs 2 and 3
+   cover USB-C and battery input.
 5. Confirm the display returns correctly after a cold boot taken with the display
    switched off, where ALDO4 was de-energized before the reset.
 
@@ -442,23 +446,22 @@ The ordering that makes the sequence safe:
 An I2C or SPI transaction against an unpowered device can hang a bus, back-power
 the device through an I/O pin, or trigger watchdog and component-state failures.
 
-## Not yet measured
+## Power measurement and open procedures
 
 ### Current consumption
 
-**First run recorded 2026-11-14:** USB-C at 5.0 V, firmware 1.0.0-rc.11 —
-[results and boundary lines](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md).
-[Run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md) (rc.12, USB-C)
-re-measured the display-rail states after the back-powering fix, and
-[run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md) (2026-11-16)
-repeated the sequence at 4.0 V into the battery connector with USB-C unplugged.
-All three are one board.
-Any power statement not backed by a recorded run remains data-sheet inference.
+Four runs are recorded, all on one board:
 
-A Nordic Power Profiler Kit II is on hand as of 2026-09-23. A claim about a
-low-power or battery configuration requires the procedure below, the firmware
-version, the supply topology, the time window, and the PPK2 result that isolates
-the state being claimed.
+| Run | Date | Supply | Firmware | What it covers |
+| --- | --- | --- | --- | --- |
+| [1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md) | 2026-11-14 | USB-C 5.0 V | rc.11 | States A–G, and the clamped comparison X |
+| [2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md) | 2026-11-14 | USB-C 5.0 V | rc.12 | A–G after the display back-powering fix |
+| [3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md) | 2026-11-16 | battery connector 4.0 V | rc.12 | A–G on battery input |
+| [4](Measurements/2026-11-16_ppk2-run4-battery-4v0-clamp/README.md) | 2026-11-16 | battery connector 4.0 V | rc.12 | X on battery input |
+
+A power statement not backed by a recorded run is data-sheet inference. A new
+claim needs the procedure below: firmware version, supply topology, the time
+window, and the PPK2 result that isolates the state being claimed.
 
 #### Procedure
 
@@ -480,14 +483,14 @@ next boundary, so switching transients are excluded:
 
 | State | Actuation | Opening boundary |
 | --- | --- | --- |
-| A. Baseline idle, everything on | none, after the first refresh has finished | `photopainter_state event=level` with `display=active audio=active amplifier=on` (normal builds have no snapshot line) |
-| B. Audio logical low power | "Audio Codecs Enabled" off | `photopainter_audio event=transition new=low_power result=ok` |
-| C. Display rail off, audio on | audio on, then "Display Enabled" off | `photopainter_display event=rail_transition old=on new=off result=ok` |
-| D. Display rail and audio off | "Audio Codecs Enabled" off with the display off | the audio `new=low_power` line |
-| E. One display refresh | "Display Enabled" on | `event=render_begin`; the end is taken from the trace (the panel plateau ends), because `Display update took` is DEBUG-only |
+| A. Baseline idle, everything on | none, after the first refresh has finished | `photopainter_state event=level` with `display=active audio=active amplifier=on` (only the diagnostic layer has a snapshot line) |
+| B. Audio logical low power | "PhotoPainter Audio Codecs Enabled" off | `photopainter_audio event=transition new=low_power result=ok` |
+| C. Display rail off, audio on | audio on, then "PhotoPainter Display Enabled" off | `photopainter_display event=rail_transition old=on new=off result=ok` |
+| D. Display rail and audio off | "PhotoPainter Audio Codecs Enabled" off with the display off | the audio `new=low_power` line |
+| E. One display refresh | "PhotoPainter Display Enabled" on | `event=render_begin`; the end is taken from the trace (the panel plateau ends), because `Display update took` is DEBUG-only |
 | F. ESP32 deep sleep, ALDO4 off | "Deep Sleep", 2 min timer | `photopainter_deep_sleep event=enter`; the sleep window ends at the current rise of the wake |
-| G. One wake cycle | timer wake from F | the wake current rise to `Display update took` of the first refresh |
-| X. Deep sleep, ALDO3 and ALDO4 off, bus clamped (comparison only) | private test build, "TEST X" button; ends the session | `photopainter_test event=clamp_test phase=enter_deep_sleep` |
+| G. One wake cycle | timer wake from F | the wake current rise to the end of the first refresh, taken from the trace as for E |
+| X. Deep sleep, ALDO3 and ALDO4 off, bus clamped (comparison only) | private test build, "TEST X" button; ends the session | `deep_sleep: Sleeping for …`, which follows `photopainter_test event=clamp_test phase=enter_deep_sleep` |
 
 State X is **not a supported configuration**. It reproduces the failure mode of
 firmware that de-energizes ALDO3 in sleep, so that **X − F** states the
@@ -506,8 +509,10 @@ repeats, then X once at the very end. A private test build can run A–E ×3 the
 F/G from one button, logging `photopainter_test event=auto_test state=… rep=…`
 at each boundary (see run 2); automated timing gave a spread under ±0.6 mA. State C needs audio switched back **on**
 before the display rail goes off; it is easy to skip, so call each step out.
-Record whether a web UI or API log client is connected: both add idle current. USB-C first; the battery-input run repeats the same table, since USB
-power can disguise the battery-side figure.
+Record whether a web UI or API log client is connected. Run 2 found no
+measurable difference in idle current from closing the web UI; the API client's
+effect has not been isolated. USB-C first; the battery-input run repeats the same
+table, since USB power can disguise the battery-side figure.
 
 **Result record:** per state, the opening and closing log lines quoted
 verbatim, window length, mean and peak current, and for E/G the charge. A
@@ -554,6 +559,11 @@ Repeat at least five cycles alternating timer, BOOT, and KEY wake, on USB and on
 battery, and once with a longer timer. `restore=degraded` or `slept_s=-1` after a
 real sleep is a failure to diagnose, not to retry past. The PPK2 matrix above is
 separate from this functional validation.
+
+Recorded so far: on USB-C (2026-11-14), timer, BOOT, and KEY wake, BOOT sleep
+requests after a button wake, and settings that survive a wake; the BOOT wakes
+in PPK2 run 1 and the timer wakes in runs 2–4 repeat it. Button wake on battery
+input has not been recorded.
 
 ### Battery ADC enable
 

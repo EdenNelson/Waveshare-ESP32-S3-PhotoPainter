@@ -1,8 +1,9 @@
 # Diagnostic logs
 
 Sanitized serial and ESPHome logs captured from the physical Rev 2.0 unit
-during bring-up, and added to as the power-state matrix in
-[`TESTING.md`](../TESTING.md) is worked through.
+during bring-up and the hardware investigation, 2026-08-21 to 2026-09-01. Later
+current measurements, with their boundary lines, are in
+[`Measurements/`](../Measurements/).
 
 These are raw evidence rather than curated examples. They span several
 iterations of the configuration, including bring-up firmware that no longer
@@ -12,9 +13,9 @@ tells you which firmware produced it.
 
 When interpreting one, the context that matters is listed under "Record for
 every run" in [`TESTING.md`](../TESTING.md): board revision, ESPHome version,
-USB and battery state, reset source, and time unpowered. Newer logs state the
-firmware version and the reason the board powered on in their first few lines,
-so those no longer have to be recorded by hand.
+USB and battery state, reset source, and time unpowered. These captures predate
+the version and power-on-reason lines that 1.0.0 prints at boot, so that context
+comes from the capture's file name and this page.
 
 ## How these logs were sanitized
 
@@ -32,9 +33,9 @@ of this repository. What that means for reading them:
   are replaced by placeholders such as `<mac-1>` and `<ipv4-2>`. Each distinct
   value keeps one stable placeholder across every file, so you can still
   correlate an access point or address between runs.
-- The development unit's node name and area were rewritten to the published
-  `waveshare-photopainter` and `Waveshare`, so the logs line up with the
-  published profiles. Bring-up node names such as `photopainter-display-rail`
+- The development unit's node name and area were rewritten to the neutral
+  `waveshare-photopainter` and `Waveshare` (the 1.0.0 examples use
+  `photopainter`). Bring-up node names such as `photopainter-display-rail`
   are kept: they say which firmware produced a log and carry no installation
   identity.
 - Absolute paths under the capturing user's home directory are replaced with a

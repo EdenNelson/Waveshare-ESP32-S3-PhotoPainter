@@ -3,13 +3,12 @@ substitutions:
   photopainter_environment_update_interval: 60s
   photopainter_power_update_interval: 60s
   photopainter_battery_level_update_interval: 180s
-  photopainter_display_refresh_interval: 900s
 
 esphome:
   min_version: 2026.9.0
   project:
     name: edennelson.waveshare-esp32s3-photopainter
-    version: "1.0.0-rc.12"
+    version: "1.0.0-rc.13"
 esp32:
   board: esp32-s3-devkitc-1
   variant: esp32s3

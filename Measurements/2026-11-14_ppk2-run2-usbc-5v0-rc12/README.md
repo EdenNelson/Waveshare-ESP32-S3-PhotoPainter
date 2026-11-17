@@ -10,7 +10,7 @@ identical timing.
 
 | Field | Value |
 | --- | --- |
-| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, normal composition, plus a private test-only button that runs the sequence (not published) |
+| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, demo composition with the web UI, plus a private test-only button that runs the sequence (not published) |
 | ESPHome | 2026.10.2 |
 | Change under test | `controls/display_power.yaml`: CS (GPIO9), DC (GPIO8), and RESET (GPIO12) driven low before ALDO4 is cleared; CS and RESET restored high after it returns |
 | Supply | Nordic PPK2, source-meter mode, **5000 mV into USB-C** (power-only pigtail); output on 14:58:06 |

@@ -10,36 +10,44 @@ not include the PMIC's USB input path.
 
 | Field | Value |
 | --- | --- |
-| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, normal composition plus the private test-only sequence button; the same image as run 2 (compiled 2026-11-14 14:49:58) |
+| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, demo composition with the web UI (as in the demo standalone profile), plus the private test-only sequence button; the same image as run 2 (compiled 2026-11-14 14:49:58) |
 | ESPHome | 2026.10.2 |
 | Supply | Nordic PPK2, source-meter mode, **4000 mV into the battery connector** through a purpose-built lead; **USB-C unplugged**; output on 09:14:29 |
 | Supply as seen by the PMIC | `status1=0x18` throughout (battery present, no VBUS); `USB-C Voltage 0.00 V`; `Battery Voltage` 3.99–4.03 V |
 | Board | Rev 2.0; Li-ion removed (the PPK2 replaces it); RTC backup cell not fitted (the RTC oscillator-stop flag was set at power-up); SD card fitted (14,902 MB); insulating back as in run 2, not re-recorded |
-| Network | Wi-Fi associated; ESPHome API log client connected; the web UI was used to start the sequence (run 2 showed monitoring clients have no measurable effect on these states) |
+| Network | Wi-Fi associated; ESPHome API log client connected; the web UI was used to start the sequence (run 2 found that closing the web UI made no measurable difference to idle current) |
 | Instrument | `ppk2-api`, ~100 kS/s, 10 ms windows on the host clock; 176.4 M samples |
 | Sequence | `event=auto_test` button pressed 09:20:55: A → B → C → D → E, three repetitions with 60 s holds, then F (2 min timer) and G (the wake) |
 
 ## Results
 
 Steady windows run from 5 s after their `event=auto_test state=… phase=begin`
-line to the next one. Current is at the battery connector. Power is current ×
-supply voltage, which compares the two supply topologies directly.
+line to the next one. Current is at the battery connector, weighted by each
+recorded window's actual length. Power is current × supply voltage, which
+compares the two supply topologies directly.
 
 | State | Run 3, battery 4.0 V | Spread | Power | Run 2, USB-C 5.0 V | Power |
 | --- | --- | --- | --- | --- | --- |
-| A. Idle, everything on | **134.9 mA** | 134.7–135.1 | **540 mW** | 119.6 mA | 598 mW |
-| B. Audio logical low power | **74.6 mA** | 74.1–75.5 | **298 mW** | 63.9 mA | 320 mW |
+| A. Idle, everything on | **134.8 mA** | 134.7–135.1 | **539 mW** | 119.6 mA | 598 mW |
+| B. Audio logical low power | **74.7 mA** | 74.0–75.8 | **299 mW** | 63.9 mA | 320 mW |
 | C. ALDO4 off, audio on | **136.5 mA** | 134.6–138.1 | **546 mW** | 119.0 mA | 595 mW |
-| D. ALDO4 off, audio off | **72.2 mA** | 71.2–74.0 | **289 mW** | 64.5 mA | 323 mW |
-| E. One refresh, from `render_begin` | **1.32 mAh / 30 s** | 1.283–1.334 mAh | **5.3 mWh** | 1.29 mAh / 30 s (run 1) | 6.5 mWh |
-| E. One refresh, from the rail-on line | 1.37 mAh / 33 s | 1.305–1.409 mAh | 5.5 mWh | 1.36 mAh / 33.3 s | 6.8 mWh |
+| D. ALDO4 off, audio off | **72.2 mA** | 71.1–73.9 | **289 mW** | 64.5 mA | 323 mW |
+| E. One refresh, from `render_begin` | **1.48 mAh / 30 s** | 1.468–1.498 mAh | **5.9 mWh** | 1.29 mAh / 30 s (run 1) | 6.5 mWh |
+| E. One refresh, from the rail-on line | 1.55 mAh / 33 s | 1.493–1.577 mAh | 6.2 mWh | 1.36 mAh / 33.3 s | 6.8 mWh |
 | F. Deep sleep, ALDO3 on, ALDO4 off | **14.46 mA** | five 20 s blocks, 14.453–14.461 | **57.8 mW** | 16.07 mA | 80.4 mW |
-| G. One wake cycle (boot, Wi-Fi, first refresh) | **2.04 mAh / 44 s** | 1 rep | **8.2 mWh** | 2.06 mAh / 43 s | 10.3 mWh |
+| G. One wake cycle (boot, Wi-Fi, first refresh) | **2.28 mAh / 43 s** | 1 rep | **9.1 mWh** | 2.06 mAh / 43 s | 10.3 mWh |
 
 E is measured to the end of the panel's activity plateau (five consecutive 1 s
-means below 100 mA). G runs from the wake current rise (09:39:30.8) until five
-consecutive 1 s means fall below 155 mA (state A + 20 mA). The F window is 99.5 s
-of the 120 s timer; peak 21.6 mA.
+means below 100 mA). G runs from the wake current rise (09:39:30.7) until five
+consecutive 1 s means fall below 155 mA (state A + 20 mA). The F window is
+113.9 s, from 5 s after the sleep line to the wake current rise; peak 21.6 mA.
+
+**Correction (2026-11-16).** The first version of this record understated E, G,
+the F window length, and the gauge figure in finding 4 by about 12 %: it counted
+every recorded window as exactly 10 ms, but the recorder closes a window once
+10 ms *or more* has passed (11.27 ms on average in this run). The figures above
+weight each window by its actual length. Mean currents were barely affected; runs
+1 and 2 used wall-clock durations and were not affected.
 
 ## Evidence
 
@@ -58,19 +66,20 @@ trace reduced to 1 s.
 ## Findings
 
 1. **Deep sleep draws 14.46 mA from the battery** (57.8 mW at 4.0 V). Each hour
-   asleep costs about 14.5 mAh; one wake cycle (2.04 mAh) equals about 8.5 minutes
+   asleep costs about 14.5 mAh; one wake cycle (2.28 mAh) equals about 9.5 minutes
    of sleep.
 2. **The battery input costs less power than USB-C in every state.** It saves
-   22 mW in deep sleep (28 %), 59 mW idle, and about 1.2 mWh per refresh. The
+   22 mW in deep sleep (28 %), 59 mW idle, and about 0.5 mWh per refresh. The
    difference is the PMIC's USB input path, which run 1 and run 2 include and
-   this run does not.
+   this run does not. Charge per refresh is higher on battery (1.48 versus
+   1.29 mAh) because the same energy is drawn at a lower voltage.
 3. **The awake ordering is the same on battery.** The audio path costs about
    60 mA (A → B). With the rc.12 fix, ALDO4 off changes awake current by no more
-   than the repetition spread (C − A +1.6 mA, D − B −2.4 mA).
+   than the repetition spread (C − A +1.7 mA, D − B −2.5 mA).
 4. **The PMIC's battery percentage is a charge counter, not a voltage reading.**
    With the supply held at 4.0 V, `Battery Level` fell from 98 % to 90 % between
-   09:17:32 and 09:42:32. The PPK2 measured 43.0 mAh over the same interval:
-   about 5.4 mAh per percent, so the gauge's full scale is roughly 540 mAh
+   09:17:32 and 09:42:32. The PPK2 measured 48.4 mAh over the same interval:
+   about 6.0 mAh per percent, so the gauge's full scale is roughly 600 mAh
    (±12 % from 1 % resolution). This describes the PMIC gauge's model as
    configured, not the capacity of any real cell.
 
@@ -85,7 +94,7 @@ refresh only.
 ## Not measured
 
 - ~~The ALDO3-off clamped sleep (state X) on battery input.~~ Done in
-  [run 4](../2026-11-16_ppk2-run4-battery-4v0-clamp/README.md): 3.18 mA, so
+  [run 4](../2026-11-16_ppk2-run4-battery-4v0-clamp/README.md): 3.19 mA, so
   keeping I2C working costs 11.27 mA from the battery.
 - More than one repetition of F and G on battery input.
 - Battery voltages other than 4.0 V. A real cell falls toward 3.0 V as it

@@ -5,13 +5,12 @@
 # web_server_password in the ESPHome installation's secrets.yaml.
 
 esphome:
-  name: waveshare-photopainter
-  friendly_name: Waveshare PhotoPainter
-  area: Waveshare
+  name: photopainter
+  friendly_name: PhotoPainter
   min_version: 2026.9.0
   project:
     name: edennelson.waveshare-esp32s3-photopainter
-    version: 1.0.0-rc.12
+    version: 1.0.0-rc.13
   on_boot:
     - priority: 790.0
       then:
@@ -325,6 +324,10 @@ esphome:
                         id: photopainter_display
                         update_interval: 900s
                   else:
+                    - component.resume:
+                        id: photopainter_display
+                        update_interval: 900s
+                    - component.suspend: photopainter_display
                     - logger.log:
                         tag: photopainter_dashboard
                         level: WARN
@@ -427,7 +430,7 @@ esphome:
     - <esp_partition.h>
     - <esp_sleep.h>
     - <driver/rtc_io.h>
-  comment: PhotoPainter package reference - diagnostic demo profile
+  comment: PhotoPainter standalone profile - diagnostic
 api:
   reboot_timeout: 0s
   encryption:
@@ -1079,9 +1082,7 @@ script:
           condition:
             lambda: return !id(photopainter_display_power_down_ok);
           then:
-            - component.resume:
-                id: photopainter_display
-                update_interval: 900s
+            - component.resume: photopainter_display
   - id: photopainter_display_power_up
     mode: single
     then:
@@ -1169,9 +1170,7 @@ script:
           condition:
             lambda: return id(photopainter_display_power_up_ok);
           then:
-            - component.resume:
-                id: photopainter_display
-                update_interval: 900s
+            - component.resume: photopainter_display
   - id: photopainter_diagnostic_snapshot
     mode: queued
     then:
@@ -3222,7 +3221,7 @@ font:
 image:
   - platform: file
     id: photopainter_demo_sample_image
-    file: https://raw.githubusercontent.com/waveshareteam/ESP32-S3-PhotoPainter/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp
+    file: https://raw.githubusercontent.com/Toon-nooT/PhotoPainter-E-Ink-Spectra-6-image-converter/74a575d3871230ab7981992ade5fc3a035bf79ef/samples/david-clode-G7Jd9fMuRHs-unsplash_scale_ATK_output.bmp
     type: RGB
     dither: NONE
 select:

@@ -103,8 +103,8 @@ phase=header_parity
 for profile in "${profiles[@]}"; do
   active_log="${log_dir}/${profile}.config.yaml"
   resolved_headers="$(headers "${active_log}")"
-  for reference in ESPHome/WaveshareESP32S3PhotoPainter73e6-example.yaml \
-                   ESPHome/WaveshareESP32S3PhotoPainter73e6-diag.yaml; do
+  for reference in ESPHome/WaveshareESP32S3PhotoPainter73e6-demo.yaml \
+                   ESPHome/WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml; do
     reference_headers="$(headers "${reference}")"
     if [[ -z "${reference_headers}" || "${resolved_headers}" != "${reference_headers}" ]]; then
       printf '[result] status=failed phase=header_parity profile=%s reference=%s\n' \

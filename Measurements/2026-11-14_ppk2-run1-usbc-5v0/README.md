@@ -11,7 +11,7 @@ monitoring clients were connected throughout (see the run header).
 
 | Field | Value |
 | --- | --- |
-| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.11**, normal composition (demo + web UI, INFO logging); factory image SHA-256 `7be1beaf8457ad01…` |
+| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.11**, demo composition with the web UI (INFO logging); factory image SHA-256 `7be1beaf8457ad01…` |
 | ESPHome | 2026.10.2 |
 | State X firmware | private comparison build: the same composition plus one test-only button (not published, not supported) |
 | Supply | Nordic PPK2 in source-meter mode, **5000 mV into the board's USB-C** through a power-only pigtail; PPK2 output enabled at 14:03:00 |
@@ -59,6 +59,11 @@ Each window opens on a log line quoted from `boundaries.log`:
 | G | wake current rise 14:14:18.171 (trace) | wake rise ~14:22:20 | wake rise ~14:32:12 |
 | X | `14:39:50.539 deep_sleep: Sleeping for 120000000us` after `14:39:46.457 photopainter_test event=clamp_test phase=aldo3_off reg90=0xF7->0xF3` | — | — |
 
+This run departs from the TESTING.md procedure in one way: F used a 15-minute
+timer (`Sleeping for 900000000us`), and each G was a BOOT-button wake
+(`wake=boot_gpio0`, after 164–188 s asleep) rather than a timer wake. Runs 2–4
+use the 2-minute timer.
+
 E ends when the panel's activity plateau ends (five consecutive 1 s means below
 100 mA); G ends when consecutive 1 s means fall below 140 mA after the refresh.
 F ends at the wake current rise.
@@ -74,7 +79,7 @@ F ends at the wake current rise.
    is that the ESP32 keeps driving the panel's SPI and control pins into the
    unpowered panel, back-powering it through its input protection. In deep sleep
    those pins are not driven, which fits F. Until it is fixed and re-measured,
-   **"Display Enabled" off does not save power while the ESP32 is awake.**
+   **"PhotoPainter Display Enabled" off does not save power while the ESP32 is awake.**
 3. **Keeping the shared I2C bus working costs about 11.3 mA in deep sleep**
    (F − X = 16.07 − 4.79 mA at the 5 V input). F is the supported state; X is
    the failure mode of firmware that de-energizes ALDO3 in sleep.

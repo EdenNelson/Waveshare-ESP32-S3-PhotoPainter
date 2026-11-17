@@ -191,9 +191,9 @@ script:
           condition:
             lambda: return !id(photopainter_display_power_down_ok);
           then:
-            - component.resume:
-                id: photopainter_display
-                update_interval: ${photopainter_display_refresh_interval}
+            # Resume with the panel's own interval: never on the board package,
+            # or whatever a drawing layer or the consumer has set.
+            - component.resume: photopainter_display
 
   - id: photopainter_display_power_up
     mode: single
@@ -282,6 +282,6 @@ script:
           condition:
             lambda: return id(photopainter_display_power_up_ok);
           then:
-            - component.resume:
-                id: photopainter_display
-                update_interval: ${photopainter_display_refresh_interval}
+            # Resume with the panel's own interval: never on the board package,
+            # or whatever a drawing layer or the consumer has set.
+            - component.resume: photopainter_display

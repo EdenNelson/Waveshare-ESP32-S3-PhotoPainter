@@ -9,12 +9,12 @@ and verified on a physical Rev 2.0 unit. What follows is the settled result, wit
 the evidence behind it. See [TESTING.md](TESTING.md) before changing the PMIC
 initialization sequence.
 
-**Nothing here has been measured on a current meter yet.** Rail identity, register
-behavior, and failure modes are established on hardware; what any of it *costs*
-in current is not. A Nordic Power Profiler Kit II is now on hand (as of
-2026-09-23), but no current measurement has been taken with it yet. Where this
-document reasons about power saved, it is reasoning from data sheets and is
-labeled as such.
+Rail identity, register behavior, and failure modes are established on hardware.
+Current consumption is measured with a Nordic Power Profiler Kit II on one board,
+through USB-C and through the battery connector; the records are in
+[`Measurements/`](Measurements/), and figures quoted here link to the run they
+come from. Anything else this document says about power saved is reasoning from
+data sheets and is labeled as such.
 
 The single most important fact is in
 [the README](README.md#the-one-thing-that-makes-this-board-different):
@@ -35,11 +35,12 @@ clamped and unusable.
 | Display | 7.3-inch Spectra E6, 800 × 480, six color | SPI | Working |
 | Storage | microSD/TF | SPI in the ESPHome configuration | Working |
 
-“Working” means demonstrated on the development unit with the complete working
-configuration, published here as the diagnostic profile in
-[`ESPHome/`](ESPHome/) and built with ESPHome 2026.8.2 (pre-release builds; the
-1.0.0 package is verified on 2026.10.2). It does not imply that
-every power state in the test matrix has been completed.
+“Working” means demonstrated on the development unit, first with the
+hand-maintained pre-release configuration (ESPHome 2026.8.2) and then with the
+package-built images (ESPHome 2026.10.2). The package carries that
+implementation, and the standalone profiles in [`ESPHome/`](ESPHome/) are
+generated from it. It does not imply that every power state in the test matrix
+has been completed.
 
 ## GPIO map
 
@@ -61,13 +62,12 @@ GPIO0 through `R34` (0 Ω) and pulled up to 3.3 V by `R36` (10 kΩ). GPIO0 is
 RTC-capable, so the demo uses it, with KEY on GPIO4, as an active-low ext1
 deep-sleep wake, as the vendor firmware does. GPIO0
 is also a boot strap: holding BOOT during a reset may enter the ROM download
-mode. The schematic and ESPHome support establish the intended electrical and
-software path, but the actual BOOT wake behavior on this board still requires
-the timed-fallback physical test in [TESTING.md](TESTING.md#esp32-deep-sleep).
+mode. BOOT and KEY wake are verified on this board, along with the timer
+fallback; see [TESTING.md](TESTING.md#esp32-deep-sleep).
 
 The vendor SD implementation also identifies GPIO1 and GPIO2 as D1 and D2 for
-four-bit SDMMC operation. The ESPHome diagnostic configuration currently uses
-the compatible SPI subset: CS/D3 on GPIO38, CLK on GPIO39, MISO/D0 on GPIO40,
+four-bit SDMMC operation. The package uses the compatible SPI subset and leaves
+GPIO1 and GPIO2 unclaimed: CS/D3 on GPIO38, CLK on GPIO39, MISO/D0 on GPIO40,
 and MOSI/CMD on GPIO41.
 
 ## Boot dependency
@@ -95,9 +95,9 @@ display or downstream peripherals are not ready after a cold power state.
 
 The vendor firmware follows the same broad order: initialize I2C and the
 AXP2101, establish its startup and wake settings, configure the 3.3 V rails, and
-only then initialize the e-paper and other peripherals. Its sleep path disables
-both ALDO3 and ALDO4 — the condition described below under ALDO3, and the reason
-retained PMIC state matters when comparing a warm reset with a true cold start.
+only then initialize the e-paper and other peripherals. Its deep sleep leaves
+every AXP2101 rail on (see the ALDO3 section below), so the PMIC keeps its state
+across that sleep: one reason a warm reset must not be mistaken for a cold start.
 
 ## Boot power state
 
@@ -106,12 +106,13 @@ energized during PMIC bring-up regardless of how the board was left, so `0x90`
 has one expected baseline — `bit 2` and `bit 3` both set — and any other value
 is worth investigating rather than explaining away.
 
-The "Display: Enabled" and "Audio: Codecs Enabled" switches work normally while
+The "PhotoPainter Display Enabled" and "PhotoPainter Audio Codecs Enabled" switches work normally while
 the board is running; they simply do not carry their state across a reset. A
 board demonstrating hardware should not come back from a reset with the panel
-dark or the codecs down. What persisting an off state would have saved is
-unknown — it has not been measured — so the demonstration default wins by
-default rather than by argument.
+dark or the codecs down. Measured while awake, the audio path costs about 56 mA
+and the idle panel rail about 0.6 mA ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)),
+so persisting the audio-off state is the one with something to gain; it is left
+to the consumer.
 
 One consequence worth knowing when comparing captures: a reset always returns
 the board to the same power state, so two logs taken minutes apart are directly
@@ -149,9 +150,10 @@ restored state would have to act on.
 
 ### `0x10` in full, from the data sheet
 
-Register `0x10` is the only one the firmware writes that can remove board power,
-so it is worth reading in full rather than by the two bits this project drives.
-From `Documentation/AXP2101.pdf` §6.13.2.7:
+Register `0x10` holds the PMIC's soft power-off and restart commands. The
+package does not write it (see below), but any firmware that does must preserve
+its undocumented bits, so it is worth reading in full. From
+`Documentation/AXP2101.pdf` §6.13.2.7:
 
 | Bit | Meaning | POR default | Observed on this board |
 | --- | --- | --- | --- |
@@ -165,9 +167,9 @@ From `Documentation/AXP2101.pdf` §6.13.2.7:
 
 Two practical consequences. **Bit 4 defaults set and is undocumented**, so any
 write to `0x10` must be read-modify-write; a blind byte clears it. And **bit 2 is
-set on this board**, which means holding PWR for 16 seconds shuts the PMIC
-regardless of software — the hardware escape hatch if firmware ever stops
-responding.
+set on this board**, enabling a 16-second PWR shutdown. In practice the 6 s
+power-off described under [PWR button](#pwr-button-and-the-long-press-hazard-schematic-2026-11-14) acts first, and
+both de-energize ALDO3 and clamp the shared bus.
 
 Bits 0 and 1 are auto-clearing (`RWAC`). Reading `0x00` back after writing one
 proves nothing, because the PMU clears the bit whether or not it acted. `0x21`
@@ -190,8 +192,8 @@ the same rails) are therefore not part of the supported configuration; the
 package offers only an ESP32 restart, which leaves every rail untouched.
 
 `0x25` bit 2 defaults **clear**, meaning the PMU drops every rail simultaneously.
-Setting it before the terminal command gives a ramp-down in the reverse of the
-startup order, which is the orderly behavior and costs one register write.
+Firmware that does use the soft power-off can set it first to get a ramp-down in
+the reverse of the startup order. The package does neither.
 
 `0x12` bit 3 was found **set**: powered off on battery alone, BATFET stays
 enabled and the cell continues to feed VSYS. "Off" is therefore not electrically
@@ -331,8 +333,8 @@ clean.
 
 Audio power-down instead uses the documented ES8311/ES7210 low-power register
 states plus the GPIO7 amplifier disable, with ALDO3 always enabled. That path is
-implemented as `pmic_audio_power_action_script` with action 0 and is reversible
-in software via `audio_logical_power_up_script`.
+implemented as the `photopainter_audio_shutdown` script and is reversed by
+`photopainter_audio_restore`.
 
 **Scope of that decision.** Keeping ALDO3 on is a requirement of *this*
 configuration, which reads the PMIC, RTC, SHTC3, and codec status after boot and
@@ -349,19 +351,21 @@ territory.
 ALDO4 is not on the shared I2C bus, so removing it does not disturb the PMIC,
 RTC, or codecs. Hardware testing confirmed that the display rail can be disabled
 and re-enabled with no ill effects, provided the panel is brought to a safe
-shutdown point first. This is implemented and exposed as the “Display: Enabled”
+shutdown point first. This is implemented and exposed as the “PhotoPainter Display Enabled”
 switch:
 
-- `display_power_down_script` stops the display poller, waits out the refresh
-  window, confirms BUSY/GPIO13, issues the driver's safe-shutdown hook, and only
-  then clears `0x90` bit 3.
-- `display_power_up_script` reprograms `0x95` to 3.3 V, sets `0x90` bit 3,
-  allows the rail to settle, and restarts the poller so a reset-driven full
-  refresh runs.
+- `photopainter_display_power_down` stops the display poller, waits out any
+  refresh (45 s bound), confirms BUSY/GPIO13, issues the driver's safe-shutdown
+  hook, drives the panel's CS, DC, and RESET lines low so they cannot back-power
+  it, and only then clears `0x90` bit 3.
+- `photopainter_display_power_up` reprograms `0x95` to 3.3 V, sets `0x90` bit 3,
+  allows the rail to settle, restores CS and RESET high, and resumes the poller
+  with the panel's own interval, so a build that draws to the panel refreshes and
+  a build without a layout stays idle.
 
-The full demo now combines this safe ALDO4 shutdown with ESP32 deep sleep in
-firmware. Physical sleep/wake regression and current characterization remain;
-the independent rail cycle itself is already established.
+The demo combines this safe ALDO4 shutdown with ESP32 deep sleep. Sleep and wake
+are verified on hardware and measured (see
+[Recommended sleep sequence](#recommended-sleep-sequence-firmware-independent-measured-2026-11-14-and-2026-11-16)).
 
 The demo leaves the PCF85063 RTC running across ESP32 deep sleep to preserve
 time continuity and provide an independently readable I2C check before entry.
@@ -369,18 +373,17 @@ An RTC-stop UI switch is intentionally absent until there is a measured reason
 for it and a tested resume sequence. This choice does not affect ALDO3: the
 audio rail remains enabled for shared-I2C safety.
 
-## Recommended sleep sequence (firmware-independent, measured 2026-11-14)
+## Recommended sleep sequence (firmware-independent, measured 2026-11-14 and 2026-11-16)
 
 The logic below keeps the shared I2C bus working through sleep and stops the
 panel being back-powered. It applies to any firmware on this board, not only
-ESPHome. Figures come from [PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md)
-and [run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md): USB-C at
-5.0 V, measured at the board input, on one board.
+ESPHome. Figures come from PPK2 runs 1–4 on one board, through USB-C at 5.0 V
+and through the battery connector at 4.0 V (see [`Measurements/`](Measurements/)).
 
 **Rules that always hold**
 
 1. **Never clear ALDO3** (REG90 bit 2): the codecs' I2C pins clamp the shared bus
-   until a full power drain (see the ALDO3 section below).
+   until a full power drain (see the ALDO3 section above).
 2. **Never modify ALDO2** (REG90 bit 1). Change only the intended bit by
    read-modify-write, then verify the read-back.
 3. **Whenever ALDO4 is off and the ESP32 is awake, drive no panel line high**:
@@ -415,7 +418,7 @@ down.
 | Deep sleep, ALDO4 off | Battery 4.0 V | USB-C 5.0 V |
 | --- | --- | --- |
 | ALDO3 on, codecs in logical low power (this sequence) | **14.46 mA** (57.8 mW) | 16.07 mA (80.4 mW) |
-| ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **3.18 mA** (12.7 mW) | 4.79 mA (24.0 mW) |
+| ALDO3 off, bus clamped (firmware that de-energizes ALDO3; OpenDisplay as of 2026-08-31) | **3.19 mA** (12.8 mW) | 4.79 mA (24.0 mW) |
 | Cost of keeping I2C working | **11.27 mA** (45.1 mW) | 11.28 mA (56.4 mW) |
 
 The battery column is 4.0 V at the battery connector with USB-C unplugged
@@ -435,10 +438,13 @@ bringing them back is **not** symmetric with `setup()`:
 | Chip | Register | Shutdown writes | Restored by the component's `setup()`? |
 | --- | --- | --- | --- |
 | ES8311 | `0x31` DAC mute | `0x60` (DSM + DEM mute) | **No** |
-| ES8311 | `0x00`, `0x01` | `0x00` | yes |
+| ES8311 | `0x00` | bit 7 cleared | yes |
+| ES8311 | `0x01` | bits 5:0 cleared | yes |
 | ES7210 | `0x4B` / `0x4C` mic power-down | `0xFF` (all down) | **No** |
 | ES7210 | `0x06` | bits `0x07` set | **No** |
-| ES7210 | `0x00`, `0x01`, `0x40` | — | yes, incidentally |
+| ES7210 | `0x00` | bit 0 cleared | yes, incidentally |
+| ES7210 | `0x01` | bits `0x7F` set | yes, incidentally |
+| ES7210 | `0x40` | bit 7 set | yes, incidentally |
 
 The general rule this establishes: **a power-down sequence that writes a register
 must have a power-up sequence that writes it back.** Relying on a component's own
@@ -485,7 +491,7 @@ Repeatable figures from the development unit, useful as pass/fail bounds:
 | Five-second voice note, playback | ~5 s |
 | RTTTL "Final Countdown" | ~12 s |
 | Display safe shutdown, panel already idle | ~1 s |
-| Display safe shutdown during a refresh | up to 40 s, waiting the refresh out |
+| Display safe shutdown during a refresh | the rest of the refresh, bounded at 45 s |
 
 ## Battery telemetry behavior
 
@@ -524,26 +530,23 @@ Repeatable figures from the development unit, useful as pass/fail bounds:
 None of these are open questions about how the hardware works; they are
 measurements and additions that have not been made yet.
 
-- Current-consumption measurements for each power state, including ALDO4 off.
-  **No longer blocked on equipment.** A Nordic Power Profiler Kit II was
-  acquired (on hand as of 2026-09-23); no current measurement has been taken
-  with it yet. Nothing else in this document is blocked on it, and no power-saving choice
-  here should be argued from estimates until the numbers exist.
+- Current consumption at cell voltages other than 4.0 V, and of the battery
+  composition as a whole (the measured states are in [`Measurements/`](Measurements/))
 - Repeat-cycle regression coverage for ALDO4 under battery-only operation
 - Shared-I2C recovery behavior against faults other than the closed ALDO3 case
 - GPIO21 PMIC-interrupt support in ESPHome
-- Physical repeat-cycle regression of the new demo deep-sleep path, especially
-  BOOT/KEY ext1 wake versus timer fallback and post-wake codec restoration
+- Button wake (BOOT/KEY) on battery input; it is verified on USB-C
 - **Measured and fixed 2026-11-14:** switching ALDO4 off while the ESP32 is awake
   *raised* input current (+8 mA with audio on, +50 mA with audio off; [run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md)),
   confirming the hypothesis below. Driving CS, DC, and RESET low before clearing
   ALDO4 (rc.12) removed it entirely ([run 2](Measurements/2026-11-14_ppk2-run2-usbc-5v0-rc12/README.md)).
   With the fix, ALDO4 off saves only ~0.6 mA while awake.
-- Whether the e-paper signal lines back-power the panel while ALDO4 is off. The
-  ESP32 keeps driving the panel's SPI and control pins, and ESPHome's shutdown
-  hook sends the panel's deep-sleep command during a reboot or deep-sleep entry
-  even when ALDO4 is already off. The panel is not on the shared bus, so this
-  cannot clamp I2C; whether it draws measurable current is a PPK2 question.
+- ESPHome's shutdown hook still sends the panel's deep-sleep command during a
+  reboot or deep-sleep entry, even when ALDO4 is already off: a few milliseconds
+  of SPI traffic into an unpowered panel. Deep-sleep current is unaffected
+  (state F is identical in runs 1 and 2); whether it matters to the panel over
+  many cycles is untested. The panel is not on the shared bus, so it cannot
+  clamp I2C.
 
 ## Evidence hierarchy
 

@@ -13,7 +13,7 @@ recover.
 
 | Field | Value |
 | --- | --- |
-| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, normal composition plus one private test-only button (not published, not supported); compiled 2026-11-16 10:00:04 |
+| Firmware | `edennelson.waveshare-esp32s3-photopainter` **1.0.0-rc.12**, demo composition with the web UI, plus one private test-only button (not published, not supported); compiled 2026-11-16 10:00:04 |
 | ESPHome | 2026.10.2 |
 | Test button | Safe panel shutdown and ALDO4 off through the package's display-power path, then REG90 bit 2 (ALDO3) cleared by read-modify-write, then ESP32 deep sleep on a 2 min timer. ALDO2 is not modified. |
 | Supply | Nordic PPK2, source-meter mode, **4000 mV into the battery connector**, USB-C unplugged; output on 10:13:49 |
@@ -26,11 +26,12 @@ recover.
 | State | Battery 4.0 V | USB-C 5.0 V (run 1) |
 | --- | --- | --- |
 | F. Deep sleep, ALDO3 on, ALDO4 off (run 3 / run 1) | 14.46 mA = 57.8 mW | 16.07 mA = 80.4 mW |
-| **X. Deep sleep, ALDO3 and ALDO4 off, bus clamped** | **3.18 mA = 12.7 mW** (five 20 s blocks, 3.182–3.184; peak 4.1 mA) | 4.79 mA = 24.0 mW |
+| **X. Deep sleep, ALDO3 and ALDO4 off, bus clamped** | **3.19 mA = 12.8 mW** (five 20 s blocks, 3.182–3.184; peak 4.1 mA) | 4.79 mA = 24.0 mW |
 | **F − X: cost of keeping I2C working** | **11.27 mA = 45.1 mW** | 11.28 mA = 56.4 mW |
 
 The X window runs from 5 s after `Sleeping for 120000000us` (10:15:47.769) to the
-wake current rise (10:17:46.7): 101.7 s.
+wake current rise (10:17:46.7): 114.0 s, with each recorded window weighted by its
+actual length.
 
 ## Evidence
 
@@ -56,7 +57,7 @@ rtc_valid=1 ldo_enable=0xFF sda=1 scl=1` (10:21:05).
    here): ALDO3 is a linear regulator, so its load current passes straight
    through to the input whatever the supply.
 2. **In relative terms**, clearing ALDO3 cuts deep-sleep current from 14.46 mA
-   to 3.18 mA, about 4.5× less, at the price of the PMIC, RTC, SHTC3, and
+   to 3.19 mA, about 4.5× less, at the price of the PMIC, RTC, SHTC3, and
    codecs being unreachable until a full power drain.
 3. **The clamp onset is now bracketed at 1 ms to 2.48 s after ALDO3 is cleared.**
    The read-back 1 ms after the write succeeded with both lines high. The next

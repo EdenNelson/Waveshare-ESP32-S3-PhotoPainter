@@ -49,13 +49,6 @@ during the research. They are not republished here.
 - [ESP32-S3-PhotoPainter-Demo.zip](https://files.waveshare.com/wiki/ESP32-S3-PhotoPainter/ESP32-S3-PhotoPainter-Demo.zip):
   the vendor demo source, SD card assets, and the factory firmware image
   (`ESP32-S3-PhotoPainter-factory.bin`).
-- [Pre-dithered sample `2.bmp`](https://github.com/waveshareteam/ESP32-S3-PhotoPainter/blob/7600e4c701705b081cbd5909e7ce78414fcebb3e/02_SDCARD/06_user_Foundation_img/2.bmp)
-  at commit `7600e4c` (2025-11-17): 800 x 480, already reduced to the panel's six
-  colours. The demo's sample-image page downloads it at compile time from this
-  immutable commit (SHA-256
-  `447cfb524a99ba7be53b62cf6c29bf353a00734c4a09d3f9d8a48016d0c08e52`). Later
-  commits replaced these files with full-colour originals, which is why the pin
-  is older than the one above.
 - [PhotoPainter_B-BMP.zip](https://files.waveshare.com/wiki/PhotoPainter%20(B)/PhotoPainter_B-BMP.zip):
   eight sample six-colour bitmaps at 800 x 480 and 480 x 800. The 480 x 480
   dithering test image is a separate file in the vendor repository; see
@@ -68,3 +61,17 @@ directory names and PMIC code (`components/axpPower/axp_prot.cpp`), whose exact
 upstream commit could not be established. Nothing stated in this repository rests
 on it alone — everything was rechecked against the pinned source above or against
 the physical board.
+
+## Demo sample image
+
+The demo's sample-image page shows a rainbow lorikeet: a photo by
+[David Clode on Unsplash](https://unsplash.com/photos/G7Jd9fMuRHs) (Unsplash
+licence), reduced to the panel's six colours with Atkinson dithering by
+[PhotoPainter E-Ink Spectra 6 image converter](https://github.com/Toon-nooT/PhotoPainter-E-Ink-Spectra-6-image-converter)
+(MIT; its readme states the sample images are Unsplash-licensed). The build
+downloads
+[`samples/david-clode-G7Jd9fMuRHs-unsplash_scale_ATK_output.bmp`](https://github.com/Toon-nooT/PhotoPainter-E-Ink-Spectra-6-image-converter/blob/74a575d3871230ab7981992ade5fc3a035bf79ef/samples/david-clode-G7Jd9fMuRHs-unsplash_scale_ATK_output.bmp)
+at compile time from immutable commit `74a575d` (2025-09-06): 800 x 480, 24-bit,
+exactly the panel's six colours (SHA-256
+`1000f22ec6b308d27f52652a3327a67abc7de0d67adb06132036531971e02af0`). It is not
+stored in this repository.

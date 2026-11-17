@@ -26,8 +26,8 @@ INPUT_DIR = ROOT / "examples" / "reference"
 PACKAGE_DIR = ROOT / "packages"
 OUTPUT_DIR = ROOT / "ESPHome"
 PROFILES = {
-    "normal": OUTPUT_DIR / "WaveshareESP32S3PhotoPainter73e6-example.yaml",
-    "diagnostic": OUTPUT_DIR / "WaveshareESP32S3PhotoPainter73e6-diag.yaml",
+    "demo": OUTPUT_DIR / "WaveshareESP32S3PhotoPainter73e6-demo.yaml",
+    "diagnostic": OUTPUT_DIR / "WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml",
 }
 MARKERS = {
     "wifi_ssid": "__REFERENCE_WIFI_SSID__",

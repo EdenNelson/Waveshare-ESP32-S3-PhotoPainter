@@ -31,9 +31,8 @@ packages:
   photopainter: github://edennelson/Waveshare-ESP32-S3-PhotoPainter/packages/waveshare-esp32-s3-photopainter.yaml@v1.0.0
 
 esphome:
-  name: office-photopainter
-  friendly_name: Office PhotoPainter
-  area: Office
+  name: photopainter
+  friendly_name: PhotoPainter
 
 wifi:
   ssid: !secret wifi_ssid
@@ -54,16 +53,17 @@ the package's minimum. The `@v1.0.0` suffix pins a release tag; a
 commit SHA works as well.
 
 The package builds with the ESP-IDF framework. The first build needs network
-access, because the dashboard fonts come from Google Fonts through ESPHome.
+access to fetch the package and ESPHome's components; the demo layer also
+downloads its fonts from Google Fonts and its sample image at compile time.
 
 ### Choose an entry point
 
 | Entry point | What you get |
 | --- | --- |
-| [`waveshare-esp32-s3-photopainter.yaml`](packages/waveshare-esp32-s3-photopainter.yaml) | The board: hardware, SD storage, entities, safe audio/display/PMIC controls, and I2C recovery. No credentials, display layout, or application behaviour. Start here for your own project. |
-| [`waveshare-esp32-s3-photopainter-demo.yaml`](packages/waveshare-esp32-s3-photopainter-demo.yaml) | The board plus a six-colour status dashboard, a Waveshare pre-dithered sample image (selectable, or rotated with the dashboard), RTTTL test tune, SD voice-note recording and playback, and manual deep sleep. |
+| [`waveshare-esp32-s3-photopainter.yaml`](packages/waveshare-esp32-s3-photopainter.yaml) | The core board package: hardware, SD storage, entities, safe audio and display-rail controls, and I2C recovery. No credentials, display layout, or application behaviour. Start here for your own project. |
+| [`waveshare-esp32-s3-photopainter-demo.yaml`](packages/waveshare-esp32-s3-photopainter-demo.yaml) | The board plus a six-colour status dashboard, a pre-dithered six-colour sample photo (selectable, or rotated with the dashboard), RTTTL test tune, SD voice-note recording and playback, and manual deep sleep. |
 | [`waveshare-esp32-s3-photopainter-diagnostic.yaml`](packages/waveshare-esp32-s3-photopainter-diagnostic.yaml) | The board plus DEBUG logging, runtime diagnostic state, and read-only register snapshots. Use it when reporting a problem. |
-| [`waveshare-esp32-s3-photopainter-battery.yaml`](packages/waveshare-esp32-s3-photopainter-battery.yaml) | The board plus slower polling and idle logical audio shutdown. Battery-oriented, not a measured low-power result. |
+| [`waveshare-esp32-s3-photopainter-battery.yaml`](packages/waveshare-esp32-s3-photopainter-battery.yaml) | The board plus slower polling, with audio placed in logical low power after boot. Battery-oriented; this composition as a whole has not been measured. |
 
 **Optional web UI grouping.** If your device runs `web_server:`, also include
 [`waveshare-esp32-s3-photopainter-web-ui.yaml`](packages/waveshare-esp32-s3-photopainter-web-ui.yaml),
@@ -84,21 +84,24 @@ through substitutions. Components meant for customization carry stable IDs, so
 you can `!extend` or `!remove` them.
 
 [ESPHome/README.md](ESPHome/README.md) has the full merge and ownership contract,
-and [`examples/`](examples/) has a small consumer for each entry point.
+and [`examples/`](examples/) has a small consumer for each board entry point;
+[`examples/reference/`](examples/reference/) holds the compositions the standalone
+profiles are rendered from.
 
 ### Standalone profiles
 
-If you would rather have one complete file than a package, two rendered profiles
-are available:
+If you would rather have one complete file than a package, two standalone
+profiles are available:
 
-| Profile | Use it for |
-| --- | --- |
-| [`WaveshareESP32S3PhotoPainter73e6-example.yaml`](ESPHome/WaveshareESP32S3PhotoPainter73e6-example.yaml) | The demo composition: dashboard, test tune, voice notes, and manual deep sleep. `INFO` logging. |
-| [`WaveshareESP32S3PhotoPainter73e6-diag.yaml`](ESPHome/WaveshareESP32S3PhotoPainter73e6-diag.yaml) | The same, plus `DEBUG` runtime reporting and read-only PMIC, RTC, and codec register snapshots. |
+| Standalone profile | Generated from | Use it for |
+| --- | --- | --- |
+| [`WaveshareESP32S3PhotoPainter73e6-demo.yaml`](ESPHome/WaveshareESP32S3PhotoPainter73e6-demo.yaml) | [`examples/reference/demo.yaml`](examples/reference/demo.yaml) | The demo entry point with the web UI grouping: dashboard and sample image, test tune, voice notes, and manual deep sleep. `INFO` logging. |
+| [`WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml`](ESPHome/WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml) | [`examples/reference/diagnostic.yaml`](examples/reference/diagnostic.yaml) | The same, plus `DEBUG` runtime reporting and read-only PMIC, RTC, and codec register snapshots. |
 
-Both are generated from the package by
-[`generate_esphome_profiles.py`](scripts/generate_esphome_profiles.py), so they
-cannot drift from it. Paste one into the ESPHome dashboard and add
+[`generate_esphome_profiles.py`](scripts/generate_esphome_profiles.py) renders
+each one from its composition with ESPHome's own package merge, and its
+`--check` mode fails if either file no longer matches the packages. Both carry
+the same project version as the package. Paste one into the ESPHome dashboard and add
 `wifi_ssid`, `wifi_password`, `api_encryption_key`, `fallback_password`, and
 `web_server_password` to your `secrets.yaml`. Use an ESPHome-generated API key,
 a fallback password of at least eight characters, and a strong, unique web
@@ -119,8 +122,8 @@ password (the web UI logs in as `photopainter-admin`).
 
 ## Status
 
-The 1.0.0 release is gated on a physical regression run of the package-built
-images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
+The boot log states the version as `Project edennelson.waveshare-esp32s3-photopainter
+version …`.
 
 - **Hardware behaviour is settled.** Every power rail and every register this
   package touches has been identified and verified on a physical Rev 2.0 unit.
@@ -128,8 +131,9 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
 - **All of the board's hardware has been demonstrated working** with ESPHome.
   The package splits that proven implementation into reusable layers.
 - **Package builds** validate and compile for every entry point with ESPHome
-  2026.10.2 (2026-11-13). Physical regression of the package-built images, including the
-  demo's deep-sleep and wake path, is the remaining gate for 1.0.0.
+  2026.10.2 and validate with 2026.9.1, the minimum. The package-built images were
+  regression-tested on hardware, including the demo's deep sleep with timer,
+  BOOT, and KEY wake.
 - **First current measurements are recorded** (2026-11-14, USB-C at 5.0 V):
   [PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md). Idle with
   everything on is about 120 mA at 5 V, audio logical shutdown saves about 56 mA,
@@ -139,7 +143,7 @@ images. Release candidates identify themselves as `1.0.0-rc.N` in the boot log.
 - **Battery-input current is recorded** (2026-11-16, 4.0 V at the battery
   connector, USB-C unplugged): [PPK2 run 3](Measurements/2026-11-16_ppk2-run3-battery-4v0/README.md).
   Deep sleep draws **14.5 mA** from the battery, idle with everything on 135 mA,
-  one refresh 1.32 mAh, and one wake cycle 2.04 mAh. Keeping the shared I2C bus
+  one refresh 1.48 mAh, and one wake cycle 2.28 mAh. Keeping the shared I2C bus
   working through deep sleep costs 11.3 mA on either supply
   ([run 4](Measurements/2026-11-16_ppk2-run4-battery-4v0-clamp/README.md)). These
   figures come from one board at one cell voltage.
@@ -150,7 +154,7 @@ Not yet built or characterized:
 - Repeat-cycle regression across the power-state matrix
 - Battery ADC enable behaviour across the power-state matrix
 - Native `image:` dithering against Waveshare's 480 x 480 sample image
-- The PWR button and AXP2101 interrupt path
+- The AXP2101 interrupt path (GPIO21); the PWR button itself is monitored
 
 ## The one thing that makes this board different
 
@@ -170,13 +174,13 @@ codec status, and switching the display rail. So:
 
 - **ALDO3 is never disabled.** The package enables it during PMIC bring-up,
   before any component initializes, and leaves it on.
-- **Audio is quieted logically, not by rail.** The "Audio: Codecs Enabled"
+- **Audio is quieted logically, not by rail.** The "PhotoPainter Audio Codecs Enabled"
   switch puts the ES8311 and ES7210 into their documented low-power register
   states and disables the NS4150B amplifier on GPIO7. The bus stays healthy and
-  the change is fully reversible. That it saves meaningful power is a data-sheet
-  inference, not a measurement.
+  the change is fully reversible. It saves about 56 mA at 5 V while awake
+  ([PPK2 run 1](Measurements/2026-11-14_ppk2-run1-usbc-5v0/README.md)).
 - **ALDO4, the display rail, is safe to cycle.** It is not on the shared bus. The
-  "Display: Enabled" switch powers the panel down at a safe point and back up
+  "PhotoPainter Display Enabled" switch powers the panel down at a safe point and back up
   cleanly.
 
 Firmware that never touches the shared bus after boot can go further, dropping
@@ -212,7 +216,7 @@ disables ALDO3, and no switch it exposes can put the board into that state.
 | Display | 7.3-inch Spectra E6 e-paper | Six-colour 800 x 480 dashboard |
 | Power management | AXP2101 at I2C `0x34` | Early boot initialization, rail register diagnostics, USB/battery presence, charging, voltage, and battery percentage |
 | Power control | AXP2101 rails and codec registers | Live display rail (ALDO4) on/off, logical audio shutdown and restart, ESP32 restart, and demo ESP32 deep sleep with BOOT, KEY, or timer wake |
-| Bus resilience | Shared I2C (SDA 47 / SCL 48) | Bounded ESP-IDF bus-reset recovery with independent PMIC and RTC verification, retried every 15 s while the bus is down |
+| Bus resilience | Shared I2C (SDA 47 / SCL 48) | Bounded ESP-IDF bus-reset recovery with independent PMIC and RTC verification, retried on each peripheral poll (every 10 s; 60 s in the battery composition) while the bus is down |
 | Environment | SHTC3 at I2C `0x70` | Temperature and humidity |
 | RTC | PCF85063 at I2C `0x51` | Hardware time, oscillator status, and SNTP synchronization |
 | Audio output | ES8311 plus NS4150B | I2S speaker, media player, volume control, and RTTTL playback |
@@ -221,8 +225,9 @@ disables ALDO3, and no switch it exposes can put the board into that state.
 | Inputs | BOOT, KEY, and PWR buttons | ESPHome binary sensors; in the demo, KEY plays the test tune. PWR is monitored (read-only), never acted on |
 | Indicators | ACT and PWR LEDs | Individually controllable ESPHome lights and dashboard status |
 
-The full GPIO map, including the two pins the package deliberately leaves
-unclaimed, is in [HARDWARE.md](HARDWARE.md#gpio-map).
+The full GPIO map, including the pins the package deliberately leaves unclaimed
+(GPIO21 for the PMIC interrupt, and GPIO1/GPIO2, the SD card's four-bit data
+lines), is in [HARDWARE.md](HARDWARE.md#gpio-map).
 
 ## Security
 

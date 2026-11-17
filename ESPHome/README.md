@@ -1,50 +1,52 @@
 # ESPHome package design
 
-The ESPHome package is the primary deliverable for this board. The complete
-normal and diagnostic YAML files are generated reference implementations and
+The ESPHome package is the primary deliverable for this board. The demo and
+diagnostic standalone profiles are generated reference implementations and
 optional independent downloads. The package is the maintained hardware source;
 consumers do not need to copy its inline lambdas.
 
-`Office-PhotoPainter.yaml` and `Office-PhotoPainter.bk.yaml` are private,
-ignored working files. The public profile generator does not read or update
-them. The old private-source renderer, `scripts/sync_esphome_profiles.py`, is
-retained locally for historical work and is not part of the public workflow.
-The new deep-sleep behavior was first added to the private
-`Office-PhotoPainter.yaml` for bench testing, then mirrored into the package
-demo fragment. Until the private test is retired, changes to either sleep path
-must be reviewed against the other; only the package generates the public
-normal and diagnostic downloads.
+The hardware research began as one hand-maintained configuration file. When it
+outgrew a single file, its implementation moved into the package, and that file
+was retired; it is not published and nothing is generated from it. The only
+single-file configurations in this repository are the standalone profiles
+generated from the package.
 
 ## Package structure
 
-The stable public entry points live at the top of [`packages/`](../packages/):
+The stable board entry points live at the top of [`packages/`](../packages/); a
+consumer includes one of them, plus the optional web UI files described in
+[`packages/README.md`](../packages/README.md) if it runs `web_server:`:
 
 | Entry point | Adds |
 | --- | --- |
 | [`waveshare-esp32-s3-photopainter.yaml`](../packages/waveshare-esp32-s3-photopainter.yaml) | Platform, buses, PMIC initialization/recovery, telemetry, SD storage, buttons, LEDs, audio/display hardware, and safe power controls. |
 | [`waveshare-esp32-s3-photopainter-demo.yaml`](../packages/waveshare-esp32-s3-photopainter-demo.yaml) | Dashboard with readiness-gated first refresh, RTTTL, SD voice-note recording/playback, and manually requested deep sleep. |
 | [`waveshare-esp32-s3-photopainter-diagnostic.yaml`](../packages/waveshare-esp32-s3-photopainter-diagnostic.yaml) | DEBUG logging, runtime state reporting, and read-only register snapshots at boot and on request. |
-| [`waveshare-esp32-s3-photopainter-battery.yaml`](../packages/waveshare-esp32-s3-photopainter-battery.yaml) | Slower polling and logical codec/amplifier shutdown after boot. This is not yet a measured low-power profile. |
+| [`waveshare-esp32-s3-photopainter-battery.yaml`](../packages/waveshare-esp32-s3-photopainter-battery.yaml) | Slower polling and logical codec/amplifier shutdown after boot. This composition as a whole has not been measured. |
 
 The directory below the entry points is an implementation detail organized as
 `core/`, `hardware/`, `controls/`, `demos/`, `diagnostics/`, and `policies/`. Consumers
 should include an entry point rather than individual internal fragments, so the
 implementation can be reorganized without changing their configuration.
 
-Representative local consumers live in [`examples/`](../examples/). They omit
-Wi-Fi, API, OTA, and secrets on purpose; an installation adds those stanzas in
-its own file.
+Representative local consumers live in [`examples/`](../examples/). They carry no
+credentials: most omit Wi-Fi, API, and OTA entirely, and the two web UI fixtures
+declare an access-point-only `wifi:` because `web_server:` needs a network
+component. An installation adds those stanzas in its own file.
 
-## Standalone downloads
+## Standalone profiles
 
 [`scripts/generate_esphome_profiles.py`](../scripts/generate_esphome_profiles.py)
-renders the two complete YAMLs in this directory using ESPHome's package merge.
-Its rendering inputs live in [`examples/reference/`](../examples/reference/):
-normal composes the demo entry point; diagnostic composes the diagnostic entry
-point and the same demo dashboard/audio fragments. The diagnostic composition
+renders the two standalone profiles in this directory using ESPHome's package
+merge. Each is named after its rendering input in
+[`examples/reference/`](../examples/reference/): `demo.yaml` composes the demo
+entry point and produces `WaveshareESP32S3PhotoPainter73e6-demo.yaml`;
+`diagnostic.yaml` composes the diagnostic entry point and the same demo
+fragments and produces `WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml`. Both
+add the optional web UI grouping. The diagnostic composition
 includes core only once. The synthetic site input supplies identity, API, OTA,
 Wi-Fi, and the fallback access point; the script converts its known credential
-markers to `!secret` references before publishing either download.
+markers to `!secret` references before writing either profile.
 
 Run from any directory:
 
@@ -57,10 +59,10 @@ python3 /path/to/repo/scripts/generate_esphome_profiles.py --check --compile
 The generator needs ESPHome and PyYAML. `ESPHOME_BIN` selects another ESPHome
 executable. Every run validates the rendering inputs and checks that each
 standalone file resolves to the same configuration. `--check` also fails if
-either committed download is stale. `--compile` builds both downloads with
+either committed profile is stale. `--compile` builds both profiles with
 synthetic credentials; its logs are under ignored `build/reference-verification/`.
-The package verification script runs `--check` before its own four consumer
-checks. Source changes that affect a download therefore require regeneration.
+The package verification script runs `--check` before its own six consumer
+checks. Source changes that affect a profile therefore require regeneration.
 
 The generated files have concrete values for package substitutions. Installers
 can edit a standalone copy, while package consumers should set their own
@@ -116,9 +118,9 @@ The consumer can provide:
 
 ```yaml
 esphome:
-  name: office-photopainter
-  friendly_name: Office PhotoPainter
-  area: Office
+  name: photopainter
+  friendly_name: PhotoPainter
+  area: Living Room
 ```
 
 The resolved `esphome:` mapping contains all of those keys. Consumer boot
@@ -169,23 +171,7 @@ audio codecs. Audio power-down uses the documented ES8311/ES7210 low-power
 states and GPIO7 amplifier disable. ALDO4 remains independently switchable after
 the display reaches its safe shutdown point.
 
-## Migration and validation
-
-The package foundation now preserves the board bring-up behavior while separating
-hardware support from demonstrations:
-
-- [x] Extract the fixed platform, bus, power initialization, telemetry, input,
-      indicator, audio, and display definitions into the core package.
-- [x] Remove installation identity, credentials, and site policy.
-- [x] Add and compile a minimal merged consumer fixture.
-- [x] Layer demo, diagnostic, and battery-oriented behavior over the same core.
-- [x] Migrate safe live ALDO4 control, logical audio control, terminal PMIC
-      commands, and SD hardware support into core; put RTTTL and voice-note
-      recording/playback in the optional demo layer.
-- [x] Add a repeatable validation/compilation script in `scripts/`, including
-      resolved header reporting and reference-header parity checking.
-- [x] Render and validate the complete normal and diagnostic standalone
-      profiles from the package source, with a stale-output check.
+## Implementation note
 
 Moving stable implementation areas into named external components can happen
 incrementally when it materially improves maintenance or diagnostics. It is not
@@ -206,11 +192,9 @@ shutdown between application updates remains a separate workload policy. The
 rail must never be removed during a refresh.
 
 The battery entry point must remain distinct from demo behavior such as the
-dashboard, test tones, and voice-note recording. Deep sleep and wake restoration
-also remain outside its supported claims until their complete state transitions
-have been verified.
+dashboard, test tones, voice-note recording, and the demo's deep sleep.
 
-A Nordic Power Profiler Kit II is available as of 2026-09-23, but no current
-measurements have been taken yet. Until a controlled measurement campaign records
-the firmware version, supply topology, state boundaries, and results, describe
-this composition as **battery-oriented**, not as a measured low-power profile.
+The individual power states are measured on battery input
+([`Measurements/`](../Measurements/)), but this composition as a whole, with its
+slower polling, has not been. Describe it as **battery-oriented**, not as a
+measured low-power profile.

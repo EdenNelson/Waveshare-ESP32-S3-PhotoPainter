@@ -16,9 +16,9 @@ suffix; the release tag drops it.
 
 ## 1.0.0 — unreleased
 
-First public release. The ESPHome package is the primary interface; the complete
-normal and diagnostic profiles under [`ESPHome/`](ESPHome/) are rendered from the
-same package source.
+First public release. The ESPHome package is the primary interface; the demo
+and diagnostic standalone profiles under [`ESPHome/`](ESPHome/) are rendered from
+the same package source.
 
 ### Package structure
 
@@ -31,22 +31,26 @@ same package source.
   no substitution proxies or remote `!secret` lookups are involved.
 - Externally customizable components carry stable IDs, so a consumer can
   `!extend` or `!remove` them without copying the package.
+- The standalone profiles are named after the composition they are rendered
+  from: `WaveshareESP32S3PhotoPainter73e6-demo.yaml` (from
+  `examples/reference/demo.yaml`) and `WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml`.
+  Pre-release copies on `main` were named `-example.yaml` and `-diag.yaml`.
 
 ### Board behaviour
 
 - **Both rails come up on every boot.** ALDO3 (audio) and ALDO4 (display) are
   energized during PMIC bring-up regardless of how the board was left, so the
-  "Display: Enabled" and "Audio: Codecs Enabled" switches do not carry state
+  "PhotoPainter Display Enabled" and "PhotoPainter Audio Codecs Enabled" switches do not carry state
   across a reset.
 - **ALDO3 is never disabled.** Dropping it clamps the shared I2C bus for the rest
   of the power cycle ([HARDWARE.md](HARDWARE.md)). ALDO2 is never modified.
 - **Audio powers down logically, never by rail.** The ES8311 and ES7210 enter
   their documented low-power register states and the NS4150B amplifier is
   disabled on GPIO7. Restoring writes back every register the shutdown wrote.
-- **The display rail can be cycled at runtime.** "Display: Enabled" stops the
+- **The display rail can be cycled at runtime.** "PhotoPainter Display Enabled" stops the
   refresh poller, waits out any refresh in progress, confirms BUSY, issues the
-  panel's safe shutdown, and only then clears ALDO4, and reverses that on the way
-  back up.
+  panel's safe shutdown, parks the panel's control lines low, and only then
+  clears ALDO4, and reverses that on the way back up.
 - **No PMIC power-off or PMIC restart.** Both cycle ALDO3 with every other rail,
   which leaves the shared I2C bus clamped until a full power drain. The
   research-phase controls for them were removed; "PhotoPainter Restart" reboots
@@ -62,13 +66,14 @@ same package source.
   [TESTING.md](TESTING.md) has the vocabulary.
 - **Microphone gain defaults to 4**, measured against the ES7210 delivering
   roughly 12% of full scale in a normal room.
-
 - **Display rail off no longer back-powers the panel.** CS, DC, and RESET are
   driven low before ALDO4 is cleared and restored after it returns; measured
-  before/after in PPK2 runs 1 and 2 (8–49 mA removed while awake).
+  before/after in PPK2 runs 1 and 2 (8.9–49.3 mA removed while awake).
 - **No refresh without a layout.** The panel is declared with an empty drawing
-  lambda, so board-only and battery compositions never refresh it (ESPHome would
-  otherwise force a test card every minute).
+  lambda and no refresh interval, so compositions without a layout (core,
+  battery, diagnostic) never refresh it, including after the display rail is
+  switched off and on (ESPHome would otherwise force a test card every minute).
+  The demo dashboard sets its own 900 s interval.
 - **PWR button monitored, never acted on.** GPIO5 mirrors the AXP2101 `PWRON`
   pin; every press is logged with its hold time without touching I2C. Holding PWR
   for 6 s or more is the PMIC's own hardware power-off.
@@ -78,9 +83,9 @@ same package source.
 - Readiness-gated six-colour status dashboard, RTTTL test tune, and five-second
   SD voice-note recording and playback. The first refresh never waits on network
   time; the clock appears on the next refresh.
-- A sample-image page: Waveshare's own pre-dithered six-colour 800x480 bitmap,
-  downloaded at compile time from a pinned vendor commit rather than
-  redistributed. "PhotoPainter Display Page" selects it or the dashboard, and
+- A sample-image page: a pre-dithered six-colour 800x480 photo (credited in
+  [References/README.md](References/README.md#demo-sample-image)), downloaded at
+  compile time from a pinned commit rather than redistributed. "PhotoPainter Display Page" selects it or the dashboard, and
   "PhotoPainter Rotate Pages" alternates them on each scheduled refresh.
 - Manual ESP32 deep sleep: audio stops logically, ALDO4 is removed safely, the
   PMIC and running external RTC are verified, and the board sleeps until
@@ -104,13 +109,13 @@ same package source.
 
 ### Not claimed
 
-PPK2 runs on USB-C at 5.0 V and on the battery input at 4.0 V are recorded in
-[`Measurements/`](Measurements/). They report current per state on one board
-at one cell voltage. No battery-life figure is claimed for any particular cell.
+PPK2 runs through USB-C at 5.0 V and through the battery connector at 4.0 V are
+recorded in [`Measurements/`](Measurements/). They report current per state on
+one board. No battery-life figure is claimed for any particular cell.
 
 ## Pre-release development
 
 Development builds before 1.0.0 were numbered 0.9.100 through 0.10.x. They were
 never released, so there is nothing to upgrade from. The sanitized captures under
-[`Logs/`](Logs/) were taken with those builds and print those version strings;
-[`Logs/README.md`](Logs/README.md) maps each capture to its purpose.
+[`Logs/`](Logs/) come from the hardware investigation before those builds were
+versioned; [`Logs/README.md`](Logs/README.md) maps each capture to its purpose.

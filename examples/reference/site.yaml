@@ -1,9 +1,8 @@
 # Public, synthetic site configuration used only to render standalone downloads.
 # These marker values become installation secret references in the downloads.
 esphome:
-  name: waveshare-photopainter
-  friendly_name: Waveshare PhotoPainter
-  area: Waveshare
+  name: photopainter
+  friendly_name: PhotoPainter
 
 api:
   reboot_timeout: 0s

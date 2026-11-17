@@ -1,4 +1,6 @@
-# Rendering input: diagnostics and demo extend one shared core, exactly once.
+# Rendering input for ESPHome/WaveshareESP32S3PhotoPainter73e6-diagnostic.yaml: the
+# diagnostic entry point, the demo fragments, and the optional web UI grouping.
+# Diagnostics and demo extend one shared core, exactly once.
 packages:
   - !include site.yaml
   - !include ../../packages/waveshare-esp32-s3-photopainter-diagnostic.yaml
@@ -10,4 +12,4 @@ packages:
   - !include ../../packages/waveshare-esp32-s3-photopainter-web-ui-diagnostic.yaml
 
 esphome:
-  comment: PhotoPainter package reference - diagnostic demo profile
+  comment: PhotoPainter standalone profile - diagnostic

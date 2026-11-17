@@ -1,15 +1,16 @@
 # ESPHome package entry points
 
-Consumers should include one top-level entry point from this directory. Files
-under `waveshare-esp32-s3-photopainter/` are internal fragments, not public
-entry points.
+A consumer includes one board entry point from this directory (core, demo,
+diagnostic, or battery) and, if it runs `web_server:`, the optional web UI files
+that match the layers it uses. Files under `waveshare-esp32-s3-photopainter/` are
+internal fragments, not public entry points.
 
 | File | Intended use |
 | --- | --- |
-| `waveshare-esp32-s3-photopainter.yaml` | Normal reusable board support without installation policy or demo UI. |
+| `waveshare-esp32-s3-photopainter.yaml` | The core: reusable board support without installation policy or demo UI. |
 | `waveshare-esp32-s3-photopainter-demo.yaml` | Board support plus a readiness-gated dashboard, RTTTL, SD voice-note recording/playback, and manually requested deep sleep. |
 | `waveshare-esp32-s3-photopainter-diagnostic.yaml` | Board support plus DEBUG logging, runtime diagnostic state, and read-only register snapshots. |
-| `waveshare-esp32-s3-photopainter-battery.yaml` | Board support plus slower polling and idle audio shutdown. This is battery-oriented, not measured low power. |
+| `waveshare-esp32-s3-photopainter-battery.yaml` | Board support plus slower polling and audio placed in logical low power after boot. Battery-oriented; this composition as a whole has not been measured. |
 | `waveshare-esp32-s3-photopainter-web-ui.yaml` | Optional, only with `web_server:`. Web UI version 3, served from the firmware (`local: true`), with the board's entities grouped (Display, Power, Audio, Storage, Environment, Buttons & LEDs, Diagnostics). |
 | `waveshare-esp32-s3-photopainter-web-ui-demo.yaml` | Optional companion to the demo layer: groups its page, sleep, and voice-note controls (adds Deep Sleep and Voice Notes). Requires `-web-ui.yaml`. |
 | `waveshare-esp32-s3-photopainter-web-ui-diagnostic.yaml` | Optional companion to the diagnostic layer: places its memory sensors and register-snapshot button under Diagnostics. Requires `-web-ui.yaml`. |
@@ -21,9 +22,8 @@ packages:
   photopainter: github://edennelson/Waveshare-ESP32-S3-PhotoPainter/packages/waveshare-esp32-s3-photopainter.yaml@v1.0.0
 
 esphome:
-  name: office-photopainter
-  friendly_name: Office PhotoPainter
-  area: Office
+  name: photopainter
+  friendly_name: PhotoPainter
 
 wifi:
   ssid: !secret wifi_ssid
@@ -49,12 +49,11 @@ See [`examples/`](../examples/) for local validation fixtures and
 
 **Display without a layout.** The board package declares the panel with an
 empty drawing lambda and `update_interval: never`, so a composition without a
-layout (board-only, battery) never refreshes the panel. Without that lambda,
-ESPHome's `epaper_spi` would force a test card refreshed every minute. Add your
-own layout with `!extend photopainter_display` and a `lambda:`. Turning
-"Display Enabled" off and on in a layout-free build resumes the refresh poller,
-which then redraws a blank page at the refresh interval.
-
+layout (core, battery, diagnostic) never refreshes the panel, including after
+"PhotoPainter Display Enabled" is switched off and on: the power-up script
+resumes the panel with its own interval. Without that lambda, ESPHome's
+`epaper_spi` would force a test card refreshed every minute. Add your own layout
+with `!extend photopainter_display`, a `lambda:`, and your `update_interval:`.
 
 The core package owns the fixed board definition, initialization, SD mounting
 and capacity telemetry, logical audio power controls, safe ALDO4 controls, and an
@@ -71,22 +70,22 @@ The external RTC remains running; its time and the shared I2C bus are checked
 before entry. There is deliberately no RTC-stop switch: stopping the clock
 would remove time continuity and is not needed for ESP32 deep sleep. Its power
 cost can be evaluated separately with the PPK2 before adding an opt-in control.
-Button wake is not hardware-verified yet, so keep the timer fallback enabled.
-GPIO0 is also a boot strap: do not hold BOOT through a reset. The new sleep behavior is for physical regression testing, not a measured
-power claim.
+Timer, BOOT, and KEY wake are verified on hardware, and the sleep current is
+measured (see [`Measurements/`](../Measurements/)). GPIO0 is also a boot strap:
+do not hold BOOT through a reset.
 
 The supported configuration never disables ALDO3: doing so de-energizes the
 audio codecs' I2C pins and clamps the shared bus for the rest of the power cycle.
-Idle audio uses codec register states plus the GPIO7 amplifier disable. ALDO2 is
+Audio power-down uses codec register states plus the GPIO7 amplifier disable. ALDO2 is
 never modified. The core's live ALDO4 control waits for the display's safe
 shutdown point before removing the rail.
 
-No package variant currently carries a measured power claim. The PPK2 is
-available, but a controlled measurement campaign has not yet been run.
+Measured current for the demo composition's power states, through USB-C and
+the battery connector, is in [`Measurements/`](../Measurements/).
 
 ## Validation
 
-All seven C++ headers from the complete reference profiles are declared once in
+All seven C++ headers in the standalone profiles are declared once in
 the public core entry point: `esp_vfs_fat.h`, `sdmmc_cmd.h`,
 `driver/i2c_master.h`, `esp_flash.h`, `esp_partition.h`, `esp_sleep.h`, and
 `driver/rtc_io.h`. Every variant
@@ -102,24 +101,19 @@ Run from any working directory:
 /path/to/repo/scripts/verify_esphome_packages.sh --config-only
 ```
 
-The script reports the merged C++ include lists, checks every variant's headers
-against both reference profiles, and validates and compiles all four consumers.
-It first checks that the two standalone reference downloads are current with the
-package source. Regenerate them with `python3 scripts/generate_esphome_profiles.py` (PyYAML required)
+The script reports the merged C++ include lists, checks every fixture's headers
+against both standalone profiles, and validates and compiles all six consumers in
+[`examples/`](../examples/). It first checks that the two standalone profiles are
+current with the package source. Regenerate them with `python3 scripts/generate_esphome_profiles.py` (PyYAML required)
 when the check reports a stale file; use `--check --compile` to build both
-standalone downloads as well.
+standalone profiles as well.
 Resolved configurations and compiler logs go to the ignored
 `build/package-verification/` directory. A failure returns a nonzero status and
 identifies the profile and log. `ESPHOME_BIN` selects another ESPHome executable,
 and `PYTHON` selects a Python with PyYAML (ESPHome's own interpreter works).
 
-With ESPHome 2026.10.2, the following local consumers were checked on 2026-11-13:
-
-- `examples/minimal.yaml`: validated and compiled;
-- `examples/demo.yaml`: validated and compiled;
-- `examples/battery.yaml`: validated and compiled; and
-- `examples/diagnostic.yaml`: validated and compiled.
-
-These checks prove configuration merging and generated-C++ compilation. They do
+For 1.0.0, all six consumers and both standalone profiles were validated and
+compiled with ESPHome 2026.10.2, and validated with 2026.9.1, the minimum. These
+checks prove configuration merging and generated-C++ compilation. They do
 not replace flashing and physical regression testing when hardware behavior is
 changed.
