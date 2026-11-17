@@ -52,6 +52,15 @@ encrypt over-the-air updates; it needs ESPHome 2026.9 or newer, which is also
 the package's minimum. The `@v1.0.0` suffix pins a release tag; a
 commit SHA works as well.
 
+> [!IMPORTANT]
+> **Coming from other firmware? Drain the board once after the first install.**
+> Firmware that disabled ALDO3 can leave the shared I2C bus clamped, and a USB
+> install does not clear it, because the board stays powered throughout. After
+> the first install, disconnect USB-C **and** the battery for at least one
+> minute, then reconnect. If you are not sure what ran before, do it anyway.
+> [Coming from other firmware](#coming-from-other-firmware-drain-the-board-once)
+> explains why and how to confirm the bus is up.
+
 The package builds with the ESP-IDF framework. The first build needs network
 access to fetch the package and ESPHome's components; the demo layer also
 downloads its fonts from Google Fonts and its sample image at compile time.
@@ -188,13 +197,28 @@ rails and placing components in their documented low-power states. None of that
 is supported or tested here, but the rail map and register tables in
 [HARDWARE.md](HARDWARE.md) are the place to start.
 
-## Seeing `i2c.master: I2C software timeout`? Your configuration is fine
+## Coming from other firmware? Drain the board once
 
-If the log fills with I2C timeouts right after flashing, the YAML is not broken.
-The bus was left clamped by whatever ran on the board before. Any firmware that
-powers down with ALDO3 disabled leaves it that way; as of 2026-08-31 OpenDisplay
-does. A reflash does not clear it, because reflashing neither de-energizes the
-rail nor drains the board.
+The shared I2C bus can arrive clamped from whatever ran on the board before. Any
+firmware that powers down with ALDO3 disabled leaves it that way; as of
+2026-08-31 OpenDisplay does. Waveshare's shipped firmware does not. A reflash
+does not clear it, because reflashing neither de-energizes the rail nor drains
+the board.
+
+A clamped bus is not a configuration error. Every entry point, not only the
+diagnostic one, reports it at the default log level:
+
+```
+photopainter_power: event=boot result=failed stage=pmic_probe attempts=10 sda=0 scl=0
+photopainter_state: event=level power_ready=… bus=unavailable … sda=0 scl=0
+i2c.master: I2C software timeout
+```
+
+The boot line comes before Wi-Fi, so it shows only on the USB serial log. The
+`event=level` line repeats every 60 seconds and reaches network log clients as
+well. In Home Assistant or the web UI, the PMIC, RTC, and SHTC3 readings stay
+unavailable, and the display and audio switches refuse to change state, logging
+`reason=i2c_unavailable`.
 
 **The fix is a full power drain:**
 
@@ -203,10 +227,13 @@ rail nor drains the board.
 2. Leave it disconnected for **at least one minute.** The bulk capacitance needs
    time to drain; ten seconds is reliably not enough.
 3. Reconnect power. The package enables ALDO3 during PMIC bring-up, so the bus
-   comes up clean and stays that way.
+   comes up clean and stays that way. Within a minute the `event=level` line
+   shows `bus=available axp_valid=1 rtc_valid=1 sda=1 scl=1`.
 
 Once you are running this package you should not need to do this again. It never
-disables ALDO3, and no switch it exposes can put the board into that state.
+disables ALDO3, and no switch it exposes can put the board into that state. The
+one exception is outside firmware control: holding PWR for 6 seconds or longer
+(see the warning above).
 
 ## Hardware coverage
 

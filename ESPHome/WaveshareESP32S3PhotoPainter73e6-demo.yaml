@@ -10,7 +10,7 @@ esphome:
   min_version: 2026.9.0
   project:
     name: edennelson.waveshare-esp32s3-photopainter
-    version: 1.0.0-rc.13
+    version: 1.0.0
   on_boot:
     - priority: 790.0
       then:

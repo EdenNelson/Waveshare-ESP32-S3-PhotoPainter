@@ -14,7 +14,7 @@ That line is what makes a capture evidence rather than an anecdote. Quote it whe
 reporting behaviour. Hardware-test builds ahead of a release carry an `-rc.N`
 suffix; the release tag drops it.
 
-## 1.0.0 — unreleased
+## 1.0.0 — 2026-11-16
 
 First public release. The ESPHome package is the primary interface; the demo
 and diagnostic standalone profiles under [`ESPHome/`](ESPHome/) are rendered from
